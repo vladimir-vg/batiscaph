@@ -1,0 +1,28 @@
+1> F = fun() -> 2 + 2 end.
+2> spawn(F).
+3> spawn(fun() -> io:format("~p~n",[2 + 2]) end).
+4> G = fun(X) -> timer:sleep(10), io:format("~p~n", [X]) end.
+5> [spawn(fun() -> G(X) end) || X <- lists:seq(1,10)].
+6> self().
+7> exit(self()).
+8> self().
+9> self() ! hello.
+10> self() ! self() ! double.
+11> flush().
+11> c(dolphins).
+12> Dolphin = spawn(dolphins, dolphin1, []).
+13> Dolphin ! "oh, hello dolphin!".
+14> Dolphin ! fish.
+8> f(Dolphin).
+9> Dolphin = spawn(dolphins, dolphin1, []).
+10> Dolphin ! fish.
+11> c(dolphins).
+12> Dolphin2 = spawn(dolphins, dolphin2, []).
+13> Dolphin2 ! {self(), do_a_flip}.
+14> flush().
+15> Dolphin3 = spawn(dolphins, dolphin3, []).
+16> Dolphin3 ! Dolphin3 ! {self(), do_a_flip}.
+17> flush().
+18> Dolphin3 ! {self(), unknown_message}.
+19> Dolphin3 ! Dolphin3 ! {self(), fish}.
+20> flush().
