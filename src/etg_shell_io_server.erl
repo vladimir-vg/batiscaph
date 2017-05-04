@@ -52,7 +52,7 @@ handle_cast(Cast, State) ->
 
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}, #shell_io{collector_pid = CollectorPid} = State) ->
-  Event = shell_output_event_now(Format, Args),
+  Event = shell_output_event_now([{put_chars,unicode,io_lib,format,[Format,Args]}]),
   CollectorPid ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
@@ -68,6 +68,12 @@ handle_io_request(From, ReplyAs, {get_geometry, _}, State) ->
 
 handle_io_request(From, ReplyAs, getopts, State) ->
   From ! {io_reply, ReplyAs, [{binary,true},{encoding,unicode}]},
+  {ok, State};
+
+handle_io_request(From, ReplyAs, {requests, Requests}, #shell_io{collector_pid = CollectorPid} = State) ->
+  Event = shell_output_event_now(Requests),
+  CollectorPid ! Event,
+  From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
 handle_io_request(_From, _ReplyAs, Request, State) ->
@@ -110,15 +116,24 @@ take_prefix([C | Input1], Input) -> [C | take_prefix(Input1, Input)].
 
 
 
-shell_output_event_now(Format, Args) ->
+shell_output_event_now(Requests) ->
   Now = erlang:system_time(micro_seconds),
-  Output = io_lib:format(Format, Args),
+  Output = shell_output_event_now0(Requests, []),
   #{
     at => (Now div (1000*1000)),
     at_mcs => (Now rem (1000*1000)),
     type => <<"shell_output">>,
     message => Output
   }.
+
+shell_output_event_now0([], Acc) -> lists:reverse(Acc);
+shell_output_event_now0([{put_chars,unicode,Output} | Requests], Acc) ->
+  shell_output_event_now0(Requests, [Output | Acc]);
+shell_output_event_now0([{put_chars,unicode,io_lib,format,[Format,Args]} | Requests], Acc) ->
+  Output = io_lib:format(Format, Args),
+  shell_output_event_now0(Requests, [Output | Acc]).
+
+
 
 shell_input_event_now(Prompt, Result) ->
   Now = erlang:system_time(micro_seconds),

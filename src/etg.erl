@@ -13,6 +13,7 @@ main() ->
   ShellPid ! start_shell,
 
   IoServerPid ! {input, "X = 123, Y = 5455, X + Y.\n"},
+  IoServerPid ! {input, "X + Y + 33333.\n"},
   timer:sleep(1000),
 
   ok.
