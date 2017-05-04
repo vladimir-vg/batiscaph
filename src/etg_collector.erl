@@ -17,7 +17,7 @@ start_link(Path) ->
 
 init([Path]) ->
   {ok, Fd} = file:open(Path, [write]),
-  file:write(Fd, <<"at,at_mcs,type,message\n">>),
+  file:write(Fd, <<"at,at_mcs,type,prompt,message\n">>),
   {ok, #collector{fd=Fd}}.
 
 
@@ -37,8 +37,9 @@ handle_cast(Cast, State) ->
   {stop, {unknown_cast, Cast}, State}.
 
 format_event(#{at := At, at_mcs := Mcs, type := Type} = E) ->
-  Message1 = escape_string(iolist_to_binary(maps:get(message, E, <<>>))),
-  iolist_to_binary([integer_to_binary(At), ",", integer_to_binary(Mcs), ",", Type, ",", Message1]).
+  Prompt = escape_string(iolist_to_binary(maps:get(prompt, E, <<>>))),
+  Message = escape_string(iolist_to_binary(maps:get(message, E, <<>>))),
+  iolist_to_binary([integer_to_binary(At), ",", integer_to_binary(Mcs), ",", Type, ",", Prompt, ",", Message]).
 
 escape_string(<<>>) -> <<>>;
 escape_string(Binary) -> <<"\"", (escape_string(Binary, <<>>))/binary, "\"">>.

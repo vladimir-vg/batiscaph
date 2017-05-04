@@ -12,7 +12,7 @@ main() ->
   group_leader(IoServerPid, ShellPid),
   ShellPid ! start_shell,
 
-  IoServerPid ! {execute, <<"X = 123, Y = 5455, X + Y.">>},
+  IoServerPid ! {input, "X = 123, Y = 5455, X + Y.\n"},
   timer:sleep(1000),
 
   ok.
