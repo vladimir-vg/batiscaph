@@ -47,7 +47,9 @@ execute_repl_file(Name) ->
     {Ref, finished, Status} ->
       io:format(", ~s\n", [Status]),
       ok
-  end.
+  end,
+  exit(Pid, finished), % just in case
+  ok.
 
 
 
@@ -59,14 +61,22 @@ repl_worker(Parent, Ref, Name) ->
 
   % capture all stdin/stdout io for shell runner process and its children
   group_leader(IoServerPid, ShellPid),
-  ShellPid ! restart_shell,
-
   {ok, Binary} = file:read_file(Name),
+
+  ok = gen_server:call(CollectorPid, {ignore_pids_tracing, [self(), CollectorPid, IoServerPid, ShellPid]}),
+  ok = gen_server:call(CollectorPid, start_tracing),
+
+  ShellPid ! restart_shell,
   IoServerPid ! {input, binary_to_list(Binary)},
 
   erlang:send_after(10000, self(), total_timeout),
   Status = loop_until_finished(IoServerPid, ShellPid),
-  timer:sleep(500),
+
+  ok = gen_server:call(CollectorPid, stop_tracing),
+
+  ok = wait_until_collector_processed_messages(CollectorPid),
+
+  timer:sleep(100), % TODO: wait until all events processed and written down
   Parent ! {Ref, finished, Status},
 
   ok.
@@ -99,3 +109,10 @@ is_everything_consumed(IoServerPid) ->
       end
   end.
 
+
+
+wait_until_collector_processed_messages(CollectorPid) ->
+  case process_info(CollectorPid, message_queue_len) of
+    {message_queue_len, 0} -> ok;
+    _ -> timer:sleep(100), wait_until_collector_processed_messages(CollectorPid)
+  end.
