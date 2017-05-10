@@ -34,48 +34,68 @@ trace_repl_scenarios_dir() ->
 execute_repl_file(Name) ->
   Self = self(),
   Ref = erlang:make_ref(),
-  proc_lib:spawn(fun () ->
+  Pid = proc_lib:spawn(fun () ->
     repl_worker(Self, Ref, Name)
   end),
+  MRef = erlang:monitor(process, Pid),
 
   io:format("executing '~s'", [Name]),
   receive
-    {Ref, finished} ->
-      io:format(", ok\n"),
+    {'DOWN', MRef, process, Pid, Reason} ->
+      io:format(", dead: ~p\n", [Reason]),
+      ok;
+    {Ref, finished, Status} ->
+      io:format(", ~s\n", [Status]),
       ok
-  after 10000 ->
-    io:format(", timeout\n"),
-    {error, timeout}
   end.
 
 
 
 repl_worker(Parent, Ref, Name) ->
+  Self = self(), 
   {ok, CollectorPid} = etg_collector:start_link(Name ++ ".csv"),
-  {ok, IoServerPid} = etg_shell_io_server:start_link(CollectorPid),
+  {ok, IoServerPid} = etg_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
   {ok, ShellPid} = etg_shell_runner:start_link(),
 
   % capture all stdin/stdout io for shell runner process and its children
   group_leader(IoServerPid, ShellPid),
-  ShellPid ! start_shell,
+  ShellPid ! restart_shell,
 
   {ok, Binary} = file:read_file(Name),
   IoServerPid ! {input, binary_to_list(Binary)},
 
-  sleep_until_input_consumed(IoServerPid),
+  erlang:send_after(10000, self(), total_timeout),
+  Status = loop_until_finished(IoServerPid, ShellPid),
   timer:sleep(500),
-  Parent ! {Ref, finished},
+  Parent ! {Ref, finished, Status},
 
   ok.
 
 
 
-sleep_until_input_consumed(IoServerPid) ->
+loop_until_finished(IoServerPid, ShellPid) ->
+  receive
+    total_timeout -> timeout;
+    {IoServerPid, stalled} ->
+      ok = gen_server:call(IoServerPid, clear_pending),
+      ShellPid ! restart_shell,
+      loop_until_finished(IoServerPid, ShellPid)
+  after 0 ->
+    case is_everything_consumed(IoServerPid) of
+      false -> timer:sleep(100), loop_until_finished(IoServerPid, ShellPid);
+      true -> ok
+    end
+  end.
+
+
+
+is_everything_consumed(IoServerPid) ->
   case gen_server:call(IoServerPid, pending_input) of
-    not_pending -> timer:sleep(100), sleep_until_input_consumed(IoServerPid);
+    not_pending -> false; % looks like busy processing last command
     {pending, Input} ->
       case re:run(Input, "^\s*$") of
-        nomatch -> timer:sleep(100), sleep_until_input_consumed(IoServerPid);
-        {match, _} -> ok
+        {match, _} -> true; % only whitespace left, exit
+        nomatch -> false
       end
   end.
+

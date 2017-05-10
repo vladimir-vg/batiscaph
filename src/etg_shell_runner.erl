@@ -20,9 +20,15 @@ init([]) ->
 
 
 
-handle_info(start_shell, State) ->
+handle_info(restart_shell, #shell_runner{shell_pid = Pid} = State) when Pid =/= undefined ->
+  exit(Pid, restart_shell),
+  handle_info(restart_shell, State#shell_runner{shell_pid = undefined});
+
+handle_info(restart_shell, #shell_runner{shell_pid = undefined} = State) ->
   Pid = shell:start(false, true),
-  {noreply, State#shell_runner{shell_pid=Pid}};
+  {noreply, State#shell_runner{shell_pid = Pid}};
+
+
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
