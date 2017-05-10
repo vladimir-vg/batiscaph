@@ -1,0 +1,47 @@
+c(event).
+rr(event, state).
+% edited, wrapped to_go into list -- vg
+spawn(event, loop, [#state{server=self(), name="test", to_go=[5]}]).
+flush().
+flush().
+% edited, wrapped to_go into list -- vg
+Pid = spawn(event, loop, [#state{server=self(), name="test", to_go=[500]}]).
+ReplyRef = make_ref().
+Pid ! {self(), ReplyRef, cancel}.
+flush().
+
+% edited, wrapped to_go into list -- vg
+spawn(event, loop, [#state{server=self(), name="test", to_go=[365*24*60*60]}]).
+
+c(event).
+f().
+% added this instead of 0 to make it work -- vg
+V0 = calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(calendar:local_time()) + 1).
+event:start("Event", V0).
+flush().
+% added this instead of 500 to make it work -- vg
+V500 = calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(calendar:local_time()) + 500).
+Pid = event:start("Event", V500).
+event:cancel(Pid).
+
+% added compile command to make it work -- vg
+c(evserv).
+evserv:start().
+evserv:subscribe(self()).
+% specified example FutureDateTime -- vg
+FutureDateTime = calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(calendar:local_time()) + 60*60).
+evserv:add_event("Hey there", "test", FutureDateTime).
+evserv:listen(5).
+evserv:cancel("Hey there").
+% specified NextMinuteDateTime -- vg
+NextMinuteDateTime = calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(calendar:local_time()) + 60).
+evserv:add_event("Hey there2", "test", NextMinuteDateTime).
+evserv:listen(2000).
+
+c(evserv), c(sup).
+SupPid = sup:start(evserv, []).
+whereis(evserv).
+exit(whereis(evserv), die).
+exit(whereis(evserv), die).
+exit(SupPid, shutdown).
+whereis(evserv).
