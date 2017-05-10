@@ -43,6 +43,9 @@ handle_info({io_request, From, ReplyAs, Request}, State) ->
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
+handle_call(pending_input, _From, State) ->
+  {reply, pending_input(State), State};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
@@ -127,8 +130,13 @@ shell_output_event_now(Requests) ->
   }.
 
 shell_output_event_now0([], Acc) -> lists:reverse(Acc);
+
 shell_output_event_now0([{put_chars,unicode,Output} | Requests], Acc) ->
   shell_output_event_now0(Requests, [Output | Acc]);
+
+shell_output_event_now0([{put_chars,latin1,Output} | Requests], Acc) ->
+  shell_output_event_now0(Requests, [Output | Acc]);
+
 shell_output_event_now0([{put_chars,unicode,io_lib,format,[Format,Args]} | Requests], Acc) ->
   Output = io_lib:format(Format, Args),
   shell_output_event_now0(Requests, [Output | Acc]).
@@ -144,3 +152,8 @@ shell_input_event_now(Prompt, Result) ->
     prompt => Prompt,
     message => Result
   }.
+
+
+
+pending_input(#shell_io{pending_get_until = undefined}) -> not_pending;
+pending_input(#shell_io{pending_get_until = #pending_read{}, input_string = Input}) -> {pending, Input}.
