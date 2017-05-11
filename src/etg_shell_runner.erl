@@ -28,13 +28,20 @@ handle_info(restart_shell, #shell_runner{shell_pid = undefined} = State) ->
   Pid = shell:start(false, true),
   {noreply, State#shell_runner{shell_pid = Pid}};
 
-
-
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
+
+
+handle_call({start_tracing, CollectorPid}, _From, State) ->
+  % trace all shell processes that spawned by collectors
+  erlang:trace(self(), true, [procs, send, timestamp, set_on_spawn, {tracer, CollectorPid}]),
+  {reply, ok, State};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
+
+
 
 handle_cast(Cast, State) ->
   {stop, {unknown_cast, Cast}, State}.

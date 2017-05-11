@@ -18,8 +18,8 @@ start_link(Path) ->
 
 init([Path]) ->
   {ok, Fd} = file:open(Path, [write]),
-  file:write(Fd, <<"at,at_mcs,type,pid,pid_arg,mfa,name,prompt,message,reason\n">>),
-  {ok, #collector{fd=Fd}}.
+  file:write(Fd, <<"at,at_mcs,type,pid,pid_arg,mfa,atom,prompt,message,term\n">>),
+  {ok, #collector{fd = Fd}}.
 
 
 
@@ -36,34 +36,32 @@ handle_info(Message, #collector{fd = Fd} = State) when element(1, Message) == tr
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
+
+
 handle_call({ignore_pids_tracing, Pids}, _From, State) ->
   {reply, ok, State#collector{ignored_pids = Pids}};
-
-handle_call(start_tracing, _From, State) ->
-  erlang:trace(new_processes, true, [call, procs, timestamp]),
-  {reply, ok, State};
-
-handle_call(stop_tracing, _From, State) ->
-  erlang:trace(new_processes, false, [call, procs, timestamp]),
-  {reply, ok, State};
 
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
+
+
 handle_cast(Cast, State) ->
   {stop, {unknown_cast, Cast}, State}.
+
+
 
 format_event(#{at := At, at_mcs := Mcs, type := Type} = E) ->
   Pid = escape_string(iolist_to_binary(maps:get(pid, E, <<>>))),
   PidArg = escape_string(iolist_to_binary(maps:get(pid_arg, E, <<>>))),
   MFA = escape_string(iolist_to_binary(maps:get(mfa, E, <<>>))),
-  Name = escape_string(iolist_to_binary(maps:get(name, E, <<>>))),
+  Atom = escape_string(iolist_to_binary(maps:get(atom, E, <<>>))),
   Prompt = escape_string(iolist_to_binary(maps:get(prompt, E, <<>>))),
   Message = escape_string(iolist_to_binary(maps:get(message, E, <<>>))),
-  Reason = escape_string(iolist_to_binary(maps:get(reason, E, <<>>))),
+  Term = escape_string(iolist_to_binary(maps:get(term, E, <<>>))),
   iolist_to_binary([
     integer_to_binary(At), ",", integer_to_binary(Mcs), ",", Type, ",",
-    Pid, ",", PidArg, ",", MFA, ",", Name, ",", Prompt, ",", Message, ",", Reason
+    Pid, ",", PidArg, ",", MFA, ",", Atom, ",", Prompt, ",", Message, ",", Term
   ]).
 
 escape_string(<<>>) -> <<>>;
@@ -74,6 +72,12 @@ escape_string(<<"\"", Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binar
 escape_string(<<C, Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binary, C>>).
 
 
+
+handle_trace_message({trace_ts, Pid, send, _, PidTo, _} = Message, #collector{ignored_pids = IgnoredPids}) ->
+  case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
+    true -> {ok, []};
+    false -> handle_trace_message0(Message)
+  end;
 
 handle_trace_message(Message, #collector{ignored_pids = IgnoredPids}) ->
   Pid = element(2, Message),
@@ -105,21 +109,38 @@ handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}) ->
   {ok, [E1]};
 
 handle_trace_message0({trace_ts, Pid, exit, Reason, Timestamp}) ->
-  E = #{type => <<"exit">>, pid => erlang:pid_to_list(Pid), reason => io_lib:format("~p", [Reason])},
+  E = #{type => <<"exit">>, pid => erlang:pid_to_list(Pid), term => io_lib:format("~p", [Reason])},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
 handle_trace_message0({trace_ts, Pid, register, Atom, Timestamp}) ->
-  E = #{type => <<"register">>, pid => erlang:pid_to_list(Pid), name => atom_to_binary(Atom,latin1)},
+  E = #{type => <<"register">>, pid => erlang:pid_to_list(Pid), atom => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
 handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}) ->
-  E = #{type => <<"unregister">>, pid => erlang:pid_to_list(Pid), name => atom_to_binary(Atom,latin1)},
+  E = #{type => <<"unregister">>, pid => erlang:pid_to_list(Pid), atom => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
 
+handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) ->
+  E = case To of
+    _ when is_pid(To) -> #{pid_arg => erlang:pid_to_list(To)};
+    _ when is_atom(To) -> #{atom => atom_to_binary(To, latin1)}
+  end,
+  E1 = E#{type => <<"send">>, pid => erlang:pid_to_list(Pid), term => io_lib:format("~p", [Msg])},
+  E2 = event_with_timestamp(Timestamp, E1),
+  {ok, [E2]};
+
+handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) ->
+  To1 = case To of
+    _ when is_pid(To) -> erlang:pid_to_list(To);
+    _ when is_atom(To) -> atom_to_binary(To, latin1)
+  end,
+  E = #{type => <<"send_to_dead">>, pid => erlang:pid_to_list(Pid), pid_arg => To1, term => io_lib:format("~p", [Msg])},
+  E1 = event_with_timestamp(Timestamp, E),
+  {ok, [E1]};
 
 handle_trace_message0(Message) ->
   io:format("skip trace message:~n~p~n", [Message]),

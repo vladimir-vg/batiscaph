@@ -64,15 +64,13 @@ repl_worker(Parent, Ref, Name) ->
   {ok, Binary} = file:read_file(Name),
 
   ok = gen_server:call(CollectorPid, {ignore_pids_tracing, [self(), CollectorPid, IoServerPid, ShellPid]}),
-  ok = gen_server:call(CollectorPid, start_tracing),
+  ok = gen_server:call(ShellPid, {start_tracing, CollectorPid}),
 
   ShellPid ! restart_shell,
   IoServerPid ! {input, binary_to_list(Binary)},
 
   erlang:send_after(10000, self(), total_timeout),
   Status = loop_until_finished(IoServerPid, ShellPid),
-
-  ok = gen_server:call(CollectorPid, stop_tracing),
 
   ok = wait_until_collector_processed_messages(CollectorPid),
 
