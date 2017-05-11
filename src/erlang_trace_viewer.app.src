@@ -5,7 +5,10 @@
   {mod, { erlang_trace_viewer_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    lager,
+    ranch,
+    cowboy
    ]},
   {env,[]},
   {modules, []},
