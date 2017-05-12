@@ -1,4 +1,4 @@
--module(erlang_trace_viewer_sup).
+-module(erltv_sup).
 -behaviour(supervisor).
 
 -export([start_link/0]).

@@ -1,6 +1,12 @@
--module(etg). % erlang trace generator
--mode(compile).
+-module(erltv).
+-export([start/0]).
 -export([trace_repl_scenarios/1]).
+
+
+
+start() ->
+  application:ensure_all_started(erltv),
+  ok.
 
 
 
@@ -55,9 +61,9 @@ execute_repl_file(Name) ->
 
 repl_worker(Parent, Ref, Name) ->
   Self = self(), 
-  {ok, CollectorPid} = etg_collector:start_link(Name ++ ".csv"),
-  {ok, IoServerPid} = etg_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
-  {ok, ShellPid} = etg_shell_runner:start_link(),
+  {ok, CollectorPid} = erltv_collector:start_link(Name ++ ".csv"),
+  {ok, IoServerPid} = erltv_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
+  {ok, ShellPid} = erltv_shell_runner:start_link(),
 
   % capture all stdin/stdout io for shell runner process and its children
   group_leader(IoServerPid, ShellPid),

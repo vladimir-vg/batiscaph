@@ -1,4 +1,4 @@
--module(erlang_trace_viewer_app).
+-module(erltv_app).
 -behaviour(application).
 
 -export([start/2, stop/1]).
@@ -7,7 +7,7 @@
 
 start(_StartType, _StartArgs) ->
   ok = start_cowboy(),
-  erlang_trace_viewer_sup:start_link().
+  erltv_sup:start_link().
 
 
 

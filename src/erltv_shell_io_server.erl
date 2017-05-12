@@ -1,4 +1,4 @@
--module(etg_shell_io_server).
+-module(erltv_shell_io_server).
 -behaviour(gen_server).
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -109,7 +109,9 @@ continue_pending_input(#shell_io{pending_get_until = Pending, collector_pid = Co
     {ok, Scanned, Result, State1} ->
       State2 = refresh_stale_timer(State1),
       Event = shell_input_event_now(Prompt, Scanned),
-      CollectorPid ! Event,
+
+      % make sure that input logged first, and only then execution starts
+      ok = gen_server:call(CollectorPid, {event, Event}),
       From ! {io_reply, ReplyAs, Result},
       {ok, State2#shell_io{pending_get_until = undefined}};
     {need_more_input, State1} ->

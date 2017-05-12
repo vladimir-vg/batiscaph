@@ -1,4 +1,4 @@
--module(etg_collector).
+-module(erltv_collector).
 -behaviour(gen_server).
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -37,6 +37,11 @@ handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
 
+
+% blocking variant of event consumption
+handle_call({event, E}, _From, State) ->
+  {noreply, State1} = handle_info(E, State),
+  {reply, ok, State1};
 
 handle_call({ignore_pids_tracing, Pids}, _From, State) ->
   {reply, ok, State#collector{ignored_pids = Pids}};
