@@ -1,12 +1,16 @@
 -module(erltv).
--export([start/0]).
+-export([start/0, restart/0]).
 -export([trace_repl_scenarios/1]).
 
 
 
 start() ->
   application:ensure_all_started(erltv),
-  erltv_web:start_cowboy(),
+  erltv_web:restart_cowboy(),
+  ok.
+
+restart() ->
+  erltv_web:restart_cowboy(),
   ok.
 
 

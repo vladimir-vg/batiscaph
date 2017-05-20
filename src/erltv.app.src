@@ -2,14 +2,8 @@
  [{description, "An OTP application"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, { erltv_app, []}},
-  {applications,
-   [kernel,
-    stdlib,
-    lager,
-    ranch,
-    cowboy
-   ]},
+  {mod, {erltv_app, []}},
+  {applications, [kernel,stdlib,lager,cowboy]},
   {env,[]},
   {modules, []},
 

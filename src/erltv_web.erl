@@ -1,13 +1,14 @@
 -module(erltv_web).
 -include_lib("kernel/include/file.hrl").
 
--export([start_cowboy/0]).
+-export([restart_cowboy/0]).
 
 
 
-start_cowboy() ->
-  % for babel output
-  ets:new(web_page_cache, [public, named_table, set]),
+restart_cowboy() ->
+  % try create cache table if not created
+  % useful to cache babel output
+  catch ets:new(web_page_cache, [public, named_table, set]),
 
   Port = 8099,
   Dispatch = cowboy_router:compile([
@@ -22,8 +23,20 @@ start_cowboy() ->
     {env, [{dispatch, Dispatch}]},
     {onresponse, fun translate_jsx_if_precompiled_unavailable/4}
   ],
-  {ok, _} = cowboy:start_http(http, 100, [{port, Port}], Opts),
-  lager:info("Started http server on ~p port", [Port]),
+
+  % if webserver already running
+  case (catch ranch:get_port(erltv_http)) of
+    Port ->
+      % just refresh routing and loaded modules
+      ranch:set_protocol_options(erltv_http, Opts),
+      ok;
+
+    _ ->
+      ranch:stop_listener(erltv_http),
+      {ok, _} = cowboy:start_http(erltv_http, 100, [{port, Port}], Opts),
+      lager:info("Started http server on ~p port", [Port]),
+      ok
+  end,
   ok.
 
 
