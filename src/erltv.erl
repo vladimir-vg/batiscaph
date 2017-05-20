@@ -6,6 +6,7 @@
 
 start() ->
   application:ensure_all_started(erltv),
+  erltv_web:start_cowboy(),
   ok.
 
 
