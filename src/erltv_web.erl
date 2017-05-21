@@ -16,6 +16,7 @@ restart_cowboy() ->
       {"/vendor/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       {"/prepared/[...]", prepared_csv_handler, []},
+      {"/style/app.css", cowboy_static, {priv_file, erltv, "wwwroot/app.css"}},
       {"/", cowboy_static, {priv_file, erltv, "wwwroot/index.html"}}
     ]}
   ]),

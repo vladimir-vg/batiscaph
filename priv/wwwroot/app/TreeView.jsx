@@ -21,7 +21,7 @@ class TreeView extends React.Component {
       let width = CELL_WIDTH;
       let height = ((proc.stoppedY || maxY) - proc.startedY)*CELL_HEIGHT;
 
-      procRects.push(<rect key={pid} x={x} y={y} width={width} height={height} style={{fill: '#ccc'}} />);
+      procRects.push(<rect key={pid} x={x} y={y} width={width} height={height} className="proc" />);
     }
 
     return <g>
