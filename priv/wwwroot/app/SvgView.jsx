@@ -1,12 +1,12 @@
 class SvgView extends React.Component {
-  constructor() {
+  constructor(props) {
     super();
     this.state = {
       areaCursor: null,
 
       // global position of the whole figure
-      posX: 0,
-      posY: 0
+      posX: props.padding,
+      posY: props.padding
     }
   }
 
@@ -43,6 +43,31 @@ class SvgView extends React.Component {
     // calculating difference from dragging start position, add to initial
     var x = this.state.posX + (e.clientX - this._dragStartX);
     var y = this.state.posY + (e.clientY - this._dragStartY);
+
+    this.setPosition(x,y);
+  }
+
+  setPosition(x,y) {
+    // do not allow to move out of padded space
+
+    var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+
+    if ((viewportWidth+(-x)) > (this.props.paddedWidth + this.props.padding)) {
+      x = -(this.props.paddedWidth-viewportWidth+this.props.padding);
+    }
+    if (x > this.props.padding) { x = this.props.padding; }
+
+    if ((viewportHeight+(-y)) > (this.props.paddedHeight + this.props.padding)) {
+      y = -(this.props.paddedHeight-viewportHeight+this.props.padding);
+    }
+    if (y > this.props.padding) { y = this.props.padding; }
+
+    // // if viewport is larger than dragger area then just ignore dragging on that axis
+    // if (viewportWidth > this.props.paddedWidth) { x = this.state._dragX; }
+    // if (viewportHeight > this.props.paddedHeight) { y = this.state._dragY; }
+
+    if (x == this._dragX && y == this._dragY) return;
 
     this._posMoveAnimationRequest = window.requestAnimationFrame((function () {
       // explicitly setting svg figure offset
@@ -92,3 +117,9 @@ class SvgView extends React.Component {
     </svg>;
   }
 }
+
+SvgView.propTypes = {
+  padding: React.PropTypes.number.isRequired,
+  paddedWidth: React.PropTypes.number.isRequired,
+  paddedHeight: React.PropTypes.number.isRequired,
+};

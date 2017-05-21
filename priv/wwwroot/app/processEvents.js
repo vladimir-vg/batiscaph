@@ -119,6 +119,7 @@ V.processEvents = function (keys, rows) {
   }
 
   tree.maxY = tree._currentRow.y;
+  tree.maxX = (Object.keys(tree._currentColumns).length + tree._availColumns.length);
 
   return tree;
 };

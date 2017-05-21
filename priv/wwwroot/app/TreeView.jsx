@@ -1,6 +1,6 @@
-const CELL_HEIGHT = 4;
-const CELL_WIDTH = 6;
-const CELL_GUTTER = 6;
+V.CELL_HEIGHT = 4;
+V.CELL_WIDTH = 6;
+V.CELL_GUTTER = 6;
 
 
 
@@ -16,10 +16,10 @@ class TreeView extends React.Component {
     for (let pid in this.props.tree.procs) {
       let proc = this.props.tree.procs[pid];
 
-      let x = proc.x*(CELL_WIDTH + CELL_GUTTER);
-      let y = proc.startedY*CELL_HEIGHT;
-      let width = CELL_WIDTH;
-      let height = ((proc.stoppedY || maxY) - proc.startedY)*CELL_HEIGHT;
+      let x = proc.x*(V.CELL_WIDTH + V.CELL_GUTTER);
+      let y = proc.startedY*V.CELL_HEIGHT;
+      let width = V.CELL_WIDTH;
+      let height = ((proc.stoppedY || maxY) - proc.startedY)*V.CELL_HEIGHT;
 
       procRects.push(<rect key={pid} x={x} y={y} width={width} height={height} className="proc" />);
     }

@@ -1,3 +1,8 @@
+// pixels of empty space around figure that might be visible by dragging
+V.WORKSPACE_PADDING = 100;
+
+
+
 class App extends React.Component {
   constructor() {
     super();
@@ -34,7 +39,9 @@ class App extends React.Component {
     }
 
     if (this.state.tree) {
-      return <SvgView>
+      let paddedWidth = Math.max(0, this.state.tree.maxX*(V.CELL_WIDTH + V.CELL_GUTTER) - V.CELL_GUTTER);
+      let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
+      return <SvgView padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
         <TreeView tree={this.state.tree} />
       </SvgView>;
     }
