@@ -27,6 +27,7 @@ let insertProc = (proc, tree) => {
   // currently just simply enumerate them without aggregation
   proc.startedY = tree._currentRow.y;
   tree._currentRow.y += 1;
+  proc.x = column.x;
 
   tree.procs[proc.pid] = proc;
 };
@@ -116,6 +117,8 @@ V.processEvents = function (keys, rows) {
   for (let i in rows) {
     processEvent(keys, rows[i], tree);
   }
+
+  tree.maxY = tree._currentRow.y;
 
   return tree;
 };
