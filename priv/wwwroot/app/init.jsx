@@ -3,6 +3,7 @@ class App extends React.Component {
     super();
     this.state = {
       errorText: null,
+      tree: null
     };
   }
 
@@ -20,15 +21,27 @@ class App extends React.Component {
     fetch(url).then((response) => {
       response.text().then((text) => {
         let rows = CSV.parse(text);
-        console.log("parsed rows: ", rows);
+        let keys = rows.shift();
+        let tree = V.processEvents(keys, rows);
+        this.setState({tree: tree});
       });
     });
   }
 
   render() {
-    return <div>Hello World! {100}</div>;
+    if (this.state.errorText) {
+      return <div>{this.state.errorText}</div>;
+    }
+
+    if (this.state.tree) {
+      return <div>
+        <TreeView tree={this.state.tree} />
+      </div>;
+    }
+
+    return <div>Loading...</div>;
   }
-};
+}
 
 
 
