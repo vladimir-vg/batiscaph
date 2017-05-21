@@ -34,9 +34,9 @@ class App extends React.Component {
     }
 
     if (this.state.tree) {
-      return <svg style={{position: 'fixed', top: 0, left: 0, width:'100%', height: '100%'}}>
+      return <SvgView>
         <TreeView tree={this.state.tree} />
-      </svg>;
+      </SvgView>;
     }
 
     return <div>Loading...</div>;
