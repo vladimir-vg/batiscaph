@@ -1,3 +1,16 @@
+svg .unselectable {
+  cursor: default;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+svg .unselectable::selection {
+  background: none;
+}
+
+/***/
+
 rect.proc {
   fill: #ccc;
 }

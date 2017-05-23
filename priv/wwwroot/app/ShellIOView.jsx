@@ -4,6 +4,11 @@ V.SHELL_SIDELINE_WIDTH = 45;
 
 
 class ShellIOView extends React.Component {
+  onMouseDown(e) {
+    // to disable dragging when selecting text
+    e.stopPropagation();
+  }
+
   render() {
     let blocks = [];
 
@@ -17,16 +22,16 @@ class ShellIOView extends React.Component {
         let y1 = y + V.SHELL_LINE_HEIGHT*(parseInt(j)+1) - 7;
         texts.push(<text key={j} x={V.CELL_WIDTH/2} y={y1} className="shell-text">{e.lines[j]}</text>);
         if (e.type == 'shell_output') {
-          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center">...</text>);
+          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center unselectable">...</text>);
         } else {
-          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left">{e.prompt}</text>);
+          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left unselectable">{e.prompt}</text>);
         }
       }
 
       let x = -V.SHELL_SIDELINE_WIDTH;
       let width = this.props.width+V.SHELL_SIDELINE_WIDTH;
 
-      blocks.push(<g key={i}>
+      blocks.push(<g key={i} onMouseDown={this.onMouseDown.bind(this)}>
         <rect x={x} y={y} width={width} height={e.height} className="shell-area" />
         <g>{texts}</g>
       </g>);

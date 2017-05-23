@@ -29,6 +29,13 @@ class SvgView extends React.Component {
     this.stopDragging();
   }
 
+  onWheel(e) {
+    let x = this.state.posX;
+    let y = this.state.posY - e.deltaY;
+    let t = this.sanitizeXY(x, y);
+    this.setState({posY: t.y});
+  }
+
   startDragging(e) {
     this._isDragging = true;
     this._dragStartX = e.clientX;
@@ -47,9 +54,8 @@ class SvgView extends React.Component {
     this.setPosition(x,y);
   }
 
-  setPosition(x,y) {
-    // do not allow to move out of padded space
-
+  // do not allow to move out of padded space
+  sanitizeXY(x,y) {
     var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
@@ -63,9 +69,13 @@ class SvgView extends React.Component {
     }
     if (y > this.props.padding) { y = this.props.padding; }
 
-    // // if viewport is larger than dragger area then just ignore dragging on that axis
-    // if (viewportWidth > this.props.paddedWidth) { x = this.state._dragX; }
-    // if (viewportHeight > this.props.paddedHeight) { y = this.state._dragY; }
+    return {x: x, y: y};
+  }
+
+  setPosition(x,y) {
+    let t = this.sanitizeXY(x, y);
+    x = t.x;
+    y = t.y;
 
     if (x == this._dragX && y == this._dragY) return;
 
@@ -104,6 +114,7 @@ class SvgView extends React.Component {
 
     return <svg ref="svg"
       style={{position: 'fixed', top: 0, left: 0, width:'100%', height: '100%', cursor: this.state.areaCursor}}
+      onWheel={this.onWheel.bind(this)}
       onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}
       onMouseUp={this.onMouseUp.bind(this)} onMouseLeave={this.onMouseLeave.bind(this)}>
   
