@@ -1,3 +1,12 @@
 rect.proc {
-  fill: #ececec;
+  fill: #ccc;
+}
+
+rect.shell-area {
+  fill: rgba(255,255,255,0.7);
+}
+
+text.shell-text {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 16px;
 }

@@ -28,7 +28,7 @@ let insertProc = (proc, tree) => {
   proc.startedY = tree._currentRow.y;
   tree._currentRow.y += 1;
   proc.x = column.x;
-
+  console.log("start", proc.startedY);
   tree.procs[proc.pid] = proc;
 };
 
@@ -87,8 +87,34 @@ let exitProc = (keys, values, tree) => {
   tree.procs[pid].stoppedAtMcs = atMcs;
   tree.procs[pid].reason = reason;
   tree.procs[pid].stoppedY = tree._currentRow.y;
-
+  console.log("stop", tree.procs[pid].stoppedY);
   tree._currentRow.y += 1;
+};
+
+
+
+let addShellIO = (keys, values, tree) => {
+  let type = get(keys, values, 'type');
+  let at = get(keys, values, 'at');
+  let atMcs = get(keys, values, 'at_mcs');
+  let prompt = get(keys, values, 'prompt');
+  let message = get(keys, values, 'message');
+
+  let e = {at: at, atMcs: atMcs, type: type};
+  e.lines = message.trim().split("\n");
+  e.height = e.lines.length*V.SHELL_LINE_HEIGHT;
+  e.length = 1 + Math.trunc(e.height/V.CELL_HEIGHT) // in cells;
+
+  // add one cell around shell block
+  tree._currentRow.y += 1;
+  e.y = tree._currentRow.y;
+  tree._currentRow.y += e.length;
+  tree._currentRow.y += 1;
+
+  console.log("shell", e.y, e.length);
+  e.prompt = prompt;
+
+  tree.shellIO.push(e);
 };
 
 
@@ -98,6 +124,8 @@ let processEvent = (keys, values, tree) => {
   switch (get(keys, values, 'type')) {
   case 'spawn': spawnProc(keys, values, tree); break;
   case 'exit': exitProc(keys, values, tree); break;
+  case 'shell_input': addShellIO(keys, values, tree); break;
+  case 'shell_output': addShellIO(keys, values, tree); break;
   }
 };
 
@@ -112,6 +140,9 @@ V.processEvents = function (keys, rows) {
 
     // these are output fields that later gonna be used for visualization
     procs: {},
+
+    // sorted list of events with length (in cells)
+    shellIO: [],
   };
 
   for (let i in rows) {

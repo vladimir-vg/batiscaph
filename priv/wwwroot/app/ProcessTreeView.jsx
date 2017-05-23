@@ -4,7 +4,7 @@ V.CELL_GUTTER = 6;
 
 
 
-class TreeView extends React.Component {
+class ProcessTreeView extends React.Component {
   componentDidMount() {
     console.log(this.props.tree);
   }
@@ -30,6 +30,6 @@ class TreeView extends React.Component {
   }
 };
 
-TreeView.propTypes = {
+ProcessTreeView.propTypes = {
   tree: React.PropTypes.object.isRequired
 };
