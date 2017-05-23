@@ -28,7 +28,7 @@ let insertProc = (proc, tree) => {
   proc.startedY = tree._currentRow.y;
   tree._currentRow.y += 1;
   proc.x = column.x;
-  console.log("start", proc.startedY);
+
   tree.procs[proc.pid] = proc;
 };
 
@@ -87,13 +87,13 @@ let exitProc = (keys, values, tree) => {
   tree.procs[pid].stoppedAtMcs = atMcs;
   tree.procs[pid].reason = reason;
   tree.procs[pid].stoppedY = tree._currentRow.y;
-  console.log("stop", tree.procs[pid].stoppedY);
+
   tree._currentRow.y += 1;
 };
 
 
 
-let addShellIO = (keys, values, tree) => {
+let addShellIO = (keys, values, prev, next, tree) => {
   let type = get(keys, values, 'type');
   let at = get(keys, values, 'at');
   let atMcs = get(keys, values, 'at_mcs');
@@ -103,15 +103,17 @@ let addShellIO = (keys, values, tree) => {
   let e = {at: at, atMcs: atMcs, type: type};
   e.lines = message.trim().split("\n");
   e.height = e.lines.length*V.SHELL_LINE_HEIGHT;
-  e.length = 1 + Math.trunc(e.height/V.CELL_HEIGHT) // in cells;
+  e.length = Math.trunc(e.height/V.CELL_HEIGHT) // in cells
 
-  // add one cell around shell block
-  tree._currentRow.y += 1;
   e.y = tree._currentRow.y;
   tree._currentRow.y += e.length;
-  tree._currentRow.y += 1;
 
-  console.log("shell", e.y, e.length);
+  // add one cell around shell block
+  // do add extra space if next event is not shell io
+  if (next && get(keys, next, 'type').indexOf('shell_') != 0) {
+    tree._currentRow.y += 1;
+  }
+
   e.prompt = prompt;
 
   tree.shellIO.push(e);
@@ -120,12 +122,15 @@ let addShellIO = (keys, values, tree) => {
 
 
 // this procedure destructively changes tree
-let processEvent = (keys, values, tree) => {
+let processEvent = (keys, rows, i, tree) => {
+  let values = rows[i];
+  let prev = rows[i-1];
+  let next = rows[i+1];
   switch (get(keys, values, 'type')) {
   case 'spawn': spawnProc(keys, values, tree); break;
   case 'exit': exitProc(keys, values, tree); break;
-  case 'shell_input': addShellIO(keys, values, tree); break;
-  case 'shell_output': addShellIO(keys, values, tree); break;
+  case 'shell_input': addShellIO(keys, values, prev, next, tree); break;
+  case 'shell_output': addShellIO(keys, values, prev, next, tree); break;
   }
 };
 
@@ -146,7 +151,7 @@ V.processEvents = function (keys, rows) {
   };
 
   for (let i in rows) {
-    processEvent(keys, rows[i], tree);
+    processEvent(keys, rows, parseInt(i), tree);
   }
 
   tree.maxY = tree._currentRow.y;

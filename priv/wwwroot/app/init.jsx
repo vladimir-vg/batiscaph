@@ -39,7 +39,7 @@ class App extends React.Component {
     }
 
     if (this.state.tree) {
-      let paddedWidth = Math.max(0, this.state.tree.maxX*(V.CELL_WIDTH + V.CELL_GUTTER) - V.CELL_GUTTER);
+      let paddedWidth = this.state.tree.maxX*(V.CELL_WIDTH + V.CELL_GUTTER);
       let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
       return <SvgView padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
         <ProcessTreeView tree={this.state.tree} />

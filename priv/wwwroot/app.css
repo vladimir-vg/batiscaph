@@ -2,11 +2,26 @@ rect.proc {
   fill: #ccc;
 }
 
+rect.shell-sideline {
+  fill: #ebf0ff;
+}
+
 rect.shell-area {
   fill: rgba(255,255,255,0.7);
 }
 
-text.shell-text {
+text.shell-text,
+text.shell-prompt-left,
+text.shell-prompt-center {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 16px;
 }
+
+text.shell-prompt-center {
+  text-anchor: middle;
+}
+
+text.shell-prompt-left {
+  text-anchor: start;
+}
+

@@ -5,3 +5,7 @@ Particularly to illustrate traces for some code examples in [Learn you some Erla
 You need to install babel to use web interface:
 
     npm install .
+
+# TODO list
+
+ [ ] parse pids in shell io and turn into links that select processes

@@ -1,32 +1,44 @@
-V.SHELL_LINE_HEIGHT = 22;
+V.SHELL_LINE_HEIGHT = V.CELL_HEIGHT*3;
+V.SHELL_SIDELINE_WIDTH = 45;
+
 
 
 class ShellIOView extends React.Component {
   render() {
-    let rects = [];
+    let blocks = [];
 
     for (let i in this.props.tree.shellIO) {
       let e = this.props.tree.shellIO[i];
 
-      // let x = proc.x*(V.CELL_WIDTH + V.CELL_GUTTER);
-      // let width = V.CELL_WIDTH;
       let y = e.y*V.CELL_HEIGHT;
 
       let texts = [];
       for (let j in e.lines) {
         let y1 = y + V.SHELL_LINE_HEIGHT*(parseInt(j)+1) - 7;
-        // if (y1 == 432) debugger
-        texts.push(<text key={j} x={0} y={y1} className="shell-text">{e.lines[j]}</text>);
+        texts.push(<text key={j} x={V.CELL_WIDTH/2} y={y1} className="shell-text">{e.lines[j]}</text>);
+        if (e.type == 'shell_output') {
+          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center">...</text>);
+        } else {
+          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left">{e.prompt}</text>);
+        }
       }
 
-      rects.push(<g key={i}>
-        <rect x={0} y={y} width={this.props.width} height={e.height} className="shell-area" />
+      let x = -V.SHELL_SIDELINE_WIDTH;
+      let width = this.props.width+V.SHELL_SIDELINE_WIDTH;
+
+      blocks.push(<g key={i}>
+        <rect x={x} y={y} width={width} height={e.height} className="shell-area" />
         <g>{texts}</g>
       </g>);
     }
 
+    let x = -V.SHELL_SIDELINE_WIDTH;
+    let width = V.SHELL_SIDELINE_WIDTH;
+    let height = this.props.tree.maxY*V.CELL_HEIGHT;
+
     return <g>
-      <g>{rects}</g>
+      <rect x={x} y={0} width={width} height={height} className="shell-sideline" />
+      <g>{blocks}</g>
     </g>;
   }
 };

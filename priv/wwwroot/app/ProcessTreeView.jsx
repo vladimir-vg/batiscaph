@@ -1,5 +1,5 @@
-V.CELL_HEIGHT = 4;
-V.CELL_WIDTH = 6;
+V.CELL_HEIGHT = 10;
+V.CELL_WIDTH = 7;
 V.CELL_GUTTER = 6;
 
 
@@ -16,7 +16,7 @@ class ProcessTreeView extends React.Component {
     for (let pid in this.props.tree.procs) {
       let proc = this.props.tree.procs[pid];
 
-      let x = proc.x*(V.CELL_WIDTH + V.CELL_GUTTER);
+      let x = proc.x*(V.CELL_WIDTH + V.CELL_GUTTER) + V.CELL_GUTTER;
       let y = proc.startedY*V.CELL_HEIGHT;
       let width = V.CELL_WIDTH;
       let height = ((proc.stoppedY || maxY) - proc.startedY)*V.CELL_HEIGHT;
