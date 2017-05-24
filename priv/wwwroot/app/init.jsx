@@ -8,7 +8,8 @@ class App extends React.Component {
     super();
     this.state = {
       errorText: null,
-      tree: null
+      tree: null,
+      selectedPid: null
     };
   }
 
@@ -33,6 +34,10 @@ class App extends React.Component {
     });
   }
 
+  onProcSelect(pid) {
+    this.setState({selectedPid: pid});
+  }
+
   render() {
     if (this.state.errorText) {
       return <div>{this.state.errorText}</div>;
@@ -41,10 +46,13 @@ class App extends React.Component {
     if (this.state.tree) {
       let paddedWidth = this.state.tree.maxX*(V.CELL_WIDTH + V.CELL_GUTTER);
       let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
-      return <SvgView padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
-        <ProcessTreeView tree={this.state.tree} />
-        <ShellIOView tree={this.state.tree} width={paddedWidth} />
-      </SvgView>;
+      return <div>
+        <SvgView padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
+          <ProcessTreeView tree={this.state.tree} selectedPid={this.state.selectedPid} onProcSelect={this.onProcSelect.bind(this)} />
+          <ShellIOView tree={this.state.tree} width={paddedWidth} />
+        </SvgView>
+        <SelectedProcInfo tree={this.state.tree} pid={this.state.selectedPid} />
+      </div>;
     }
 
     return <div>Loading...</div>;

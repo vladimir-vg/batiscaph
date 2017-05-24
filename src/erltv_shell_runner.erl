@@ -34,7 +34,7 @@ handle_info(Msg, State) ->
 
 
 handle_call({start_tracing, CollectorPid}, _From, State) ->
-  % trace all shell processes that spawned by collectors
+  % trace all shell processes that spawned by runner
   erlang:trace(self(), true, [procs, send, timestamp, set_on_spawn, {tracer, CollectorPid}]),
   {reply, ok, State};
 

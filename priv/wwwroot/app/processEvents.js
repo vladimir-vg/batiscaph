@@ -47,6 +47,13 @@ let spawnProc = (keys, values, tree) => {
     return;
   }
 
+  if (tree.procs[parent]) {
+    proc.ancestors = tree.procs[parent].ancestors.slice();
+    proc.ancestors.unshift(parent); // prepend current parent
+  } else {
+    proc.ancestors = [];
+  }
+
   insertProc(proc, tree);
 };
 
@@ -76,9 +83,9 @@ let exitProc = (keys, values, tree) => {
   // sort to make lower columns be taken first
   tree._availColumns.sort((a,b) => {
     if (a.x < b.x) {
-      return -1;
-    } else if (a.x > b.x) {
       return 1;
+    } else if (a.x > b.x) {
+      return -1;
     }
     return 0;
   });
