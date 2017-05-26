@@ -22,6 +22,32 @@ rect.bad-reason {
   fill: #ff5555;
 }
 
+
+
+circle.message-self-send {
+  fill: none;
+  stroke: #3771c8;
+  stroke-width: 2;
+}
+
+line.message-send {
+  stroke: #3771c8;
+  stroke-width: 1;
+  marker-start: url(#markerSendStart);
+  marker-end: url(#markerSendEnd);
+}
+
+circle.marker-send-start {
+  stroke: none;
+  fill: #3771c8;
+}
+
+path.marker-send-end {
+  fill: #3771c8;
+}
+
+
+
 rect.proc.selected {
   stroke: #5599ff;
   stroke-width: 2;

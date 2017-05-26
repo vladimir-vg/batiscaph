@@ -148,6 +148,25 @@ let addShellIO = (keys, values, prev, next, tree) => {
 
 
 
+let addMessageSend = (keys, values, tree) => {
+  let at = get(keys, values, 'at');
+  let atMcs = get(keys, values, 'at_mcs');
+  let pidFrom = get(keys, values, 'pid');
+  let pidTo = get(keys, values, 'pid_arg');
+  let term = get(keys, values, 'term');
+
+  if (!(pidFrom in tree.procs) || !(pidTo in tree.procs)) return;
+
+  let e = {at: at, atMcs: atMcs, term: term, from: pidFrom, to: pidTo};
+
+  e.y = tree._currentRow.y;
+  tree._currentRow.y += 1;
+
+  tree.sends.push(e);
+};
+
+
+
 // this procedure destructively changes tree
 let processEvent = (keys, rows, i, tree) => {
   let values = rows[i];
@@ -158,6 +177,7 @@ let processEvent = (keys, rows, i, tree) => {
   case 'exit': exitProc(keys, values, tree); break;
   case 'shell_input': addShellIO(keys, values, prev, next, tree); break;
   case 'shell_output': addShellIO(keys, values, prev, next, tree); break;
+  case 'send': addMessageSend(keys, values, tree); break;
   }
 };
 
@@ -175,6 +195,8 @@ V.processEvents = function (keys, rows) {
 
     // sorted list of events with length (in cells)
     shellIO: [],
+
+    sends: [],
   };
 
   for (let i in rows) {

@@ -117,7 +117,17 @@ class SvgView extends React.Component {
       onWheel={this.onWheel.bind(this)}
       onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}
       onMouseUp={this.onMouseUp.bind(this)} onMouseLeave={this.onMouseLeave.bind(this)}>
-  
+
+      <defs>
+        <marker id="markerSendStart" markerWidth="8" markerHeight="8" refX="5" refY="5">
+          <circle cx="5" cy="5" r="2" className="marker-send-start" />
+        </marker>
+
+        <marker id="markerSendEnd" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
+          <path d="M0,2 L0,7 L6,4 L0,2" className="marker-send-end" />
+        </marker>
+      </defs>
+
       <g ref="vposBase" transform={"translate(0,"+this.state.posY+")"}>
         {verticallyMovingChildren}
       </g>

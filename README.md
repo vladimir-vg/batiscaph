@@ -6,6 +6,6 @@ You need to install babel to use web interface:
 
     npm install .
 
-# TODO list
+# not forget to implement
 
 - [ ] make pid in shell IO clickable, select processes

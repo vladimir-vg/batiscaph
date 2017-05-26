@@ -108,7 +108,7 @@ handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when i
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
-handle_trace_message0({trace_ts, ParentPid, spawned, ChildPid, MFA, Timestamp}) ->
+handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) ->
   MFA1 = mfa_str(MFA),
   E = #{type => <<"spawn">>, pid => erlang:pid_to_list(ChildPid), pid_arg => erlang:pid_to_list(ParentPid), mfa => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
