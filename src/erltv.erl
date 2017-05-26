@@ -35,7 +35,7 @@ trace_repl_scenarios_dir() ->
   end, Filenames),
   ReplFiles1 = lists:sort(ReplFiles),
 
-  io:format("found scenarious to play~n~s\n\n", [[["\t", F, "\n"] || F <- ReplFiles1]]),
+  io:format("found scenarios to play~n~s\n\n", [[["\t", F, "\n"] || F <- ReplFiles1]]),
   [execute_repl_file(Name) || Name <- ReplFiles1],
 
   ok.

@@ -8,4 +8,4 @@ You need to install babel to use web interface:
 
 # TODO list
 
- [ ] parse pids in shell io and turn into links that select processes
+- [ ] make pid in shell IO clickable, select processes

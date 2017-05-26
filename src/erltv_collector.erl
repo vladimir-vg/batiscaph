@@ -78,8 +78,9 @@ escape_string(<<C, Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binary, 
 
 
 
-handle_trace_message({trace_ts, Pid, send, _, PidTo, _} = Message, #collector{ignored_pids = IgnoredPids}) ->
+handle_trace_message({trace_ts, Pid, send, _Msg, PidTo, _} = Message, #collector{ignored_pids = IgnoredPids}) ->
   case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
+    % io:format("ignore message ~p(~p) -> ~p(~p) in ~p\n\t~p\n", [Pid, lists:member(Pid, IgnoredPids), PidTo, lists:member(PidTo, IgnoredPids), IgnoredPids, _Msg]),
     true -> {ok, []};
     false -> handle_trace_message0(Message)
   end;
@@ -91,23 +92,23 @@ handle_trace_message(Message, #collector{ignored_pids = IgnoredPids}) ->
     false -> handle_trace_message0(Message)
   end.
 
-handle_trace_message0({trace_ts, _Pid, getting_linked, _PidPort, _Timestmap}) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, getting_unlinked, _PidPort, _Timestmap}) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, link, Port, _Timestamp}) when is_port(Port) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, unlink, Port, _Timestamp}) when is_port(Port) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, spawn, _ChildPid, _MFA, _Timestamp}) -> {ok, []};
+handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
+handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
+handle_trace_message0({trace_ts, _Pid, link, _PidPort, _Timestamp}) -> {ok, []};
+handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}) -> {ok, []};
+handle_trace_message0({trace_ts, _Pid, spawn, _ParentPid, _MFA, _Timestamp}) -> {ok, []};
 
-handle_trace_message0({trace_ts, Pid, link, Pid1, Timestamp}) when is_pid(Pid1) ->
+handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_pid(Pid1) ->
   E = #{type => <<"link">>, pid => erlang:pid_to_list(Pid), pid_arg => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
-handle_trace_message0({trace_ts, Pid, unlink, Pid1, Timestamp}) when is_pid(Pid1) ->
+handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when is_pid(Pid1) ->
   E = #{type => <<"unlink">>, pid => erlang:pid_to_list(Pid), pid_arg => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
-handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) ->
+handle_trace_message0({trace_ts, ParentPid, spawned, ChildPid, MFA, Timestamp}) ->
   MFA1 = mfa_str(MFA),
   E = #{type => <<"spawn">>, pid => erlang:pid_to_list(ChildPid), pid_arg => erlang:pid_to_list(ParentPid), mfa => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
