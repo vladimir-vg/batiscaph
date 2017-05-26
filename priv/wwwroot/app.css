@@ -14,8 +14,12 @@ svg .unselectable::selection {
 rect.proc {
   fill: #ccc;
 }
+line.spawn-line {
+  stroke: #ccc;
+  stroke-width: 1;
+}
 rect.bad-reason {
-  fill: #ff8080;
+  fill: #ff5555;
 }
 
 rect.proc.selected {

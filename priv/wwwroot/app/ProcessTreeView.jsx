@@ -39,13 +39,22 @@ class ProcessTreeView extends React.Component {
         className += " selected-ancestor";
       }
 
+      let spawnLine = null;
+      if (proc.parent in this.props.tree.procs) {
+        let parentProc = this.props.tree.procs[proc.parent];
+        let x1 = parentProc.x*(V.CELL_WIDTH + V.CELL_GUTTER) + V.CELL_GUTTER;
+        let x2 = x + V.CELL_WIDTH;
+        spawnLine = <line x1={x1} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" />;
+      }
+
       let badReasonRect = null;
       if (proc.reason && proc.reason != 'normal') {
         badReasonRect = <rect x={x} y={y+height-V.PROC_BAD_REASON_HEIGHT} width={width} height={V.PROC_BAD_REASON_HEIGHT} className="bad-reason" />;
       }
 
-      procRects.push(<g key={pid}>
-        <rect x={x} y={y} width={width} height={height} onClick={this.onRectClick.bind(this, pid)} className={className} />
+      procRects.push(<g key={pid} onClick={this.onRectClick.bind(this, pid)}>
+        {spawnLine}
+        <rect x={x} y={y} width={width} height={height} className={className} />
         {badReasonRect}
       </g>);
     }

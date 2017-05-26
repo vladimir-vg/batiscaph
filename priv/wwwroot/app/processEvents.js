@@ -10,15 +10,35 @@ let get = (keys, values, key) => {
 
 
 
+let availableColumnForProc = (proc, tree) => {
+  if (tree._availColumns.length == 0) return null;
+
+  let ancestorsMaxX = proc.ancestors.reduce((acc, pid) => {
+    return Math.max(acc, tree.procs[pid].x);
+  }, -1);
+
+  // take any free column to the right from ancestors
+  // make procs spawn from left to right
+
+  for (let i in tree._availColumns) {
+    let column = tree._availColumns[i];
+    if (column.x > ancestorsMaxX) {
+      tree._availColumns.splice(i, 1);
+      return column;
+    }
+  }
+
+  return null;
+};
+
+
 // this function selects best from available columns
 // or allocate new column
 let insertProc = (proc, tree) => {
-  let column;
-  if (tree._availColumns.length == 0) {
+  let column = availableColumnForProc(proc, tree);
+  if (!column) {
     let x = (Object.keys(tree._currentColumns).length + tree._availColumns.length);
     column = {x: x};
-  } else {
-    column = tree._availColumns.pop();
   }
 
   column.pid = proc.pid;
@@ -83,9 +103,9 @@ let exitProc = (keys, values, tree) => {
   // sort to make lower columns be taken first
   tree._availColumns.sort((a,b) => {
     if (a.x < b.x) {
-      return 1;
-    } else if (a.x > b.x) {
       return -1;
+    } else if (a.x > b.x) {
+      return 1;
     }
     return 0;
   });
