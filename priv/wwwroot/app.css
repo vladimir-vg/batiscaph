@@ -24,10 +24,12 @@ rect.bad-reason {
 
 
 
-circle.message-self-send {
+.message-self-send {
   fill: none;
   stroke: #3771c8;
-  stroke-width: 2;
+  stroke-width: 1;
+  marker-start: url(#markerSendStart);
+  /*marker-end: url(#markerSendEnd);*/
 }
 
 line.message-send {

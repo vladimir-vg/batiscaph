@@ -78,8 +78,11 @@ class ProcessTreeView extends React.Component {
     let y = e.y*V.CELL_HEIGHT;
     let x = (this.props.tree.procs[e.from].x+1)*(V.CELL_WIDTH + V.CELL_GUTTER);
     let d = Math.min(V.CELL_HEIGHT, V.CELL_WIDTH + V.CELL_GUTTER)*0.7;
+    let r = d/2;
+
+    let dpath = "M"+(x-r)+" "+(y)+" A "+r+" "+r+", 0, 1, 1, "+(x)+" "+(y+r)+" L "+(x-3)+" "+(y+r);
     return <g key={y}>
-      <circle cx={x} cy={y} r={d/2} className="message-self-send" />
+      <path d={dpath} className="message-self-send" />
     </g>;
   }
 
