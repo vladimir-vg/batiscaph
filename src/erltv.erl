@@ -68,14 +68,14 @@ repl_worker(Parent, Ref, Name) ->
   Self = self(), 
   {ok, CollectorPid} = erltv_collector:start_link(Name ++ ".csv"),
   {ok, IoServerPid} = erltv_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
-  {ok, ShellPid} = erltv_shell_runner:start_link(),
+  {ok, ShellPid} = erltv_shell_runner:start_link(CollectorPid),
 
   % capture all stdin/stdout io for shell runner process and its children
   group_leader(IoServerPid, ShellPid),
   {ok, Binary} = file:read_file(Name),
 
   ok = gen_server:call(CollectorPid, {ignore_pids_tracing, [self(), CollectorPid, IoServerPid, ShellPid]}),
-  ok = gen_server:call(ShellPid, {start_tracing, CollectorPid}),
+  ok = gen_server:call(ShellPid, start_tracing),
 
   ShellPid ! restart_shell,
   IoServerPid ! {input, binary_to_list(Binary)},
