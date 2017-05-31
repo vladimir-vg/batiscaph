@@ -64,3 +64,10 @@ class App extends React.Component {
 document.addEventListener("DOMContentLoaded", function(event) {
   ReactDOM.render(<App />, document.getElementById('react-app'));
 });
+
+
+
+V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
+V.socket.onopen = function (event) {
+  V.socket.send("start_shell");
+};

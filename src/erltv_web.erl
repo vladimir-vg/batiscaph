@@ -13,6 +13,7 @@ restart_cowboy() ->
   Port = 8099,
   Dispatch = cowboy_router:compile([
     {'_', [
+      {"/websocket", erltv_ws_handler, []},
       {"/vendor/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       {"/prepared/[...]", prepared_csv_handler, []},
