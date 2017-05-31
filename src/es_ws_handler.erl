@@ -1,4 +1,4 @@
--module(erltv_ws_handler).
+-module(es_ws_handler).
 -behaviour(cowboy_websocket_handler).
 
 -export([init/3]).
@@ -53,5 +53,5 @@ start_shell(#ws_state{date = undefined, scenario_id = undefined} = State) ->
   {{Year, Month, Day}, _Time} = calendar:local_time(),
   Date = iolist_to_binary(io_lib:format("~4..0w-~2..0w-~2..0w",[Year,Month,Day])),
   Id = bin_to_hex:bin_to_hex(crypto:strong_rand_bytes(10)),
-  {ok, Pid} = erltv_slave_ctl:start_link(Date, Id),
+  {ok, Pid} = es_slave_ctl:start_link(Date, Id),
   {ok, State#ws_state{scenario_id = Id, date = Date, slave_ctl_pid = Pid}}.

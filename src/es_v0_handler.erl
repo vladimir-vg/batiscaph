@@ -1,4 +1,4 @@
--module(erltv_v0_handler).
+-module(es_v0_handler).
 -export([init/3, upgrade/4, handle_info/2, terminate/2]).
 
 -define(BUFFER_FLUSH_SIZE, 2*1024).
@@ -28,7 +28,7 @@ upgrade(Req, Env, ?MODULE, []) ->
   {_, Ref} = lists:keyfind(listener, 1, Env),
   ranch:remove_connection(Ref),
 
-  {ok, Req2} = cowboy_req:upgrade_reply(101, [{<<"upgrade">>,<<"application/erltv-v0">>}], Req1),
+  {ok, Req2} = cowboy_req:upgrade_reply(101, [{<<"upgrade">>,<<"application/espace-v0">>}], Req1),
   receive
     {cowboy_req,resp_sent} -> ok
   after

@@ -29,7 +29,7 @@ handle(Req, State) ->
 
 
 read_csv_file(Dir, Filename) ->
-  PrivDir = code:priv_dir(erltv),
+  PrivDir = code:priv_dir(espace),
   Path = iolist_to_binary([PrivDir, "/", Dir, "/", Filename, ".repl.csv"]),
   {ok, Body} = file:read_file(Path),
   {ok, Body}.

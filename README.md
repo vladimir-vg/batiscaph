@@ -1,4 +1,4 @@
-This project should provide convenient visual interface to examine trace results in erlang code.
+This project at first should provide convenient visual interface to Erlang shell.
 
 Particularly to illustrate traces for some code examples in [Learn you some Erlang](http://learnyousomeerlang.com/content) and [Programming Erlang](https://pragprog.com/book/jaerlang2/programming-erlang) books.
 

@@ -1,4 +1,4 @@
--module(erltv_slave).
+-module(es_slave).
 -behaviour(gen_server).
 -export([start/0]).
 -export([start_link/2]).
@@ -79,8 +79,8 @@ connect_to_master(#slave{socket = undefined, master_port = Port, id = Id} = Stat
     "CONNECT /api/v0?id=", Id, " HTTP/1.1\r\n",
     "Host: 127.0.0.1\r\n",
     "Connection: Upgrade\r\n",
-    "User-Agent: ErlTV Slave\r\n",
-    "Upgrade: application/erltv-v0\r\n",
+    "User-Agent: ESpace Slave\r\n",
+    "Upgrade: application/espace-v0\r\n",
     "\r\n"
   ]),
   ok = receive_initial_info(Socket),

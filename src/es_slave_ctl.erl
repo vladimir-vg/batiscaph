@@ -1,4 +1,4 @@
--module(erltv_slave_ctl).
+-module(es_slave_ctl).
 -behaviour(gen_server).
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -52,12 +52,12 @@ handle_cast(Cast, State) ->
 
 start_slave(#slave_ctl{dir = Dir, id = Id} = State) ->
   Erl = "/usr/bin/erl", % TODO: discover where erl is localted
-  {ok, MasterPort} = application:get_env(erltv, http_port),
+  {ok, MasterPort} = application:get_env(espace, http_port),
   Paths = string:tokens(os:cmd("./rebar3 path"), " "),
   Args0 = lists:concat([["-pa", P] || P <- Paths]),
-  Args1 = Args0 ++ ["-noshell", "-sname", Id, "-s", "erltv_slave"],
+  Args1 = Args0 ++ ["-noshell", "-sname", Id, "-s", "es_slave"],
   Env = [{"MASTER_PORT", integer_to_list(MasterPort)}, {"SHELL_SESSION_ID", binary_to_list(Id)}],
-  DirPath = filename:join([code:priv_dir(erltv), "scenarios", Dir, Id]),
+  DirPath = filename:join([code:priv_dir(espace), "scenarios", Dir, Id]),
   ok = filelib:ensure_dir(DirPath),
   ok = file:make_dir(DirPath),
   Opts = [{args, Args1},{env,Env},{cd,DirPath}],

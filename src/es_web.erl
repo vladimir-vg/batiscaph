@@ -1,4 +1,4 @@
--module(erltv_web).
+-module(es_web).
 -include_lib("kernel/include/file.hrl").
 
 -export([restart_cowboy/0]).
@@ -10,16 +10,16 @@ restart_cowboy() ->
   % useful to cache babel output
   catch ets:new(web_page_cache, [public, named_table, set]),
 
-  {ok, Port} = application:get_env(erltv, http_port),
+  {ok, Port} = application:get_env(espace, http_port),
   Dispatch = cowboy_router:compile([
     {'_', [
-      {"/api/v0", erltv_v0_handler, []},
-      {"/websocket", erltv_ws_handler, []},
-      {"/vendor/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
-      {"/app/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
+      {"/api/v0", es_v0_handler, []},
+      {"/websocket", es_ws_handler, []},
+      {"/vendor/[...]", cowboy_static, {priv_dir, espace, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
+      {"/app/[...]", cowboy_static, {priv_dir, espace, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       {"/prepared/[...]", prepared_csv_handler, []},
-      {"/style/app.css", cowboy_static, {priv_file, erltv, "wwwroot/app.css"}},
-      {"/", cowboy_static, {priv_file, erltv, "wwwroot/index.html"}}
+      {"/style/app.css", cowboy_static, {priv_file, espace, "wwwroot/app.css"}},
+      {"/", cowboy_static, {priv_file, espace, "wwwroot/index.html"}}
     ]}
   ]),
   Opts = [
@@ -28,15 +28,15 @@ restart_cowboy() ->
   ],
 
   % if webserver already running
-  case (catch ranch:get_port(erltv_http)) of
+  case (catch ranch:get_port(espace_http)) of
     Port ->
       % just refresh routing and loaded modules
-      ranch:set_protocol_options(erltv_http, Opts),
+      ranch:set_protocol_options(espace_http, Opts),
       ok;
 
     _ ->
-      ranch:stop_listener(erltv_http),
-      {ok, _} = cowboy:start_http(erltv_http, 100, [{port, Port}], Opts),
+      ranch:stop_listener(espace_http),
+      {ok, _} = cowboy:start_http(espace_http, 100, [{port, Port}], Opts),
       lager:info("Started http server on ~p port", [Port]),
       ok
   end,
@@ -77,7 +77,7 @@ translate_jsx_if_precompiled_unavailable(_Status, _Headers, _Body, Req) -> Req.
 
 
 find_jsx_for_path(Path) ->
-  DirPath = list_to_binary(code:priv_dir(erltv)),
+  DirPath = list_to_binary(code:priv_dir(espace)),
   % replace last .js with .jsx
   NoExtSize = byte_size(Path) - 3,
   <<NoExt:NoExtSize/binary, _:3/binary>> = Path,
@@ -103,7 +103,7 @@ save_to_jsx_cache(Path, MTime, Body) ->
 
 
 compile_jsx(FilePath) ->
-  WorkDir = code:priv_dir(erltv) ++ "/..",
+  WorkDir = code:priv_dir(espace) ++ "/..",
   Opts = [binary, stream, exit_status, stderr_to_stdout, {cd, WorkDir}],
   Port = erlang:open_port({spawn, <<"./node_modules/.bin/babel --presets es2015,react ", FilePath/binary>>}, Opts),
   compile_jsx_receive_loop(Port, <<>>).

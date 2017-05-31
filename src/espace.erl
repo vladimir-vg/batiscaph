@@ -1,16 +1,16 @@
--module(erltv).
+-module(espace).
 -export([start/0, restart/0]).
 -export([trace_repl_scenarios/1]).
 
 
 
 start() ->
-  application:ensure_all_started(erltv),
-  erltv_web:restart_cowboy(),
+  application:ensure_all_started(espace),
+  es_web:restart_cowboy(),
   ok.
 
 restart() ->
-  erltv_web:restart_cowboy(),
+  es_web:restart_cowboy(),
   ok.
 
 
@@ -66,9 +66,9 @@ execute_repl_file(Name) ->
 
 repl_worker(Parent, Ref, Name) ->
   Self = self(), 
-  {ok, CollectorPid} = erltv_collector:start_link(Name ++ ".csv"),
-  {ok, IoServerPid} = erltv_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
-  {ok, ShellPid} = erltv_shell_runner:start_link(CollectorPid),
+  {ok, CollectorPid} = es_collector:start_link(Name ++ ".csv"),
+  {ok, IoServerPid} = es_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
+  {ok, ShellPid} = es_shell_runner:start_link(CollectorPid),
 
   % capture all stdin/stdout io for shell runner process and its children
   group_leader(IoServerPid, ShellPid),

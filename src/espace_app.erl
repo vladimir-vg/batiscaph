@@ -1,4 +1,4 @@
--module(erltv_app).
+-module(espace_app).
 -behaviour(application).
 
 -export([start/2, stop/1]).
@@ -6,7 +6,7 @@
 
 
 start(_StartType, _StartArgs) ->
-  erltv_sup:start_link().
+  espace_sup:start_link().
 
 
 
