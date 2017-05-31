@@ -5,7 +5,8 @@
 
 -record(slave_ctl, {
   dir,
-  id
+  id,
+  port
 }).
 
 
@@ -26,6 +27,10 @@ handle_info(start_slave, State) ->
   {ok, State1} = start_slave(State),
   {noreply, State1};
 
+handle_info({Port, Msg}, #slave_ctl{port = Port} = State) ->
+  lager:info("slave message: ~p", [Msg]),
+  {noreply, State};
+
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
@@ -45,7 +50,16 @@ handle_cast(Cast, State) ->
 
 
 
-start_slave(#slave_ctl{dir = _Dir, id = _Id} = State) ->
-  % here we should start slave application
-  % and later communicate with it over tcp
-  {ok, State}.
+start_slave(#slave_ctl{dir = Dir, id = Id} = State) ->
+  Erl = "/usr/bin/erl", % TODO: discover where erl is localted
+  {ok, MasterPort} = application:get_env(erltv, http_port),
+  Paths = string:tokens(os:cmd("./rebar3 path"), " "),
+  Args0 = lists:concat([["-pa", P] || P <- Paths]),
+  Args1 = Args0 ++ ["-noshell", "-sname", Id, "-s", "erltv_slave"],
+  Env = [{"MASTER_PORT", integer_to_list(MasterPort)}, {"SHELL_SESSION_ID", binary_to_list(Id)}],
+  DirPath = filename:join([code:priv_dir(erltv), "scenarios", Dir, Id]),
+  ok = filelib:ensure_dir(DirPath),
+  ok = file:make_dir(DirPath),
+  Opts = [{args, Args1},{env,Env},{cd,DirPath}],
+  Port = erlang:open_port({spawn_executable, Erl}, Opts),
+  {ok, State#slave_ctl{port = Port}}.

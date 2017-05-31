@@ -10,9 +10,10 @@ restart_cowboy() ->
   % useful to cache babel output
   catch ets:new(web_page_cache, [public, named_table, set]),
 
-  Port = 8099,
+  {ok, Port} = application:get_env(erltv, http_port),
   Dispatch = cowboy_router:compile([
     {'_', [
+      {"/api/v0", erltv_v0_handler, []},
       {"/websocket", erltv_ws_handler, []},
       {"/vendor/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, erltv, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},

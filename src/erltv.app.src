@@ -4,7 +4,7 @@
   {registered, []},
   {mod, {erltv_app, []}},
   {applications, [kernel,stdlib,lager,cowboy]},
-  {env,[]},
+  {env,[{http_port, 8099}]},
   {modules, []},
 
   {maintainers, []},
