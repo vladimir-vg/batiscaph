@@ -5,13 +5,10 @@
 -define(BUFFER_FLUSH_INTERVAL, 1000).
 
 
--record(bert_handler, {
+-record(v0_handler, {
   id,
   transport,
-  socket,
-
-  buffer = <<>>,
-  flush_timer
+  socket
 }).
 
 
@@ -41,11 +38,9 @@ upgrade(Req, Env, ?MODULE, []) ->
   % to get rid of process_was_not_started_by_proc_lib error
   put('$ancestors', [self()]),
 
-  self() ! flush_buffer,
-
   lager:info("Opened connection with ~s", [Id]),
 
-  gen_server:enter_loop(?MODULE, [], #bert_handler{
+  gen_server:enter_loop(?MODULE, [], #v0_handler{
     id = Id,
     transport = Transport,
     socket = Socket
@@ -53,33 +48,14 @@ upgrade(Req, Env, ?MODULE, []) ->
 
 
 
-handle_info({tcp, Socket, Binary}, #bert_handler{transport = Transport, buffer = Buffer} = State) ->
-  lager:info("recv from socket: ~p", [Binary]),
+handle_info({tcp, Socket, Binary}, #v0_handler{transport = Transport} = State) ->
   Transport:setopts(Socket, [{active,once}]),
-  Buffer1 = <<Buffer/binary, Binary/binary>>,
-  case byte_size(Buffer1) of
-    N when N > ?BUFFER_FLUSH_SIZE ->
-      {ok, State1} = process_buffer(State#bert_handler{buffer = Buffer1}),
-      {noreply, State1};
-    _ -> {noreply, State#bert_handler{buffer = Buffer1}}
-  end;
+  {ok, State1} = handle_runner_message(Binary, State),
+  {noreply, State1};
 
-handle_info({tcp_closed, Socket}, #bert_handler{socket = Socket, id = Id} = State) ->
+handle_info({tcp_closed, Socket}, #v0_handler{socket = Socket, id = Id} = State) ->
   lager:info("Closed connection with ~s", [Id]),
   {stop, normal, State};
-
-
-
-handle_info(flush_buffer, #bert_handler{flush_timer = Timer} = State) when Timer =/= undefined ->
-  erlang:cancel_timer(Timer),
-  handle_info(flush_buffer, State#bert_handler{flush_timer = undefined});
-
-handle_info(flush_buffer, #bert_handler{flush_timer = undefined} = State) ->
-  {ok, State1} = process_buffer(State),
-  Timer = erlang:send_after(?BUFFER_FLUSH_INTERVAL, self(), flush_buffer),
-  {noreply, State1#bert_handler{flush_timer = Timer}};
-
-
 
 handle_info(Message, State) ->
   lager:error("Unknown message: ~p", [Message]),
@@ -91,4 +67,9 @@ handle_info(Message, State) ->
 
 
 
-process_buffer(State) -> {ok, State}.
+handle_runner_message(Binary, #v0_handler{id = Id} = State) ->
+  case erlang:binary_to_term(Binary) of
+    {events, Events} ->
+      [Pid ! {runner_info, Id, self(), {events, Events}} || {_, Pid} <- ets:lookup(events_subscribers, Id)],
+      {ok, State}
+  end.

@@ -12,7 +12,7 @@
 -record(ws_state, {
   date,
   scenario_id,
-  slave_ctl_pid
+  runner_port
 }).
 
 
@@ -39,7 +39,8 @@ websocket_handle(_Data, Req, State) ->
 
 
 
-websocket_info(_Info, Req, State) ->
+websocket_info(Msg, Req, State) ->
+  lager:error("Unknown message: ~p", [Msg]),
   {ok, Req, State}.
 
 
@@ -53,5 +54,8 @@ start_shell(#ws_state{date = undefined, scenario_id = undefined} = State) ->
   {{Year, Month, Day}, _Time} = calendar:local_time(),
   Date = iolist_to_binary(io_lib:format("~4..0w-~2..0w-~2..0w",[Year,Month,Day])),
   Id = bin_to_hex:bin_to_hex(crypto:strong_rand_bytes(10)),
-  {ok, Pid} = es_slave_ctl:start_link(Date, Id),
-  {ok, State#ws_state{scenario_id = Id, date = Date, slave_ctl_pid = Pid}}.
+
+  ets:insert(events_subscribers, {Id, self()}),
+
+  {ok, Port} = erunner_ctl:start(Date, Id),
+  {ok, State#ws_state{scenario_id = Id, date = Date, runner_port = Port}}.

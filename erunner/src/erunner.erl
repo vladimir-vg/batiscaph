@@ -1,4 +1,4 @@
--module(es_slave).
+-module(erunner).
 -behaviour(gen_server).
 -export([start/0]).
 -export([start_link/2]).
@@ -8,7 +8,7 @@
 -define(HEADERS_RECEIVE_TIMEOUT, 10000).
 
 
--record(slave, {
+-record(runner, {
   id,
   master_port,
   socket
@@ -44,7 +44,7 @@ start_link(MasterPort, Id) ->
 
 init([MasterPort, Id]) ->
   self() ! connect_to_master,
-  {ok, #slave{master_port = MasterPort, id = Id}}.
+  {ok, #runner{master_port = MasterPort, id = Id}}.
 
 
 
@@ -54,7 +54,9 @@ handle_info(connect_to_master, State) ->
 
 
 handle_info(Msg, State) ->
-  {stop, {unknown_info, Msg}, State}.
+  io:format("from slave unknown msg: ~p~n", [Msg]),
+  {noreply, State}.
+  % {stop, {unknown_info, Msg}, State}.
 
 
 
@@ -72,22 +74,22 @@ handle_cast(Cast, State) ->
 
 
 
-connect_to_master(#slave{socket = undefined, master_port = Port, id = Id} = State) ->
+connect_to_master(#runner{socket = undefined, master_port = Port, id = Id} = State) ->
   Opts = [binary, {packet, http}, {send_timeout, ?SOCKET_OPEN_TIMEOUT}],
   {ok, Socket} = gen_tcp:connect("127.0.0.1", Port, Opts, ?SOCKET_OPEN_TIMEOUT),
   gen_tcp:send(Socket, [
     "CONNECT /api/v0?id=", Id, " HTTP/1.1\r\n",
     "Host: 127.0.0.1\r\n",
     "Connection: Upgrade\r\n",
-    "User-Agent: ESpace Slave\r\n",
+    "User-Agent: ERunner\r\n",
     "Upgrade: application/espace-v0\r\n",
     "\r\n"
   ]),
   ok = receive_initial_info(Socket),
 
-  % okay, from we stream binary packets
+  % okay, from here we stream binary packets
   inet:setopts(Socket, [{packet,4}]),
-  gen_tcp:send(Socket, <<"Hello there!">>),
+  gen_tcp:send(Socket, erlang:term_to_binary({events, [#{key => <<"this is event">>, at => 123}]})),
 
   {ok, State}.
 

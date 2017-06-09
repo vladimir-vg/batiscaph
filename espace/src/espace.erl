@@ -5,6 +5,8 @@
 
 
 start() ->
+  events_subscribers = ets:new(events_subscribers, [bag,public,named_table]),
+
   application:ensure_all_started(espace),
   es_web:restart_cowboy(),
   ok.
