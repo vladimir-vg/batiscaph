@@ -12,7 +12,9 @@
 -record(ws_state, {
   date,
   scenario_id,
-  runner_port
+  runner_port,
+
+  runner_handler_pid
 }).
 
 
@@ -30,6 +32,10 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{date = undefined, sce
   #ws_state{date = Dir, scenario_id = Id} = State1,
   {reply, {text, <<"shell_started ", Dir/binary, "/", Id/binary>>}, Req, State1};
 
+websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{runner_handler_pid = Pid} = State) when is_pid(Pid) ->
+  Pid ! {shell_input, Input},
+  {ok, Req, State};
+
 websocket_handle({text, Msg}, Req, State) ->
   lager:error("Unknown websocket command: ~p", [Msg]),
   {ok, Req, State};
@@ -39,6 +45,10 @@ websocket_handle(_Data, Req, State) ->
 
 
 
+websocket_info({runner_info,Id,RunnerHandlerPid,_Msg} = Message, Req, #ws_state{runner_handler_pid = undefined, scenario_id = Id} = State) ->
+  State1 = State#ws_state{runner_handler_pid = RunnerHandlerPid},
+  websocket_info(Message, Req, State1);
+  
 websocket_info(Msg, Req, State) ->
   lager:error("Unknown message: ~p", [Msg]),
   {ok, Req, State}.

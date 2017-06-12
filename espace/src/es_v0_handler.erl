@@ -48,9 +48,15 @@ upgrade(Req, Env, ?MODULE, []) ->
 
 
 
+handle_info({shell_input, Input}, #v0_handler{transport = Transport, socket = Socket} = State) ->
+  lager:info("sending input: ~p", [Input]),
+  Transport:send(Socket, erlang:term_to_binary({shell_input, Input})),
+  {noreply, State};
+
 handle_info({tcp, Socket, Binary}, #v0_handler{transport = Transport} = State) ->
   Transport:setopts(Socket, [{active,once}]),
-  {ok, State1} = handle_runner_message(Binary, State),
+  {ok, State1} = handle_runner_message(erlang:binary_to_term(Binary), State),
+  Transport:send(Socket, erlang:term_to_binary(start_shell)),
   {noreply, State1};
 
 handle_info({tcp_closed, Socket}, #v0_handler{socket = Socket, id = Id} = State) ->
@@ -67,9 +73,6 @@ handle_info(Message, State) ->
 
 
 
-handle_runner_message(Binary, #v0_handler{id = Id} = State) ->
-  case erlang:binary_to_term(Binary) of
-    {events, Events} ->
-      [Pid ! {runner_info, Id, self(), {events, Events}} || {_, Pid} <- ets:lookup(events_subscribers, Id)],
-      {ok, State}
-  end.
+handle_runner_message({events, Events}, #v0_handler{id = Id} = State) ->
+  [Pid ! {runner_info, Id, self(), {events, Events}} || {_, Pid} <- ets:lookup(events_subscribers, Id)],
+  {ok, State}.

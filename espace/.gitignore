@@ -17,3 +17,6 @@ _build
 rebar3.crashdump
 
 node_modules
+
+# generated during run
+priv/scenarios
