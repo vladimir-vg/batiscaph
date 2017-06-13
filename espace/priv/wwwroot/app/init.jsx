@@ -27,7 +27,20 @@ class App extends React.Component {
   }
 
   startNewShell() {
-    
+    V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
+    V.socket.onmessage = (function (event) {
+      if (event.data.slice(0,7) == "events ") {
+        let rows = JSON.parse(event.data.slice(7));
+        let tree = V.processEvents(this.state.tree, rows, 'json');
+        this.setState({tree: tree});
+      } else if (event.data.slice(0,14) == "shell_started ") {
+        let path = event.data.slice(14);
+        window.location.hash = "/" + path;
+      }
+    }).bind(this);
+    V.socket.onopen = function (event) {
+      V.socket.send("start_shell");
+    };
   }
 
   fetchCsvAndLoad(url) {
@@ -35,7 +48,7 @@ class App extends React.Component {
       response.text().then((text) => {
         let rows = CSV.parse(text);
         let keys = rows.shift();
-        let tree = V.processEvents(keys, rows);
+        let tree = V.processEvents(undefined, rows, keys);
         this.setState({tree: tree});
       });
     });
@@ -71,10 +84,3 @@ class App extends React.Component {
 document.addEventListener("DOMContentLoaded", function(event) {
   ReactDOM.render(<App />, document.getElementById('react-app'));
 });
-
-
-
-V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
-V.socket.onopen = function (event) {
-  V.socket.send("start_shell");
-};

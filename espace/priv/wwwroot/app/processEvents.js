@@ -1,5 +1,9 @@
 
 let get = (keys, values, key) => {
+  if (keys == 'json') {
+    return values[key];
+  }
+
   let index = keys.indexOf(key);
   if (index == -1) {
     console.error("not found key in keys: ", key, keys, values);
@@ -183,8 +187,8 @@ let processEvent = (keys, rows, i, tree) => {
 
 
 
-V.processEvents = function (keys, rows) {
-  var tree = {
+V.processEvents = function (tree, rows, keys) {
+  var tree = tree || {
     // these are state fields that used during processing
     _availColumns: [], // free columns that might be occupied by new processes
     _currentColumns: {}, // currently occupied columns, {pid: column}
