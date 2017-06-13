@@ -33,13 +33,26 @@ init([MasterPort, Id]) ->
 
 handle_info(connect_to_master, State) ->
   {ok, State1} = connect_to_master(State),
+  self() ! start_shell,
   {noreply, State1};
+
+handle_info(start_shell, State) ->
+  {ok, State1} = start_shell(State),
+  {noreply, State1};
+
+handle_info({events, Events}, #runner{socket = Socket} = State) ->
+  inet:send(Socket, erlang:term_to_binary({events, Events})),
+  {noreply, State};
 
 
 handle_info({tcp, Socket, Binary}, #runner{socket = Socket} = State) ->
   {ok, State1} = handle_runner_message(erlang:binary_to_term(Binary), State),
   inet:setopts(Socket, [{active,once}]),
   {noreply, State1};
+
+handle_info({tcp_closed, Socket}, #runner{socket = Socket} = State) ->
+  init:stop(),
+  {stop, normal, State};
 
 handle_info(Msg, State) ->
   io:format("from slave unknown msg: ~p~n", [Msg]),
@@ -77,7 +90,6 @@ connect_to_master(#runner{socket = undefined, master_port = Port, id = Id} = Sta
 
   % okay, from here we stream binary packets
   inet:setopts(Socket, [{active,once},{packet,4}]),
-  gen_tcp:send(Socket, erlang:term_to_binary({events, [#{key => <<"this is event">>, at => 123}]})),
 
   {ok, State#runner{socket = Socket}}.
 
@@ -101,14 +113,9 @@ receive_initial_info(Socket) ->
 
 
 
-handle_runner_message({shell_input, Input}, #runner{io_server_pid = IoServerPid} = State) ->
-  io:format("feed to io server: ~p\n\n", [Input]),
-  IoServerPid ! {input, binary_to_list(Input)},
-  {ok, State};
-
-handle_runner_message(start_shell, #runner{id = Id} = State) ->
+start_shell(#runner{id = Id} = State) ->
   Self = self(),
-  {ok, CollectorPid} = es_collector:start_link(<<Id/binary, ".csv">>),
+  {ok, CollectorPid} = es_collector:start_link(Self, <<Id/binary, ".csv">>),
   {ok, IoServerPid} = es_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
   {ok, ShellPid} = es_shell_runner:start_link(CollectorPid),
 
@@ -121,3 +128,10 @@ handle_runner_message(start_shell, #runner{id = Id} = State) ->
   ShellPid ! restart_shell,
 
   {ok, State#runner{io_server_pid = IoServerPid, collector_pid = CollectorPid, shell_runner_pid = ShellPid}}.
+
+
+
+handle_runner_message({shell_input, Input}, #runner{io_server_pid = IoServerPid} = State) ->
+  io:format("-- feeding input io: ~p collector: ~p shell: ~p ~p\n", [State#runner.io_server_pid, State#runner.collector_pid, State#runner.shell_runner_pid, Input]),
+  IoServerPid ! {input, binary_to_list(Input)},
+  {ok, State}.

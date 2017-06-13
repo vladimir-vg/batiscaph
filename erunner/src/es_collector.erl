@@ -1,11 +1,17 @@
 -module(es_collector).
 -behaviour(gen_server).
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+-define(EVENTS_FLUSH_INTERVAL, 1000).
+
 -record(collector, {
+  parent_pid,
   fd,
-  ignored_pids = []
+  ignored_pids = [],
+
+  events_flush_timer,
+  acc_events = []
 }).
 
 
@@ -13,25 +19,32 @@
 code_change(_, State, _) -> {ok, State}.
 terminate(_,_State) -> ok.
 
-start_link(Path) ->
-  gen_server:start_link(?MODULE, [Path], []).
+start_link(ParentPid, Path) ->
+  gen_server:start_link(?MODULE, [ParentPid, Path], []).
 
-init([Path]) ->
+init([ParentPid, Path]) ->
   {ok, Fd} = file:open(Path, [write]),
   file:write(Fd, <<"at,at_mcs,type,pid,pid_arg,mfa,atom,prompt,message,term\n">>),
-  {ok, #collector{fd = Fd}}.
+  {ok, #collector{fd = Fd, parent_pid = ParentPid}}.
 
 
+
+handle_info(flush_acc_events, #collector{events_flush_timer = Timer, acc_events = Events, parent_pid = ParentPid} = State) ->
+  erlang:cancel_timer(Timer),
+  ParentPid ! {events, lists:reverse(Events)},
+  {noreply, State#collector{events_flush_timer = undefined, acc_events = []}};
 
 handle_info(#{at := _, at_mcs := _, type := _} = Event, #collector{fd = Fd} = State) ->
+  {ok, State1} = save_events_for_sending([Event], State),
   Output = format_event(Event),
   file:write(Fd, [Output, <<"\n">>]),
-  {noreply, State};
+  {noreply, State1};
 
 handle_info(Message, #collector{fd = Fd} = State) when element(1, Message) == trace_ts ->
   {ok, Events} = handle_trace_message(Message, State),
+  {ok, State1} = save_events_for_sending(Events, State),
   [file:write(Fd, [format_event(E), <<"\n">>]) || E <- Events],
-  {noreply, State};
+  {noreply, State1};
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
@@ -54,6 +67,15 @@ handle_call(Call, _From, State) ->
 
 handle_cast(Cast, State) ->
   {stop, {unknown_cast, Cast}, State}.
+
+
+
+save_events_for_sending(Events, #collector{events_flush_timer = undefined} = State) ->
+  Timer = erlang:send_after(?EVENTS_FLUSH_INTERVAL, self(), flush_acc_events),
+  save_events_for_sending(Events, State#collector{events_flush_timer = Timer});
+
+save_events_for_sending(Events1, #collector{acc_events = Events} = State) ->
+  {ok, State#collector{acc_events = Events1 ++ Events}}.
 
 
 
@@ -81,7 +103,6 @@ escape_string(<<C, Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binary, 
 
 handle_trace_message({trace_ts, Pid, send, _Msg, PidTo, _} = Message, #collector{ignored_pids = IgnoredPids}) ->
   case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
-    % io:format("ignore message ~p(~p) -> ~p(~p) in ~p\n\t~p\n", [Pid, lists:member(Pid, IgnoredPids), PidTo, lists:member(PidTo, IgnoredPids), IgnoredPids, _Msg]),
     true -> {ok, []};
     false -> handle_trace_message0(Message)
   end;

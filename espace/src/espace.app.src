@@ -3,7 +3,7 @@
   {vsn, "0.1.0"},
   {registered, []},
   {mod, {espace_app, []}},
-  {applications, [kernel,stdlib,lager,cowboy]},
+  {applications, [kernel,stdlib,lager,cowboy,gproc]},
   {env,[{http_port, 8099}]},
   {modules, []},
 

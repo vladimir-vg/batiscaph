@@ -146,7 +146,7 @@ shell_output_event_now(Requests) ->
     at => (Now div (1000*1000)),
     at_mcs => (Now rem (1000*1000)),
     type => <<"shell_output">>,
-    message => Output
+    message => iolist_to_binary(Output)
   }.
 
 shell_output_event_now0([], Acc) -> lists:reverse(Acc);
@@ -169,8 +169,8 @@ shell_input_event_now(Prompt, Result) ->
     at => (Now div (1000*1000)),
     at_mcs => (Now rem (1000*1000)),
     type => <<"shell_input">>,
-    prompt => Prompt,
-    message => Result
+    prompt => iolist_to_binary(Prompt),
+    message => iolist_to_binary(Result)
   }.
 
 

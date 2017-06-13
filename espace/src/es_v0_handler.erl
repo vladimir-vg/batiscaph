@@ -38,6 +38,8 @@ upgrade(Req, Env, ?MODULE, []) ->
   % to get rid of process_was_not_started_by_proc_lib error
   put('$ancestors', [self()]),
 
+  true = gproc:reg({n, l, {erunner, Id}}),
+
   lager:info("Opened connection with ~s", [Id]),
 
   gen_server:enter_loop(?MODULE, [], #v0_handler{
@@ -56,7 +58,6 @@ handle_info({shell_input, Input}, #v0_handler{transport = Transport, socket = So
 handle_info({tcp, Socket, Binary}, #v0_handler{transport = Transport} = State) ->
   Transport:setopts(Socket, [{active,once}]),
   {ok, State1} = handle_runner_message(erlang:binary_to_term(Binary), State),
-  Transport:send(Socket, erlang:term_to_binary(start_shell)),
   {noreply, State1};
 
 handle_info({tcp_closed, Socket}, #v0_handler{socket = Socket, id = Id} = State) ->
@@ -74,5 +75,5 @@ handle_info(Message, State) ->
 
 
 handle_runner_message({events, Events}, #v0_handler{id = Id} = State) ->
-  [Pid ! {runner_info, Id, self(), {events, Events}} || {_, Pid} <- ets:lookup(events_subscribers, Id)],
+  catch gproc:send({n, l, {websocket, Id}}, {events, Events}), % try to send events if websocket is alive
   {ok, State}.
