@@ -1,0 +1,4 @@
+Code examples (*/*.erl) in nested directories are copied from book [Learn you some Erlang for a Great Good!](http://learnyousomeerlang.com/).
+
+File LICENSE.txt covers licensing on code examples presented in those directories.
+This license file was copied from mentioned above book site.

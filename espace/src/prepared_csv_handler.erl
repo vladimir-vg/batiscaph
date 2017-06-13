@@ -30,6 +30,7 @@ handle(Req, State) ->
 
 read_csv_file(Dir, Filename) ->
   PrivDir = code:priv_dir(espace),
-  Path = iolist_to_binary([PrivDir, "/", Dir, "/", Filename, ".repl.csv"]),
+  Path = iolist_to_binary([PrivDir, "/scenarios/", Dir, "/", Filename, "/", Filename, ".repl.csv"]),
+  lager:info("path file: ~p", [Path]),
   {ok, Body} = file:read_file(Path),
   {ok, Body}.
