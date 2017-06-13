@@ -178,7 +178,13 @@ handle_trace_message0(Message) ->
 
 event_with_timestamp({MegaSec, Sec, MicroSec}, E) ->
   Sec1 = MegaSec*1000*1000 + Sec,
-  E#{at => Sec1, at_mcs => MicroSec}.
+  E1 = E#{at => Sec1, at_mcs => MicroSec},
+  maps:fold(fun
+    (pid, V, Acc) when is_list(V) -> Acc#{pid => list_to_binary(V)};
+    (pid_arg, V, Acc) when is_list(V) -> Acc#{pid_arg => list_to_binary(V)};
+    (term, V, Acc) when is_list(V) -> Acc#{term => list_to_binary(V)};
+    (K, V, Acc) -> Acc#{K => V}
+  end, #{}, E1).
 
 
 

@@ -15,12 +15,19 @@ class App extends React.Component {
 
   componentDidMount() {
     let hash = window.location.hash;
-    if (hash.slice(0,2) == '#/') {
-      let url = '/prepared/' + hash.slice(2);
+
+    if (!hash) {
+      this.startNewShell();
+    } else if (hash.slice(0,2) == '#/') {
+      let url = '/scenarios/' + hash.slice(2);
       this.fetchCsvAndLoad(url);
     } else {
       this.setState({errorText: 'Wrong '+hash+' hash address'});
     }
+  }
+
+  startNewShell() {
+    
   }
 
   fetchCsvAndLoad(url) {

@@ -77,7 +77,9 @@ handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
-handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined} = State) ->
+handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined, collector_pid = CollectorPid} = State) ->
+  Event = shell_input_expected_event_now(Prompt),
+  CollectorPid ! Event,
   Pending = #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt, extra_args = ExtraArgs},
   {ok, State1} = continue_pending_input(State#shell_io{pending_get_until = Pending}),
   {ok, State1};
@@ -162,6 +164,15 @@ shell_output_event_now0([{put_chars,unicode,io_lib,format,[Format,Args]} | Reque
   shell_output_event_now0(Requests, [Output | Acc]).
 
 
+
+shell_input_expected_event_now(Prompt) ->
+  Now = erlang:system_time(micro_seconds),
+  #{
+    at => (Now div (1000*1000)),
+    at_mcs => (Now rem (1000*1000)),
+    type => <<"shell_input_expected">>,
+    prompt => iolist_to_binary(Prompt)
+  }.
 
 shell_input_event_now(Prompt, Result) ->
   Now = erlang:system_time(micro_seconds),

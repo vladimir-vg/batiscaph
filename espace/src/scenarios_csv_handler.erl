@@ -1,4 +1,4 @@
--module(prepared_csv_handler).
+-module(scenarios_csv_handler).
 
 -export([init/3]).
 -export([handle/2]).
@@ -16,8 +16,9 @@ terminate(_Reason, _Req, _State) ->
 
 handle(Req, State) ->
   case cowboy_req:path(Req) of
-    {<<"/prepared/learn-you-some-erlang/", Filename/binary>>, Req1} ->
-      {ok, Body} = read_csv_file(<<"learn-you-some-erlang">>, Filename),
+    {<<"/scenarios/", Path/binary>>, Req1} ->
+      [Dir, Filename] = binary:split(Path, <<"/">>),
+      {ok, Body} = read_csv_file(Dir, Filename),
       {ok, Req2} = cowboy_req:reply(200, [{<<"content-type">>, <<"text/csv">>}], Body, Req1),
       {ok, Req2, State};
 
@@ -30,6 +31,6 @@ handle(Req, State) ->
 
 read_csv_file(Dir, Filename) ->
   PrivDir = code:priv_dir(espace),
-  Path = iolist_to_binary([PrivDir, "/scenarios/", Dir, "/", Filename, "/", Filename, ".repl.csv"]),
+  Path = iolist_to_binary([PrivDir, "/scenarios/", Dir, "/", Filename, "/", Filename, ".csv"]),
   {ok, Body} = file:read_file(Path),
   {ok, Body}.
