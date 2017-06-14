@@ -6,8 +6,8 @@
 -record(shell_io, {
   collector_pid,
   parent_pid,
-  stale_timeout,
-  stale_timer,
+  % stale_timeout,
+  % stale_timer,
   pending_get_until, % {From, ReplyAs, Prompt, Continuation, ExtraArgs}
   input_string = "" % just plain string that will be scanned
 }).
@@ -29,10 +29,10 @@ terminate(_,_State) -> ok.
 start_link(Opts) ->
   gen_server:start_link(?MODULE, [Opts], []).
 
-init([#{collector := Pid, parent := ParentPid, stale_timeout := Timeout}]) ->
-  State = #shell_io{collector_pid = Pid, parent_pid = ParentPid, stale_timeout = Timeout},
-  State1 = refresh_stale_timer(State),
-  {ok, State1}.
+init([#{collector := Pid, parent := ParentPid}]) ->
+  State = #shell_io{collector_pid = Pid, parent_pid = ParentPid}, % , stale_timeout = Timeout
+  % State1 = refresh_stale_timer(State),
+  {ok, State}.
 
 
 
@@ -42,9 +42,9 @@ handle_info({input, Statement}, #shell_io{input_string = Input} = State) ->
   {noreply, State1};
 
 handle_info({io_request, From, ReplyAs, Request}, #shell_io{} = State) ->
-  State1 = refresh_stale_timer(State),
-  {ok, State2} = handle_io_request(From, ReplyAs, Request, State1),
-  {noreply, State2};
+  % State1 = refresh_stale_timer(State),
+  {ok, State1} = handle_io_request(From, ReplyAs, Request, State),
+  {noreply, State1};
 
 handle_info(stale_alert, #shell_io{parent_pid = Pid} = State) ->
   Pid ! {self(), stalled},
@@ -109,13 +109,13 @@ continue_pending_input(#shell_io{pending_get_until = Pending, collector_pid = Co
   #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt} = Pending,
   case attempt_scan(State#shell_io{pending_get_until = Pending}) of
     {ok, Scanned, Result, State1} ->
-      State2 = refresh_stale_timer(State1),
+      % State2 = refresh_stale_timer(State1),
       Event = shell_input_event_now(Prompt, Scanned),
 
       % make sure that input logged first, and only then execution starts
       ok = gen_server:call(CollectorPid, {event, Event}),
       From ! {io_reply, ReplyAs, Result},
-      {ok, State2#shell_io{pending_get_until = undefined}};
+      {ok, State1#shell_io{pending_get_until = undefined}};
     {need_more_input, State1} ->
       {ok, State1}
   end.
@@ -191,10 +191,10 @@ pending_input(#shell_io{pending_get_until = #pending_read{}, input_string = Inpu
 
 
 
-refresh_stale_timer(#shell_io{stale_timer = OldTimer} = State) when OldTimer =/= undefined ->
-  erlang:cancel_timer(OldTimer),
-  refresh_stale_timer(State#shell_io{stale_timer = undefined});
-
-refresh_stale_timer(#shell_io{stale_timer = undefined, stale_timeout = Timeout} = State) ->
-  Timer = erlang:send_after(Timeout, self(), stale_alert),
-  State#shell_io{stale_timer = Timer}.
+% refresh_stale_timer(#shell_io{stale_timer = OldTimer} = State) when OldTimer =/= undefined ->
+%   erlang:cancel_timer(OldTimer),
+%   refresh_stale_timer(State#shell_io{stale_timer = undefined});
+% 
+% refresh_stale_timer(#shell_io{stale_timer = undefined, stale_timeout = Timeout} = State) ->
+%   Timer = erlang:send_after(Timeout, self(), stale_alert),
+%   State#shell_io{stale_timer = Timer}.

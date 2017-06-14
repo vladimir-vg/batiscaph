@@ -12,7 +12,7 @@ start(Dir, Id) ->
   {ok, MasterPort} = application:get_env(espace, http_port),
   Paths = string:tokens(os:cmd("cd ../erunner && ./rebar3 path"), " "),
   Args0 = lists:concat([["-pa", P] || P <- Paths]),
-  Args1 = Args0 ++ ["-noshell", "-sname", Id, "-s", "erunner"],
+  Args1 = Args0 ++ ["-noshell", "-s", "erunner"], %  "-sname", Id,
   Env = [{"MASTER_PORT", integer_to_list(MasterPort)}, {"SHELL_SESSION_ID", binary_to_list(Id)}],
   DirPath = filename:join([code:priv_dir(espace), "scenarios", Dir, Id]),
   ok = filelib:ensure_dir(DirPath),

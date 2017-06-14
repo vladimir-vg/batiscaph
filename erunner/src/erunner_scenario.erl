@@ -116,7 +116,7 @@ receive_initial_info(Socket) ->
 start_shell(#runner{id = Id} = State) ->
   Self = self(),
   {ok, CollectorPid} = es_collector:start_link(Self, <<Id/binary, ".csv">>),
-  {ok, IoServerPid} = es_shell_io_server:start_link(#{collector => CollectorPid, parent => Self, stale_timeout => 5000}),
+  {ok, IoServerPid} = es_shell_io_server:start_link(#{collector => CollectorPid, parent => Self}),
   {ok, ShellPid} = es_shell_runner:start_link(CollectorPid),
 
   % capture all stdin/stdout io for shell runner process and its children
@@ -132,6 +132,5 @@ start_shell(#runner{id = Id} = State) ->
 
 
 handle_runner_message({shell_input, Input}, #runner{io_server_pid = IoServerPid} = State) ->
-  io:format("-- feeding input io: ~p collector: ~p shell: ~p ~p\n", [State#runner.io_server_pid, State#runner.collector_pid, State#runner.shell_runner_pid, Input]),
   IoServerPid ! {input, binary_to_list(Input)},
   {ok, State}.

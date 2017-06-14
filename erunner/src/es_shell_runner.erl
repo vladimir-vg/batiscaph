@@ -26,7 +26,7 @@ handle_info(restart_shell, #shell_runner{shell_pid = Pid} = State) when Pid =/= 
   handle_info(restart_shell, State#shell_runner{shell_pid = undefined});
 
 handle_info(restart_shell, #shell_runner{shell_pid = undefined, collector_pid = CollectorPid} = State) ->
-  Pid = shell:start(false, true),
+  Pid = shell:start(true, true),
   ok = gen_server:call(CollectorPid, {ignore_pids_tracing, [Pid]}),
   {noreply, State#shell_runner{shell_pid = Pid}};
 
