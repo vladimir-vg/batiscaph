@@ -1,4 +1,5 @@
 V.SHELL_LINE_HEIGHT = V.CELL_HEIGHT*3;
+V.SHELL_LINE_TOP_PADDING = V.CELL_HEIGHT;
 V.SHELL_SIDELINE_WIDTH = 45;
 
 
@@ -19,8 +20,8 @@ class ShellIOView extends React.Component {
 
       let texts = [];
       for (let j in e.lines) {
-        let y1 = y + V.SHELL_LINE_HEIGHT*(parseInt(j)+1) - 7;
-        texts.push(<text key={j} x={V.CELL_WIDTH/2} y={y1} className="shell-text">{e.lines[j]}</text>);
+        let y1 = y + V.SHELL_LINE_HEIGHT*(parseInt(j)+1) - V.SHELL_LINE_TOP_PADDING;
+        texts.push(<text key={j} x={V.CELL_WIDTH} y={y1} className="shell-text">{e.lines[j]}</text>);
         if (e.type == 'shell_output') {
           texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center unselectable">...</text>);
         } else {
@@ -30,9 +31,14 @@ class ShellIOView extends React.Component {
 
       let x = -V.SHELL_SIDELINE_WIDTH;
       let width = this.props.width+V.SHELL_SIDELINE_WIDTH;
+      let height = e.height;
+
+      let lineWidth = width*2;
 
       blocks.push(<g key={i} onMouseDown={this.onMouseDown.bind(this)}>
-        <rect x={x} y={y} width={width} height={e.height} className="shell-area" />
+        <rect x={x} y={y} width={width} height={height} className="shell-area" />
+        <line x1={x} y1={y+0.5} x2={x+lineWidth} y2={y+0.5} className="shell-area-border" />
+        <line x1={x} y1={height+y-0.5} x2={x+lineWidth} y2={height+y-0.5} className="shell-area-border" />
         <g>{texts}</g>
       </g>);
     }

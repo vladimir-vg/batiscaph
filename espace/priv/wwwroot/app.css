@@ -64,7 +64,12 @@ rect.shell-sideline {
 }
 
 rect.shell-area {
-  fill: rgba(255,255,255,0.7);
+  fill: rgba(255,255,255,1); /* 0.7 alpha */
+}
+
+line.shell-area-border {
+  stroke: #d7e3f4;
+  stroke-width: 1;
 }
 
 text.shell-text,
