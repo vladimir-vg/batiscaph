@@ -131,6 +131,20 @@ let addShellIO = (keys, values, prev, next, tree) => {
   let prompt = get(keys, values, 'prompt');
   let message = get(keys, values, 'message');
 
+  // if current and previous event was shell output,
+  // then merge output of this event to previous
+  // to display it like a single block
+  var lastShellIO = tree.shellIO.length && tree.shellIO[tree.shellIO.length-1];
+  var prevWasOutput = lastShellIO && prev && get(keys, values, 'type') == 'shell_output' && lastShellIO.type == 'shell_output';
+  if (prevWasOutput && type == 'shell_output') {
+    let lines = message.trim().split("\n");
+    lastShellIO.lines = lastShellIO.lines.concat(lines);
+    lastShellIO.height = lastShellIO.lines.length*V.SHELL_LINE_HEIGHT;
+    lastShellIO.length = Math.trunc(lastShellIO.height/V.CELL_HEIGHT) // in cells
+    tree._currentRow.y += Math.trunc((lines.length*V.SHELL_LINE_HEIGHT)/V.CELL_HEIGHT);
+    return;
+  }
+
   let e = {at: at, atMcs: atMcs, type: type};
   e.lines = message.trim().split("\n");
   e.height = e.lines.length*V.SHELL_LINE_HEIGHT;
@@ -141,7 +155,7 @@ let addShellIO = (keys, values, prev, next, tree) => {
 
   // add one cell around shell block
   // do add extra space if next event is not shell io
-  if (next && get(keys, next, 'type').indexOf('shell_') != 0) {
+  if (next && ['shell_input', 'shell_output'].indexOf(get(keys, next, 'type')) == -1) {
     tree._currentRow.y += 1;
   }
 
