@@ -21,11 +21,12 @@ svg .unselectable::selection {
   flex: 3;
 }
 .container > .aside-area {
-  background-color: #d7e3f4;
-  background-color: #f3f7fc;
+  /*background-color: #d7e3f4;*/
+  /*background-color: #f3f7fc;*/
   background-color: #fff;
   border-left: 1px solid #d7e3f4;
-  flex: 0 0 300px;
+  /*flex: 0 0 300px;*/
+  min-width: 450px;
 }
 
 rect.proc {

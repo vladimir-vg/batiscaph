@@ -19,13 +19,21 @@ class ShellIOView extends React.Component {
       let y = e.y*V.CELL_HEIGHT;
 
       let texts = [];
-      for (let j in e.lines) {
-        let y1 = y + V.SHELL_LINE_HEIGHT*(parseInt(j)+1) - V.SHELL_LINE_TOP_PADDING;
-        texts.push(<text key={j} x={V.CELL_WIDTH} y={y1} className="shell-text">{e.lines[j]}</text>);
-        if (e.type == 'shell_output') {
-          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center unselectable">...</text>);
-        } else {
-          texts.push(<text key={j + '-prompt'} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left unselectable">{e.prompt}</text>);
+      let n = 1;
+      for (let j in e.blocks) {
+        for (let k in e.blocks[j].lines) {
+          let line = e.blocks[j].lines[k];
+          let prompt = e.blocks[j].prompt;
+          let y1 = y + V.SHELL_LINE_HEIGHT*n - V.SHELL_LINE_TOP_PADDING;
+
+          texts.push(<text key={n} x={V.CELL_WIDTH} y={y1} className="shell-text">{line}</text>);
+          if (prompt) {
+            texts.push(<text key={'prompt-' + n} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left unselectable">{prompt}</text>);
+          } else {
+            texts.push(<text key={'prompt-' + n} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center unselectable">...</text>);
+          }
+
+          n += 1;
         }
       }
 

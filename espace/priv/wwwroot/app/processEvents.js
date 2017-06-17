@@ -123,51 +123,53 @@ let exitProc = (keys, values, tree) => {
 };
 
 
-let shiftDownIfNextNotShellIO = (next, keys, tree) => {
-  // add one cell around shell block
-  // do add extra space if next event is not shell io
-  if (next && ['shell_input', 'shell_output'].indexOf(get(keys, next, 'type')) == -1) {
-    tree._currentRow.y += 1;
+
+// this function may form several consecutive events into one shell io event
+let addShellIO = (keys, rows, i, tree) => {
+  let currentEvent = null;
+
+  while (true) {
+    let values = rows[i];
+    let prev = rows[i-1];
+    let next = rows[i+1];
+
+    let type = get(keys, values, 'type');
+    let at = get(keys, values, 'at');
+    let atMcs = get(keys, values, 'at_mcs');
+    let prompt = get(keys, values, 'prompt');
+    let message = get(keys, values, 'message');
+
+    if (['shell_output', 'shell_input'].indexOf(type) == -1) {
+      break;
+    }
+
+    if (!currentEvent) {
+      currentEvent = {at: at, atMcs: atMcs, type: type};
+      currentEvent.blocks = [{lines: message.trim().split("\n"), prompt: prompt}];
+    } else {
+      currentEvent.blocks.push({lines: message.trim().split("\n"), prompt: prompt});
+    }
+
+    if (get(keys, next, 'type') == 'shell_output' && type == 'shell_output') {
+      i += 1;
+    } else {
+      break;
+    }
   }
-};
 
-let addShellIO = (keys, values, prev, next, tree) => {
-  let type = get(keys, values, 'type');
-  let at = get(keys, values, 'at');
-  let atMcs = get(keys, values, 'at_mcs');
-  let prompt = get(keys, values, 'prompt');
-  let message = get(keys, values, 'message');
+  let linesCount = currentEvent.blocks.reduce(function (acc, block) {
+    return acc + block.lines.length;
+  }, 0);
 
-  // if current and previous event was shell output,
-  // then merge output of this event to previous
-  // to display it like a single block
-  var lastShellIO = tree.shellIO.length && tree.shellIO[tree.shellIO.length-1];
-  var prevWasOutput = lastShellIO && prev && get(keys, values, 'type') == 'shell_output' && lastShellIO.type == 'shell_output';
-  if (prevWasOutput && type == 'shell_output') {
-    let lines = message.trim().split("\n");
-    lastShellIO.lines = lastShellIO.lines.concat(lines);
-    lastShellIO.height = lastShellIO.lines.length*V.SHELL_LINE_HEIGHT;
-    lastShellIO.length = Math.trunc(lastShellIO.height/V.CELL_HEIGHT) // in cells
-    tree._currentRow.y += Math.trunc((lines.length*V.SHELL_LINE_HEIGHT)/V.CELL_HEIGHT);
+  currentEvent.height = linesCount*V.SHELL_LINE_HEIGHT;
+  currentEvent.length = Math.trunc(currentEvent.height/V.CELL_HEIGHT); // in cells
 
-    shiftDownIfNextNotShellIO(next, keys, tree);
+  currentEvent.y = tree._currentRow.y;
+  tree._currentRow.y += currentEvent.length+1;
 
-    return;
-  }
+  tree.shellIO.push(currentEvent);
 
-  let e = {at: at, atMcs: atMcs, type: type};
-  e.lines = message.trim().split("\n");
-  e.height = e.lines.length*V.SHELL_LINE_HEIGHT;
-  e.length = Math.trunc(e.height/V.CELL_HEIGHT) // in cells
-
-  e.y = tree._currentRow.y;
-  tree._currentRow.y += e.length;
-
-  shiftDownIfNextNotShellIO(next, keys, tree);
-
-  e.prompt = prompt;
-
-  tree.shellIO.push(e);
+  return i;
 };
 
 
@@ -199,10 +201,11 @@ let processEvent = (keys, rows, i, tree) => {
   switch (get(keys, values, 'type')) {
   case 'spawn': spawnProc(keys, values, tree); break;
   case 'exit': exitProc(keys, values, tree); break;
-  case 'shell_input': addShellIO(keys, values, prev, next, tree); break;
-  case 'shell_output': addShellIO(keys, values, prev, next, tree); break;
+  case 'shell_input': i = addShellIO(keys, rows, i, tree); break;
+  case 'shell_output': i = addShellIO(keys, rows, i, tree); break;
   case 'send': addMessageSend(keys, values, tree); break;
   }
+  return i;
 };
 
 
@@ -223,8 +226,10 @@ V.processEvents = function (tree, rows, keys) {
     sends: [],
   };
 
-  for (let i in rows) {
-    processEvent(keys, rows, parseInt(i), tree);
+  for (let i = 0; i < rows.length; i += 1) {
+    // it may process several consecutive events
+    // increase i counter independenly
+    i = processEvent(keys, rows, i, tree);
   }
 
   tree.maxY = tree._currentRow.y;
