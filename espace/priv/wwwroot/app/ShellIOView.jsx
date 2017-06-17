@@ -5,10 +5,10 @@ V.SHELL_SIDELINE_WIDTH = 45;
 
 
 class ShellIOView extends React.Component {
-  onMouseDown(e) {
-    // to disable dragging when selecting text
-    e.stopPropagation();
-  }
+  // onMouseDown(e) {
+  //   // to disable dragging when selecting text
+  //   e.stopPropagation();
+  // }
 
   render() {
     let blocks = [];
@@ -35,7 +35,8 @@ class ShellIOView extends React.Component {
 
       let areaWidth = 10000; // right to the end of visible space
 
-      blocks.push(<g key={i} onMouseDown={this.onMouseDown.bind(this)}>
+      // onMouseDown={this.onMouseDown.bind(this)}
+      blocks.push(<g key={i}>
         <rect x={x} y={y} width={areaWidth} height={height} className="shell-area" />
         <line x1={x} y1={y+0.5} x2={x+areaWidth} y2={y+0.5} className="shell-area-border" />
         <line x1={x} y1={height+y-0.5} x2={x+areaWidth} y2={height+y-0.5} className="shell-area-border" />

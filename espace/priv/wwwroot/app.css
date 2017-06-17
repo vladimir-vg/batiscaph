@@ -32,7 +32,7 @@ rect.proc {
   fill: #ccc;
 }
 line.spawn-line {
-  stroke: #ccc;
+  stroke: #666;
   stroke-width: 1;
 }
 rect.bad-reason {

@@ -42,9 +42,15 @@ class ProcessTreeView extends React.Component {
       let spawnLine = null;
       if (proc.parent in this.props.tree.procs) {
         let parentProc = this.props.tree.procs[proc.parent];
-        let x1 = parentProc.x*(V.CELL_WIDTH + V.CELL_GUTTER) + V.CELL_GUTTER;
+        let x1 = (parentProc.x+1)*(V.CELL_WIDTH + V.CELL_GUTTER);
         let x2 = x + V.CELL_WIDTH;
-        spawnLine = <line x1={x1} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" />;
+        let dashArray = ""+V.CELL_GUTTER+"," + V.CELL_WIDTH;
+        spawnLine = <g>
+          <line x1={x1-0.5} y1={y+0.5} x2={x1-0.5} y2={y-(V.CELL_WIDTH/2)+0.5} className="spawn-line" />
+          <line x1={x1} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" style={{strokeDasharray: dashArray}} />
+          <line x1={x} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" />
+          <line x1={x2-0.5} y1={y+0.5} x2={x2-0.5} y2={y+(V.CELL_WIDTH/2)+0.5} className="spawn-line" />
+        </g>;
       }
 
       let badReasonRect = null;
@@ -53,11 +59,11 @@ class ProcessTreeView extends React.Component {
       }
 
       procRects.push(<g key={pid}>
-        {spawnLine}
         <g onClick={this.onRectClick.bind(this, pid)}>
           <rect x={x} y={y} width={width} height={height} className={className} />
           {badReasonRect}
         </g>
+        {spawnLine}
       </g>);
     }
 
