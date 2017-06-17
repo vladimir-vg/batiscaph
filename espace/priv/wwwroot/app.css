@@ -1,3 +1,5 @@
+html, body { margin: 0; padding: 0; }
+
 svg .unselectable {
   cursor: default;
   -webkit-user-select: none;
@@ -10,6 +12,21 @@ svg .unselectable::selection {
 }
 
 /***/
+
+.container {
+  display: flex;
+}
+
+.container > .svg-area {
+  flex: 3;
+}
+.container > .aside-area {
+  background-color: #d7e3f4;
+  background-color: #f3f7fc;
+  background-color: #fff;
+  border-left: 1px solid #d7e3f4;
+  flex: 0 0 300px;
+}
 
 rect.proc {
   fill: #ccc;
@@ -64,7 +81,7 @@ rect.shell-sideline {
 }
 
 rect.shell-area {
-  fill: rgba(255,255,255,1); /* 0.7 alpha */
+  fill: #f3f7fc;
 }
 
 line.shell-area-border {

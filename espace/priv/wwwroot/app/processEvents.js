@@ -123,6 +123,13 @@ let exitProc = (keys, values, tree) => {
 };
 
 
+let shiftDownIfNextNotShellIO = (next, keys, tree) => {
+  // add one cell around shell block
+  // do add extra space if next event is not shell io
+  if (next && ['shell_input', 'shell_output'].indexOf(get(keys, next, 'type')) == -1) {
+    tree._currentRow.y += 1;
+  }
+};
 
 let addShellIO = (keys, values, prev, next, tree) => {
   let type = get(keys, values, 'type');
@@ -142,6 +149,9 @@ let addShellIO = (keys, values, prev, next, tree) => {
     lastShellIO.height = lastShellIO.lines.length*V.SHELL_LINE_HEIGHT;
     lastShellIO.length = Math.trunc(lastShellIO.height/V.CELL_HEIGHT) // in cells
     tree._currentRow.y += Math.trunc((lines.length*V.SHELL_LINE_HEIGHT)/V.CELL_HEIGHT);
+
+    shiftDownIfNextNotShellIO(next, keys, tree);
+
     return;
   }
 
@@ -153,11 +163,7 @@ let addShellIO = (keys, values, prev, next, tree) => {
   e.y = tree._currentRow.y;
   tree._currentRow.y += e.length;
 
-  // add one cell around shell block
-  // do add extra space if next event is not shell io
-  if (next && ['shell_input', 'shell_output'].indexOf(get(keys, next, 'type')) == -1) {
-    tree._currentRow.y += 1;
-  }
+  shiftDownIfNextNotShellIO(next, keys, tree);
 
   e.prompt = prompt;
 

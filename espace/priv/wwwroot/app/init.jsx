@@ -66,12 +66,14 @@ class App extends React.Component {
     if (this.state.tree) {
       let paddedWidth = this.state.tree.maxX*(V.CELL_WIDTH + V.CELL_GUTTER);
       let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
-      return <div>
-        <SvgView padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
+      return <div className="container">
+        <SvgView className="svg-area" padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
           <ProcessTreeView tree={this.state.tree} selectedPid={this.state.selectedPid} onProcSelect={this.onProcSelect.bind(this)} />
           <ShellIOView tree={this.state.tree} width={paddedWidth} />
         </SvgView>
-        <SelectedProcInfo tree={this.state.tree} pid={this.state.selectedPid} />
+        <div className="aside-area">
+          <SelectedProcInfo tree={this.state.tree} pid={this.state.selectedPid} />
+        </div>
       </div>;
     }
 
