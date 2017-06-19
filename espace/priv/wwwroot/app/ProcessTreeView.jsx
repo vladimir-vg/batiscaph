@@ -20,6 +20,64 @@ class ProcessTreeView extends React.Component {
     }
   }
 
+  onCellHoverEnter(type, key) {
+    this.props.onObjectHover(type, key);
+  }
+  onCellHoverLeave() {
+    this.props.onObjectHover(null, null);
+  }
+
+  renderHoverSelection() {
+    let rectWidth = 10000;
+    let maxY = this.props.tree.maxY;
+    let rects = [];
+
+    for (let pid in this.props.tree.procs) {
+      let proc = this.props.tree.procs[pid];
+
+      let x = proc.x*(V.CELL_WIDTH + V.CELL_GUTTER) + V.CELL_GUTTER;
+      let y = proc.startedY*V.CELL_HEIGHT;
+      let width = V.CELL_WIDTH;
+      let height = ((proc.stoppedY || maxY) - proc.startedY)*V.CELL_HEIGHT;
+
+      rects.push(<rect key={'start-'+pid}
+        x={0} y={y-V.CELL_HEIGHT/2} width={rectWidth} height={V.CELL_HEIGHT}
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)} onMouseLeave={this.onCellHoverLeave.bind(this)} className="cell-hover" />);
+      rects.push(<rect key={'end-'+pid}
+        x={0} y={y+height-V.CELL_HEIGHT/2} width={rectWidth} height={V.CELL_HEIGHT}
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)} onMouseLeave={this.onCellHoverLeave.bind(this)} className="cell-hover" />);
+    }
+
+    for (let i in this.props.tree.sends) {
+      let e = this.props.tree.sends[i];
+      let y = e.y*V.CELL_HEIGHT;
+
+      rects.push(<rect key={'send-'+e.y+'-'+e.from+'-'+e.to}
+        x={0} y={y-V.CELL_HEIGHT/2} width={rectWidth} height={V.CELL_HEIGHT}
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'send', i)} onMouseLeave={this.onCellHoverLeave.bind(this)} className="cell-hover" />);
+    }
+
+    return rects;
+  }
+
+  renderSpawnLine(x, y, proc) {
+    let spawnLine = null;
+    if (proc.parent in this.props.tree.procs) {
+      let parentProc = this.props.tree.procs[proc.parent];
+      let x1 = (parentProc.x+1)*(V.CELL_WIDTH + V.CELL_GUTTER);
+      let x2 = x + V.CELL_WIDTH;
+      let dashArray = ""+V.CELL_GUTTER+"," + V.CELL_WIDTH;
+      return <g>
+        <line x1={x1-0.5} y1={y+0.5} x2={x1-0.5} y2={y-(V.CELL_WIDTH/2)+0.5} className="spawn-line" />
+        <line x1={x1} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" style={{strokeDasharray: dashArray}} />
+        <line x1={x} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" />
+        <line x1={x2-0.5} y1={y+0.5} x2={x2-0.5} y2={y+(V.CELL_WIDTH/2)+0.5} className="spawn-line" />
+      </g>;
+    }
+
+    return null;
+  }
+
   renderProcs() {
     let maxY = this.props.tree.maxY;
     let procRects = [];
@@ -39,19 +97,7 @@ class ProcessTreeView extends React.Component {
         className += " selected-ancestor";
       }
 
-      let spawnLine = null;
-      if (proc.parent in this.props.tree.procs) {
-        let parentProc = this.props.tree.procs[proc.parent];
-        let x1 = (parentProc.x+1)*(V.CELL_WIDTH + V.CELL_GUTTER);
-        let x2 = x + V.CELL_WIDTH;
-        let dashArray = ""+V.CELL_GUTTER+"," + V.CELL_WIDTH;
-        spawnLine = <g>
-          <line x1={x1-0.5} y1={y+0.5} x2={x1-0.5} y2={y-(V.CELL_WIDTH/2)+0.5} className="spawn-line" />
-          <line x1={x1} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" style={{strokeDasharray: dashArray}} />
-          <line x1={x} y1={y+0.5} x2={x2} y2={y+0.5} className="spawn-line" />
-          <line x1={x2-0.5} y1={y+0.5} x2={x2-0.5} y2={y+(V.CELL_WIDTH/2)+0.5} className="spawn-line" />
-        </g>;
-      }
+      let spawnLine = this.renderSpawnLine(x, y, proc);
 
       let badReasonRect = null;
       if (proc.reason && proc.reason != 'normal') {
@@ -109,6 +155,7 @@ class ProcessTreeView extends React.Component {
 
   render() {
     return <g>
+      <g>{this.renderHoverSelection()}</g>
       <g>{this.renderProcs()}</g>
       <g>{this.renderSends()}</g>
     </g>;
@@ -118,5 +165,6 @@ class ProcessTreeView extends React.Component {
 ProcessTreeView.propTypes = {
   tree: React.PropTypes.object.isRequired,
   onProcSelect: React.PropTypes.func.isRequired,
+  onObjectHover: React.PropTypes.func.isRequired,
   selectedPid: React.PropTypes.string,
 };

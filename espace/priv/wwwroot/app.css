@@ -29,6 +29,19 @@ svg .unselectable::selection {
   min-width: 450px;
 }
 
+
+
+.cell-hover {
+  fill: transparent;
+}
+.cell-hover:hover {
+  /*fill: #5f8dd3;
+  fill: #f2f2fa;
+  fill: #aaccff;
+  fill: #e4efff;*/
+  fill: #ebf0ff;
+}
+
 rect.proc {
   fill: #ccc;
 }

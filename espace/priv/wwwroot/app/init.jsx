@@ -58,6 +58,10 @@ class App extends React.Component {
     this.setState({selectedPid: pid});
   }
 
+  onObjectHover(type, key) {
+    console.log("hover ", type, key);
+  }
+
   render() {
     if (this.state.errorText) {
       return <div>{this.state.errorText}</div>;
@@ -68,7 +72,8 @@ class App extends React.Component {
       let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
       return <div className="container">
         <SvgView className="svg-area" padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
-          <ProcessTreeView tree={this.state.tree} selectedPid={this.state.selectedPid} onProcSelect={this.onProcSelect.bind(this)} />
+          <ProcessTreeView tree={this.state.tree} selectedPid={this.state.selectedPid}
+            onProcSelect={this.onProcSelect.bind(this)} onObjectHover={this.onObjectHover.bind(this)} />
           <ShellIOView tree={this.state.tree} width={paddedWidth} />
         </SvgView>
         <div className="aside-area">
