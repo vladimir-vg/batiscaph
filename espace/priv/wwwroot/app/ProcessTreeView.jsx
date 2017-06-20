@@ -11,20 +11,15 @@ class ProcessTreeView extends React.Component {
     console.log(this.props.tree);
   }
 
-  onRectClick(pid, e) {
-    if (this.props.selectedPid == pid) {
-      // toggle selection
-      this.props.onProcSelect(null);
-    } else {
-      this.props.onProcSelect(pid);
-    }
+  onItemSelect(type, key) {
+    this.props.onItemSelect({type: type, key: key});
   }
 
   onCellHoverEnter(type, key) {
-    this.props.onObjectHover(type, key);
+    this.props.onItemHover({type: type, key: key});
   }
   onCellHoverLeave() {
-    this.props.onObjectHover(null, null);
+    this.props.onItemHover(null);
   }
 
   renderHoverSelection() {
@@ -42,19 +37,27 @@ class ProcessTreeView extends React.Component {
 
       rects.push(<rect key={'start-'+pid}
         x={0} y={y-V.CELL_HEIGHT/2} width={rectWidth} height={V.CELL_HEIGHT}
-        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)} onMouseLeave={this.onCellHoverLeave.bind(this)} className="cell-hover" />);
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)} onMouseLeave={this.onCellHoverLeave.bind(this)}
+        onClick={this.onItemSelect.bind(this, 'proc', pid)} className="cell-hover" />);
       rects.push(<rect key={'end-'+pid}
         x={0} y={y+height-V.CELL_HEIGHT/2} width={rectWidth} height={V.CELL_HEIGHT}
-        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)} onMouseLeave={this.onCellHoverLeave.bind(this)} className="cell-hover" />);
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)} onMouseLeave={this.onCellHoverLeave.bind(this)}
+        onClick={this.onItemSelect.bind(this, 'proc', pid)} className="cell-hover" />);
     }
 
     for (let i in this.props.tree.sends) {
       let e = this.props.tree.sends[i];
       let y = e.y*V.CELL_HEIGHT;
 
+      let className = "cell-hover";
+      if (this.props.selectedItem && this.props.selectedItem.type == 'send' && this.props.selectedItem.key == i) {
+        className += " selected";
+      }
+
       rects.push(<rect key={'send-'+e.y+'-'+e.from+'-'+e.to}
         x={0} y={y-V.CELL_HEIGHT/2} width={rectWidth} height={V.CELL_HEIGHT}
-        onMouseEnter={this.onCellHoverEnter.bind(this, 'send', i)} onMouseLeave={this.onCellHoverLeave.bind(this)} className="cell-hover" />);
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'send', i)} onMouseLeave={this.onCellHoverLeave.bind(this)}
+        onClick={this.onItemSelect.bind(this, 'send', i)} className={className} />);
     }
 
     return rects;
@@ -90,11 +93,9 @@ class ProcessTreeView extends React.Component {
       let width = V.CELL_WIDTH;
       let height = ((proc.stoppedY || maxY) - proc.startedY)*V.CELL_HEIGHT;
 
-      let className = "proc";
-      if (this.props.selectedPid == pid) {
+      let className = "";
+      if (this.props.selectedItem && this.props.selectedItem.type == 'proc' && this.props.selectedItem.key == pid) {
         className += " selected";
-      } else if (this.props.selectedPid && this.props.tree.procs[this.props.selectedPid].ancestors.indexOf(pid) != -1) {
-        className += " selected-ancestor";
       }
 
       let spawnLine = this.renderSpawnLine(x, y, proc);
@@ -104,9 +105,9 @@ class ProcessTreeView extends React.Component {
         badReasonRect = <rect x={x} y={y+height-V.PROC_BAD_REASON_HEIGHT} width={width} height={V.PROC_BAD_REASON_HEIGHT} className="bad-reason" />;
       }
 
-      procRects.push(<g key={pid}>
-        <g onClick={this.onRectClick.bind(this, pid)}>
-          <rect x={x} y={y} width={width} height={height} className={className} />
+      procRects.push(<g key={pid} className={className}>
+        <g onClick={this.onItemSelect.bind(this, 'proc', pid)}>
+          <rect x={x} y={y} width={width} height={height} className="proc" />
           {badReasonRect}
         </g>
         {spawnLine}
@@ -164,7 +165,7 @@ class ProcessTreeView extends React.Component {
 
 ProcessTreeView.propTypes = {
   tree: React.PropTypes.object.isRequired,
-  onProcSelect: React.PropTypes.func.isRequired,
-  onObjectHover: React.PropTypes.func.isRequired,
-  selectedPid: React.PropTypes.string,
+  onItemSelect: React.PropTypes.func.isRequired,
+  onItemHover: React.PropTypes.func.isRequired,
+  selectedItem: React.PropTypes.object,
 };

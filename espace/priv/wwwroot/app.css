@@ -21,11 +21,8 @@ svg .unselectable::selection {
   flex: 3;
 }
 .container > .aside-area {
-  /*background-color: #d7e3f4;*/
-  /*background-color: #f3f7fc;*/
   background-color: #fff;
   border-left: 1px solid #d7e3f4;
-  /*flex: 0 0 300px;*/
   min-width: 450px;
 }
 
@@ -35,11 +32,12 @@ svg .unselectable::selection {
   fill: transparent;
 }
 .cell-hover:hover {
-  /*fill: #5f8dd3;
-  fill: #f2f2fa;
-  fill: #aaccff;
-  fill: #e4efff;*/
   fill: #ebf0ff;
+}
+.cell-hover.selected {
+  fill: #ebf0ff;
+  stroke: #5599ff;
+  stroke-width: 2;
 }
 
 rect.proc {
@@ -81,13 +79,13 @@ path.marker-send-end {
 
 
 
-rect.proc.selected {
+.selected rect.proc {
   stroke: #5599ff;
   stroke-width: 2;
 }
-rect.proc.selected-ancestor {
-  stroke: #aaccff;
-  stroke-width: 2;
+.selected .spawn-line {
+  stroke: #5599ff;
+  stroke-width: 3;
 }
 
 rect.shell-sideline {
@@ -118,3 +116,15 @@ text.shell-prompt-left {
   text-anchor: start;
 }
 
+
+
+.selected-item-info {
+  position: fixed;
+  margin-left: 20px;
+  margin-top: 20px;
+  width: 410px; /* depends on .container > .aside-area width */
+}
+
+.selected-item-info pre {
+  white-space: pre-wrap;
+}

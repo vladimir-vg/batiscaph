@@ -9,7 +9,8 @@ class App extends React.Component {
     this.state = {
       errorText: null,
       tree: null,
-      selectedPid: null
+      hoveredItem: null,
+      selectedItem: null
     };
   }
 
@@ -54,12 +55,23 @@ class App extends React.Component {
     });
   }
 
-  onProcSelect(pid) {
-    this.setState({selectedPid: pid});
+  onItemSelect(item) {
+    if (!item) {
+      this.setState({selectedItem: null});
+    } else if (this.state.selectedItem && this.state.selectedItem.key == item.key && this.state.selectedItem.type == item.type) {
+      // toggle in case of same item select
+      this.setState({selectedItem: null});
+    } else {
+      this.setState({selectedItem: item});
+    }
   }
 
-  onObjectHover(type, key) {
-    console.log("hover ", type, key);
+  onItemHover(item) {
+    if (!item) {
+      this.setState({hoveredItem: null});
+    } else {
+      this.setState({hoveredItem: item});
+    }
   }
 
   render() {
@@ -72,12 +84,12 @@ class App extends React.Component {
       let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
       return <div className="container">
         <SvgView className="svg-area" padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
-          <ProcessTreeView tree={this.state.tree} selectedPid={this.state.selectedPid}
-            onProcSelect={this.onProcSelect.bind(this)} onObjectHover={this.onObjectHover.bind(this)} />
+          <ProcessTreeView tree={this.state.tree} selectedItem={this.state.selectedItem}
+              onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
           <ShellIOView tree={this.state.tree} width={paddedWidth} />
         </SvgView>
         <div className="aside-area">
-          <SelectedProcInfo tree={this.state.tree} pid={this.state.selectedPid} />
+          <SelectedItemInfo tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem} />
         </div>
       </div>;
     }
