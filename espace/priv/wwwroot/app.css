@@ -128,3 +128,40 @@ text.shell-prompt-left {
 .selected-item-info pre {
   white-space: pre-wrap;
 }
+
+
+
+.input-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #f3f7fc;
+  border: 1px solid #d7e3f4;
+  display: flex;
+}
+
+.input-panel .prompt {
+  background-color: #ebf0ff;
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 16px;
+  padding-top: 5px;
+}
+
+.input-panel .input {
+  flex: 1;
+}
+.input-panel .info {
+  flex: 1;
+  margin: 10px;
+  color: #888;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+.input-panel .input textarea {
+  width: 100%;
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 16px;
+  margin: 5px;
+  box-sizing: border-box;
+}

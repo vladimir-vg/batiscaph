@@ -201,9 +201,21 @@ let processEvent = (keys, rows, i, tree) => {
   switch (get(keys, values, 'type')) {
   case 'spawn': spawnProc(keys, values, tree); break;
   case 'exit': exitProc(keys, values, tree); break;
-  case 'shell_input': i = addShellIO(keys, rows, i, tree); break;
-  case 'shell_output': i = addShellIO(keys, rows, i, tree); break;
   case 'send': addMessageSend(keys, values, tree); break;
+
+  case 'shell_input_expected':
+    let prompt = get(keys, values, 'prompt');
+    tree.currentPrompt = prompt;
+    break;
+
+  case 'shell_input':
+    i = addShellIO(keys, rows, i, tree);
+    tree.currentPrompt = null; // input was accepted, wait for new prompt
+    break;
+
+  case 'shell_output':
+    i = addShellIO(keys, rows, i, tree);
+    break;
   }
   return i;
 };
@@ -216,6 +228,9 @@ V.processEvents = function (tree, rows, keys) {
     _availColumns: [], // free columns that might be occupied by new processes
     _currentColumns: {}, // currently occupied columns, {pid: column}
     _currentRow: {y: 0},
+
+    // not null if input is expected by remote shell
+    currentPrompt: null,
 
     // these are output fields that later gonna be used for visualization
     procs: {},

@@ -10,7 +10,8 @@ class App extends React.Component {
       errorText: null,
       tree: null,
       hoveredItem: null,
-      selectedItem: null
+      selectedItem: null,
+      inputAllowed: false
     };
   }
 
@@ -33,7 +34,7 @@ class App extends React.Component {
       if (event.data.slice(0,7) == "events ") {
         let rows = JSON.parse(event.data.slice(7));
         let tree = V.processEvents(this.state.tree, rows, 'json');
-        this.setState({tree: tree});
+        this.setState({tree: tree, inputAllowed: true});
       } else if (event.data.slice(0,14) == "shell_started ") {
         let path = event.data.slice(14);
         window.location.hash = "/" + path;
@@ -74,9 +75,18 @@ class App extends React.Component {
     }
   }
 
+  onShellInput(text) {
+    V.socket.send("shell_input "+text+"\n");
+  }
+
   render() {
     if (this.state.errorText) {
       return <div>{this.state.errorText}</div>;
+    }
+
+    let inputPanel = null;
+    if (this.state.tree && this.state.inputAllowed) {
+      inputPanel = <InputPanel tree={this.state.tree} onInput={this.onShellInput.bind(this)} />;
     }
 
     if (this.state.tree) {
@@ -91,6 +101,8 @@ class App extends React.Component {
         <div className="aside-area">
           <SelectedItemInfo tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem} />
         </div>
+
+        {inputPanel}
       </div>;
     }
 

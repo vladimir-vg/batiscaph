@@ -57,7 +57,7 @@ class ShellIOView extends React.Component {
     let height = this.props.tree.maxY*V.CELL_HEIGHT;
 
     return <g>
-      <rect x={x} y={0} width={width} height={height} className="shell-sideline" />
+      <rect x={x} y={-V.CELL_HEIGHT/2} width={width} height={height+V.CELL_HEIGHT} className="shell-sideline" />
       <g>{blocks}</g>
     </g>;
   }
