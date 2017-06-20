@@ -60,6 +60,11 @@ handle_info({shell_input, Input}, #v0_handler{transport = Transport, socket = So
   Transport:send(Socket, erlang:term_to_binary({shell_input, Input})),
   {noreply, State};
 
+handle_info({store_module, Name, Body}, #v0_handler{transport = Transport, socket = Socket} = State) ->
+  lager:info("storing module: ~p with ~p bytes body", [Name, byte_size(Body)]),
+  Transport:send(Socket, erlang:term_to_binary({store_module, Name, Body})),
+  {noreply, State};
+
 handle_info({tcp, Socket, Binary}, #v0_handler{transport = Transport} = State) ->
   Transport:setopts(Socket, [{active,once}]),
   {ok, State1} = handle_runner_message(erlang:binary_to_term(Binary), State),

@@ -24,7 +24,7 @@ start_link(ParentPid, Path) ->
 
 init([ParentPid, Path]) ->
   {ok, Fd} = file:open(Path, [write]),
-  file:write(Fd, <<"at,at_mcs,type,pid,pid_arg,mfa,atom,prompt,message,term\n">>),
+  file:write(Fd, <<"at,at_mcs,type,pid,pid_arg,mfa,atom,prompt,message,term,size,hash\n">>),
   {ok, #collector{fd = Fd, parent_pid = ParentPid}}.
 
 
@@ -87,9 +87,11 @@ format_event(#{at := At, at_mcs := Mcs, type := Type} = E) ->
   Prompt = escape_string(iolist_to_binary(maps:get(prompt, E, <<>>))),
   Message = escape_string(iolist_to_binary(maps:get(message, E, <<>>))),
   Term = escape_string(iolist_to_binary(maps:get(term, E, <<>>))),
+  Size = escape_string(integer_to_binary(maps:get(size, E, -1))),
+  Hash = escape_string(iolist_to_binary(maps:get(hash, E, <<>>))),
   iolist_to_binary([
     integer_to_binary(At), ",", integer_to_binary(Mcs), ",", Type, ",",
-    Pid, ",", PidArg, ",", MFA, ",", Atom, ",", Prompt, ",", Message, ",", Term
+    Pid, ",", PidArg, ",", MFA, ",", Atom, ",", Prompt, ",", Message, ",", Term, ",", Size, ",", Hash
   ]).
 
 escape_string(<<>>) -> <<>>;

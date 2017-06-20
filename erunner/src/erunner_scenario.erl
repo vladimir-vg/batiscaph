@@ -135,6 +135,34 @@ handle_runner_message(shell_restart, #runner{shell_runner_pid = ShellPid} = Stat
   ok = gen_server:call(ShellPid, restart_shell),
   {ok, State};
 
+handle_runner_message({store_module, Name, Body}, State) ->
+  {ok, State1} = store_module(Name, Body, State),
+  {ok, State1};
+
 handle_runner_message({shell_input, Input}, #runner{io_server_pid = IoServerPid} = State) ->
   IoServerPid ! {input, binary_to_list(Input)},
   {ok, State}.
+
+
+
+store_module(Name, Body, #runner{collector_pid = CollectorPid} = State) ->
+  Event = module_stored_event_now(Name, Body),
+  Event1 = case file:write_file(<<Name/binary, ".erl">>, Body) of
+    ok -> Event;
+    {error, Reason} ->
+      Event#{type => <<"module_storage_failed">>, term => iolist_to_binary(io_lib:format("~p", [Reason]))}
+  end,
+  CollectorPid ! Event1,
+  {ok, State}.
+
+module_stored_event_now(Name, Body) ->
+  Now = erlang:system_time(micro_seconds),
+  #{
+    at => (Now div (1000*1000)),
+    at_mcs => (Now rem (1000*1000)),
+    type => <<"module_stored">>,
+    atom => Name,
+    size => byte_size(Body),
+    hash => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
+  }.
+

@@ -137,7 +137,7 @@ text.shell-prompt-left {
   left: 0;
   width: 100%;
   background-color: #f3f7fc;
-  border: 1px solid #d7e3f4;
+  border-top: 1px solid #d7e3f4;
   display: flex;
   min-height: 100px;
 }
@@ -166,6 +166,5 @@ text.shell-prompt-left {
   width: 100%;
   font-family: 'Ubuntu Mono', monospace;
   font-size: 16px;
-  margin: 5px;
   box-sizing: border-box;
 }

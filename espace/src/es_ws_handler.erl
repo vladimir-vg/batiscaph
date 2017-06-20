@@ -39,6 +39,11 @@ websocket_handle({text, <<"shell_restart">>}, Req, #ws_state{scenario_id = Id} =
   gproc:send({n, l, {erunner, Id}}, shell_restart),
   {ok, Req, State};
 
+websocket_handle({text, <<"store_module ", Rest/binary>>}, Req, #ws_state{scenario_id = Id} = State) ->
+  [Name, Body] = binary:split(Rest, <<"\n">>),
+  gproc:send({n, l, {erunner, Id}}, {store_module, Name, Body}),
+  {ok, Req, State};
+
 websocket_handle({text, Msg}, Req, State) ->
   lager:error("Unknown websocket command: ~p", [Msg]),
   {ok, Req, State};
