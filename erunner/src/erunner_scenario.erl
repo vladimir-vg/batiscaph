@@ -131,6 +131,10 @@ start_shell(#runner{id = Id} = State) ->
 
 
 
+handle_runner_message(shell_restart, #runner{shell_runner_pid = ShellPid} = State) ->
+  ok = gen_server:call(ShellPid, restart_shell),
+  {ok, State};
+
 handle_runner_message({shell_input, Input}, #runner{io_server_pid = IoServerPid} = State) ->
   IoServerPid ! {input, binary_to_list(Input)},
   {ok, State}.

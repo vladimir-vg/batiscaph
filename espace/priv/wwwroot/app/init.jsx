@@ -79,6 +79,10 @@ class App extends React.Component {
     V.socket.send("shell_input "+text+"\n");
   }
 
+  onRestartRequest() {
+    V.socket.send("shell_restart");
+  }
+
   render() {
     if (this.state.errorText) {
       return <div>{this.state.errorText}</div>;
@@ -86,7 +90,7 @@ class App extends React.Component {
 
     let inputPanel = null;
     if (this.state.tree && this.state.inputAllowed) {
-      inputPanel = <InputPanel tree={this.state.tree} onInput={this.onShellInput.bind(this)} />;
+      inputPanel = <InputPanel tree={this.state.tree} submitInput={this.onShellInput.bind(this)} requestRestart={this.onRestartRequest.bind(this)} />;
     }
 
     if (this.state.tree) {

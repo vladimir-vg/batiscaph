@@ -50,6 +50,11 @@ upgrade(Req, Env, ?MODULE, []) ->
 
 
 
+handle_info(shell_restart, #v0_handler{transport = Transport, socket = Socket} = State) ->
+  lager:info("restarting shell"),
+  Transport:send(Socket, erlang:term_to_binary(shell_restart)),
+  {noreply, State};
+
 handle_info({shell_input, Input}, #v0_handler{transport = Transport, socket = Socket} = State) ->
   lager:info("sending input: ~p", [Input]),
   Transport:send(Socket, erlang:term_to_binary({shell_input, Input})),

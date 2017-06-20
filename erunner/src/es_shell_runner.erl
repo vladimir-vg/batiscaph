@@ -40,6 +40,10 @@ handle_call(start_tracing, _From, #shell_runner{collector_pid = CollectorPid} = 
   erlang:trace(self(), true, [procs, send, timestamp, set_on_spawn, {tracer, CollectorPid}]),
   {reply, ok, State};
 
+handle_call(restart_shell, _From, State) ->
+  {noreply, State1} = handle_info(restart_shell, State),
+  {reply, ok, State1};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
