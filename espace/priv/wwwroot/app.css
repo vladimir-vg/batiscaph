@@ -123,6 +123,12 @@ text.shell-prompt-left {
   margin-left: 20px;
   margin-top: 20px;
   width: 410px; /* depends on .container > .aside-area width */
+  height: 100%;
+  overflow-y: auto;
+}
+
+.selected-item-info > div {
+  margin-bottom: 200px;
 }
 
 .selected-item-info pre {
