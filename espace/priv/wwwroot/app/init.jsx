@@ -133,7 +133,9 @@ class App extends React.Component {
         <SvgView className="svg-area" padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
           <ProcessTreeView tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
               onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
-          <ShellIOView tree={this.state.tree} width={paddedWidth} />
+          <ShellIOView tree={this.state.tree} width={paddedWidth}
+            selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
+            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
         </SvgView>
         <div className="aside-area">
           <SelectedItemInfo tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem} />

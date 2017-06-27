@@ -10,6 +10,54 @@ class ShellIOView extends React.Component {
   //   e.stopPropagation();
   // }
 
+  onItemSelect(type, key) {
+    this.props.onItemSelect({type: type, key: key});
+  }
+
+  onCellHoverEnter(type, key) {
+    this.props.onItemHover({type: type, key: key});
+  }
+  onCellHoverLeave() {
+    this.props.onItemHover(null);
+  }
+
+  renderTextContent(text) {
+    let pidRe = /(<\d+\.\d+\.\d+>)/g;
+    let parts = [];
+    let prevIndex = 0;
+    let match = pidRe.exec(text);
+    while (match != null) {
+      if (prevIndex != match.index) {
+        parts.push(<tspan key={prevIndex}>{text.slice(prevIndex, match.index)}</tspan>);
+      }
+      let pid = match[1];
+
+      let className = "pid";
+      if (this.props.hoveredItem && this.props.hoveredItem.type == 'proc' && this.props.hoveredItem.key == pid) {
+        className += " hovered";
+      }
+
+      if (this.props.selectedItem && this.props.selectedItem.type == 'proc' && this.props.selectedItem.key == pid) {
+        className += " selected";
+      }
+
+      parts.push(<tspan key={match.index} className={className}
+        onClick={this.onItemSelect.bind(this, 'proc', pid)}
+        onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)}
+        onMouseLeave={this.onCellHoverLeave.bind(this)}>{pid}</tspan>);
+
+      prevIndex = match.index + pid.length;
+      match = pidRe.exec(text);
+    }
+    if (parts.length == 0) {
+      return text;
+    } else {
+      parts.push(<tspan key={prevIndex}>{text.slice(prevIndex, text.length)}</tspan>)
+    }
+
+    return parts;
+  }
+
   render() {
     let blocks = [];
 
@@ -26,7 +74,7 @@ class ShellIOView extends React.Component {
           let prompt = e.blocks[j].prompt;
           let y1 = y + V.SHELL_LINE_HEIGHT*n - V.SHELL_LINE_TOP_PADDING;
 
-          texts.push(<text key={n} x={V.CELL_WIDTH} y={y1} className="shell-text">{line}</text>);
+          texts.push(<text key={n} x={V.CELL_WIDTH} y={y1} className="shell-text">{this.renderTextContent(line)}</text>);
           if (prompt) {
             texts.push(<text key={'prompt-' + n} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left unselectable">{prompt}</text>);
           } else {
@@ -66,4 +114,8 @@ class ShellIOView extends React.Component {
 ShellIOView.propTypes = {
   tree: React.PropTypes.object.isRequired,
   width: React.PropTypes.number.isRequired,
+  onItemSelect: React.PropTypes.func.isRequired,
+  onItemHover: React.PropTypes.func.isRequired,
+  selectedItem: React.PropTypes.object,
+  hoveredItem: React.PropTypes.object,
 };

@@ -153,6 +153,16 @@ text.shell-prompt-left {
 
 
 
+text tspan.pid.hovered {
+  fill: #5599ff;
+}
+text tspan.pid.selected {
+  fill: #5599ff;
+  font-weight: bold;
+}
+
+
+
 .selected-item-info {
   position: fixed;
   margin-left: 20px;
