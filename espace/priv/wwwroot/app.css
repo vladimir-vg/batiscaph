@@ -18,6 +18,10 @@ svg .unselectable::selection {
   width: 800px;
 }
 
+.head-block {
+  margin: 100px 0;
+}
+
 .container {
   display: flex;
 }
@@ -29,6 +33,21 @@ svg .unselectable::selection {
   background-color: #fff;
   border-left: 1px solid #d7e3f4;
   min-width: 450px;
+}
+
+
+
+.btn {
+  border: 0;
+  padding: 10px;
+  background-color: #5599ff;
+  color: white;
+  transition: 0.3s;
+  outline: 0;
+}
+
+.btn:hover {
+  background-color: #1f78ff;
 }
 
 

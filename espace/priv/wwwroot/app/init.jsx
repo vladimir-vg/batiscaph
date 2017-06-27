@@ -97,6 +97,16 @@ class App extends React.Component {
     V.socket.send("store_module " + name + "\n" + body);
   }
 
+  renderMainPage() {
+    return <div className="content-page">
+      <div className="head-block">
+        <button className="btn" onClick={this.startNewShell.bind(this)}>Start new shell</button>
+      </div>
+
+      <ScenariosList scenarios={this.state.scenarios} />
+    </div>;
+  }
+
   render() {
     if (this.state.errorText) {
       return <div>{this.state.errorText}</div>;
@@ -106,7 +116,7 @@ class App extends React.Component {
       if (!this.state.scenarios) {
         return <div className="content-page">Loading scenarios...</div>;
       } else {
-        return <div className="content-page"><ScenariosList scenarios={this.state.scenarios} /></div>;
+        return this.renderMainPage();
       }
     }
 
@@ -133,7 +143,7 @@ class App extends React.Component {
       </div>;
     }
 
-    return <div>Loading...</div>;
+    return <div className="content-page">Loading...</div>;
   }
 }
 
