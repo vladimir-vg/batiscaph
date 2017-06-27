@@ -11,7 +11,8 @@ class App extends React.Component {
       tree: null,
       hoveredItem: null,
       selectedItem: null,
-      inputAllowed: false
+      inputAllowed: false,
+      scenarios: null
     };
   }
 
@@ -19,13 +20,22 @@ class App extends React.Component {
     let hash = window.location.hash;
 
     if (!hash) {
-      this.startNewShell();
+      this.requestScenarousList();
+      // this.startNewShell();
     } else if (hash.slice(0,2) == '#/') {
       let url = '/scenarios/' + hash.slice(2);
       this.fetchCsvAndLoad(url);
     } else {
       this.setState({errorText: 'Wrong '+hash+' hash address'});
     }
+  }
+
+  requestScenarousList() {
+    fetch('/scenarios.json').then((response) => {
+      response.json().then((items) => {
+        this.setState({scenarios: items});
+      });
+    });
   }
 
   startNewShell() {
@@ -90,6 +100,14 @@ class App extends React.Component {
   render() {
     if (this.state.errorText) {
       return <div>{this.state.errorText}</div>;
+    }
+
+    if (!window.location.hash) {
+      if (!this.state.scenarios) {
+        return <div className="content-page">Loading scenarios...</div>;
+      } else {
+        return <div className="content-page"><ScenariosList scenarios={this.state.scenarios} /></div>;
+      }
     }
 
     let inputPanel = null;

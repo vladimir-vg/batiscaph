@@ -17,6 +17,7 @@ restart_cowboy() ->
       {"/websocket", es_ws_handler, []},
       {"/vendor/[...]", cowboy_static, {priv_dir, espace, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, espace, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
+      {"/scenarios.json", scenarios_list_handler, []},
       {"/scenarios/[...]", scenarios_csv_handler, []},
       {"/style/app.css", cowboy_static, {priv_file, espace, "wwwroot/app.css"}},
       {"/", cowboy_static, {priv_file, espace, "wwwroot/index.html"}}

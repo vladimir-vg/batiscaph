@@ -13,6 +13,11 @@ svg .unselectable::selection {
 
 /***/
 
+.content-page {
+  margin: 0 auto;
+  width: 800px;
+}
+
 .container {
   display: flex;
 }
@@ -173,4 +178,12 @@ text.shell-prompt-left {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 16px;
   box-sizing: border-box;
+}
+
+
+
+.scenarios-list-block {
+  background-color: #f6f5f3;
+  padding: 20px;
+  margin: 20px 0;
 }
