@@ -22,16 +22,12 @@ class ShellIOView extends React.Component {
   }
 
   renderTextContent(text) {
-    let pidRe = /(<\d+\.\d+\.\d+>)/g;
     let parts = [];
-    let prevIndex = 0;
-    let match = pidRe.exec(text);
-    while (match != null) {
-      if (prevIndex != match.index) {
-        parts.push(<tspan key={prevIndex}>{text.slice(prevIndex, match.index)}</tspan>);
-      }
-      let pid = match[1];
+    let onText = (text, pos) => {
+      parts.push(<tspan key={pos}>{text}</tspan>);
+    }
 
+    let onPid = (pid, pos) => {
       let className = "pid";
       if (this.props.hoveredItem && this.props.hoveredItem.type == 'proc' && this.props.hoveredItem.key == pid) {
         className += " hovered";
@@ -41,19 +37,13 @@ class ShellIOView extends React.Component {
         className += " selected";
       }
 
-      parts.push(<tspan key={match.index} className={className}
+      parts.push(<tspan key={pos} className={className}
         onClick={this.onItemSelect.bind(this, 'proc', pid)}
         onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', pid)}
         onMouseLeave={this.onCellHoverLeave.bind(this)}>{pid}</tspan>);
+    }
 
-      prevIndex = match.index + pid.length;
-      match = pidRe.exec(text);
-    }
-    if (parts.length == 0) {
-      return text;
-    } else {
-      parts.push(<tspan key={prevIndex}>{text.slice(prevIndex, text.length)}</tspan>)
-    }
+    V.walkInfoText(text, onText, onPid);
 
     return parts;
   }

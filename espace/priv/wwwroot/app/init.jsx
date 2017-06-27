@@ -3,6 +3,30 @@ V.WORKSPACE_PADDING = 100;
 
 
 
+// utilitary function that splits given text into parts
+// and uses giveb callback on each part
+V.walkInfoText = (text, onText, onPid) => {
+  let pidRe = /(<\d+\.\d+\.\d+>)/g;
+
+  let prevIndex = 0;
+  let match = pidRe.exec(text);
+  while (match != null) {
+    if (prevIndex != match.index) {
+      onText(text.slice(prevIndex, match.index), prevIndex);
+    }
+    onPid(match[0], match.index);
+
+    prevIndex = match.index + match[0].length;
+    match = pidRe.exec(text);
+  }
+
+  if (prevIndex != text.length) {
+    onText(text.slice(prevIndex, text.length), prevIndex);
+  }
+};
+
+
+
 class App extends React.Component {
   constructor() {
     super();
@@ -73,6 +97,11 @@ class App extends React.Component {
       // toggle in case of same item select
       this.setState({selectedItem: null});
     } else {
+      // if selected pid that not present on page then do nothing
+      // for example parent of top process
+      if (item.type == 'proc' && !(item.key in this.state.tree.procs)) {
+        return;
+      }
       this.setState({selectedItem: item});
     }
   }
@@ -138,7 +167,9 @@ class App extends React.Component {
             onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
         </SvgView>
         <div className="aside-area">
-          <SelectedItemInfo tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem} />
+          <SelectedItemInfo tree={this.state.tree}
+            selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
+            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
         </div>
 
         {inputPanel}

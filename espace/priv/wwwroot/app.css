@@ -153,14 +153,21 @@ text.shell-prompt-left {
 
 
 
-text tspan.pid.hovered {
+svg text tspan.pid.hovered {
   fill: #5599ff;
 }
-text tspan.pid.selected {
+svg text tspan.pid.selected {
   fill: #5599ff;
   font-weight: bold;
 }
 
+.selected-item-info .pid.hovered {
+  color: #5599ff;
+}
+.selected-item-info .pid.selected {
+  color: #5599ff;
+  font-weight: bold;
+}
 
 
 .selected-item-info {

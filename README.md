@@ -4,10 +4,6 @@ Particularly to illustrate traces for some code examples in [Learn you some Erla
 
 Actually I've tried to create tool that collects and visualizes events from Common Test runs before: [screen1](/common_test_prev_attempt1.png), [screen2](/common_test_prev_attempt2.png), [screen3](/common_test_prev_attempt3.png). But it was too coupled with proprietary code from my last workplace, so I decided to start it from scratch.
 
-# not forget to implement
-
-- [ ] make pid in shell IO clickable, select processes
-
 # TODO
 
 If this project becomes something bigger than just demo, I would like to have:
