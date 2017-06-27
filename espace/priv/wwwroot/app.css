@@ -103,6 +103,15 @@ path.marker-send-end {
 
 
 
+.hovered rect.proc {
+  stroke: #99c2ff;
+  stroke-width: 2;
+}
+.hovered .spawn-line {
+  stroke: #99c2ff;
+  stroke-width: 3;
+}
+
 .selected rect.proc {
   stroke: #5599ff;
   stroke-width: 2;
@@ -111,6 +120,8 @@ path.marker-send-end {
   stroke: #5599ff;
   stroke-width: 3;
 }
+
+
 
 rect.shell-sideline {
   fill: #ebf0ff;

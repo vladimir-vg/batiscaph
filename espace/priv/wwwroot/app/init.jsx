@@ -131,7 +131,7 @@ class App extends React.Component {
       let paddedHeight = this.state.tree.maxY*V.CELL_HEIGHT;
       return <div className="container">
         <SvgView className="svg-area" padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
-          <ProcessTreeView tree={this.state.tree} selectedItem={this.state.selectedItem}
+          <ProcessTreeView tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
               onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
           <ShellIOView tree={this.state.tree} width={paddedWidth} />
         </SvgView>

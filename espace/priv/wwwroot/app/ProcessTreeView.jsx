@@ -94,6 +94,10 @@ class ProcessTreeView extends React.Component {
       let height = ((proc.stoppedY || maxY) - proc.startedY)*V.CELL_HEIGHT;
 
       let className = "";
+      if (this.props.hoveredItem && this.props.hoveredItem.type == 'proc' && this.props.hoveredItem.key == pid) {
+        className += " hovered";
+      }
+
       if (this.props.selectedItem && this.props.selectedItem.type == 'proc' && this.props.selectedItem.key == pid) {
         className += " selected";
       }
@@ -106,7 +110,9 @@ class ProcessTreeView extends React.Component {
       }
 
       procRects.push(<g key={pid} className={className}>
-        <g onClick={this.onItemSelect.bind(this, 'proc', pid)}>
+        <g onClick={this.onItemSelect.bind(this, 'proc', pid)}
+            onMouseEnter={this.onCellHoverEnter.bind(this, 'proc', proc.pid)}
+            onMouseLeave={this.onCellHoverLeave.bind(this)}>
           <rect x={x} y={y} width={width} height={height} className="proc" />
           {badReasonRect}
         </g>
@@ -168,4 +174,5 @@ ProcessTreeView.propTypes = {
   onItemSelect: React.PropTypes.func.isRequired,
   onItemHover: React.PropTypes.func.isRequired,
   selectedItem: React.PropTypes.object,
+  hoveredItem: React.PropTypes.object,
 };
