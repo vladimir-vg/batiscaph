@@ -2,6 +2,35 @@ const OFFER_TO_RESTART_AFTER = 3000;
 
 
 
+class ErlFileInput extends React.Component {
+  onChange() {
+    let hash = window.location.hash;
+
+    if (hash.slice(0,2) != '#/') {
+      console.error("expected to have scenario hash address")
+      return;
+    }
+
+    let url = '/scenarios/' + hash.slice(2) + "/erlmodules";
+    fetch(url, {
+      method: 'POST',
+      body: new FormData(this.refs.form)
+    }).then(() => {
+      this.refs.form.reset();
+    }).catch((error) => {
+      this.refs.form.reset();
+    });
+  }
+
+  render() {
+    return <form ref="form" className="notice-text">
+      upload *.erl module: <input type="file" name="modules" accept=".erl" multiple={true} onChange={this.onChange.bind(this)} />
+    </form>;
+  }
+}
+
+
+
 class InputPanel extends React.Component {
   constructor() {
     super();
@@ -81,16 +110,18 @@ class InputPanel extends React.Component {
     }
 
     let buttonSendText = "send to shell";
-    let moduleNotice = null;
+    let moduleBlock = null;
     if (this.state.moduleName) {
-      moduleNotice = <div className="notice-text">will be sent as: <strong>{this.state.moduleName}.erl</strong></div>
+      moduleBlock = <div className="notice-text">will be sent as: <strong>{this.state.moduleName}.erl</strong></div>
       buttonSendText = "store erlang module"
+    } else {
+      moduleBlock = <ErlFileInput />;
     }
 
     let content = <div>
       <textarea rows="3" disabled={inputDisabled} value={this.state.text}
         onChange={this.onTextChange.bind(this)} onKeyPress={this.onKeyPress.bind(this)} />
-      {moduleNotice}
+      {moduleBlock}
     </div>;
 
     if (this.state.showRestartButton) {
