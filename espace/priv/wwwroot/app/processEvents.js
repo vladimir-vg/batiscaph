@@ -1,5 +1,7 @@
 
 let get = (keys, values, key) => {
+  if (!values) return null;
+
   if (keys == 'json') {
     return values[key];
   }
@@ -9,6 +11,7 @@ let get = (keys, values, key) => {
     console.error("not found key in keys: ", key, keys, values);
     return null;
   }
+
   return values[index];
 };
 
@@ -139,7 +142,15 @@ let addShellIO = (keys, rows, i, tree) => {
     let prompt = get(keys, values, 'prompt');
     let message = get(keys, values, 'message');
 
-    if (['shell_output', 'shell_input'].indexOf(type) == -1) {
+    if (type == 'module_stored') {
+      let name = get(keys, values, 'atom');
+      let size = get(keys, values, 'size');
+      let hash = get(keys, values, 'hash');
+      prompt = "erl";
+      message = "uploaded " + name + ".erl, " + size + " bytes, md5 hash: " + hash;
+    }
+
+    if (['shell_output', 'shell_input', 'module_stored'].indexOf(type) == -1) {
       break;
     }
 
@@ -150,7 +161,10 @@ let addShellIO = (keys, rows, i, tree) => {
       currentEvent.blocks.push({lines: message.trim().split("\n"), prompt: prompt});
     }
 
-    if (get(keys, next, 'type') == 'shell_output' && type == 'shell_output') {
+    if (
+      (get(keys, next, 'type') == 'shell_output' && type == 'shell_output')
+      || (get(keys, next, 'type') == 'module_stored' && type == 'module_stored')
+    ) {
       i += 1;
     } else {
       break;
@@ -214,6 +228,7 @@ let processEvent = (keys, rows, i, tree) => {
     break;
 
   case 'shell_output':
+  case 'module_stored':
     i = addShellIO(keys, rows, i, tree);
     break;
   }

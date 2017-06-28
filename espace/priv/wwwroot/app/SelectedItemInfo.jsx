@@ -63,15 +63,18 @@ class SelectedItemInfo extends React.Component {
         <div>pid: {this.tryRenderPid(proc.pid)}</div>
         <div>mfa: {proc.mfa}</div>
         <div>parent: {this.tryRenderPid(proc.parent)}</div>
-        <pre>{this.renderTextContent(proc.reason)}</pre>
+        <div> termination reason:
+          <pre>{this.renderTextContent(proc.reason)}</pre>
+        </div>
       </div>;
     } else if (this.props.selectedItem.type == 'send') {
       let send = this.props.tree.sends[this.props.selectedItem.key];
       body = <div>
         <div>from: {this.tryRenderPid(send.from)}</div>
         <div>to: {this.tryRenderPid(send.to)}</div>
-
-        <pre>{this.renderTextContent(send.term)}</pre>
+        <div> message:
+          <pre>{this.renderTextContent(send.term)}</pre>
+        </div>
       </div>;
     }
 
