@@ -103,17 +103,19 @@ escape_string(<<C, Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binary, 
 
 
 
-handle_trace_message({trace_ts, Pid, send, _Msg, PidTo, _} = Message, #collector{ignored_pids = IgnoredPids}) ->
-  case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
-    true -> {ok, []};
-    false -> handle_trace_message0(Message)
-  end;
+handle_trace_message({trace_ts, _Pid, send, _Msg, _PidTo, _} = Message, #collector{ignored_pids = _IgnoredPids}) ->
+  % case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
+  %   true -> {ok, []};
+  %   false ->
+  % end;
+  handle_trace_message0(Message);
 
 handle_trace_message(Message, #collector{ignored_pids = IgnoredPids}) ->
   Pid = element(2, Message),
   case lists:member(Pid, IgnoredPids) of
     true -> {ok, []};
-    false -> handle_trace_message0(Message)
+    false ->
+      handle_trace_message0(Message)
   end.
 
 handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}) when is_port(Port) -> {ok, []};

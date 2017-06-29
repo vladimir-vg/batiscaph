@@ -46,7 +46,7 @@ class SelectedItemInfo extends React.Component {
 
   tryRenderPid(pid) {
     if (!pid) return null;
-    if (pid[0] != '<') return null;
+    if (pid[0] != '<') return pid;
     return this.renderPid(pid);
   }
 
@@ -70,9 +70,10 @@ class SelectedItemInfo extends React.Component {
     } else if (this.props.selectedItem.type == 'send') {
       let send = this.props.tree.sends[this.props.selectedItem.key];
       body = <div>
-        <div>from: {this.tryRenderPid(send.from)}</div>
-        <div>to: {this.tryRenderPid(send.to)}</div>
-        <div> message:
+        <div>{this.tryRenderPid(send.from)} &rarr; {this.tryRenderPid(send.to)}</div>
+        <br />
+        <div>
+          message:
           <pre>{this.renderTextContent(send.term)}</pre>
         </div>
       </div>;

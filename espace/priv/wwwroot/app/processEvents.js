@@ -193,11 +193,12 @@ let addMessageSend = (keys, values, tree) => {
   let atMcs = get(keys, values, 'at_mcs');
   let pidFrom = get(keys, values, 'pid');
   let pidTo = get(keys, values, 'pid_arg');
+  let atomTo = get(keys, values, 'atom');
   let term = get(keys, values, 'term');
 
-  if (!(pidFrom in tree.procs) || !(pidTo in tree.procs)) return;
-
-  let e = {at: at, atMcs: atMcs, term: term, from: pidFrom, to: pidTo};
+  // ignore message if both sender and received are not displayed
+  if (!(pidFrom in tree.procs) && !(pidTo in tree.procs)) return;
+  let e = {at: at, atMcs: atMcs, term: term, from: pidFrom, to: pidTo || atomTo};
 
   e.y = tree._currentRow.y;
   tree._currentRow.y += 1;
