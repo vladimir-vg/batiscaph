@@ -61,7 +61,7 @@ svg .unselectable::selection {
 .cell-hover.selected {
   fill: #ebf0ff;
   stroke: #5599ff;
-  stroke-width: 2;
+  stroke-width: 1;
 }
 
 rect.proc {
@@ -81,8 +81,8 @@ rect.bad-reason {
   fill: none;
   stroke: #3771c8;
   stroke-width: 1;
-  marker-start: url(#markerSendStart);
-  /*marker-end: url(#markerSendEnd);*/
+  /*marker-start: url(#markerSendStart);*/
+  marker-end: url(#markerSendEnd);
 }
 
 line.message-send {
