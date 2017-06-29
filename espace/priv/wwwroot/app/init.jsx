@@ -35,7 +35,7 @@ V.isMessageValuable = (send, tree) => {
   let receiverToplevel = (send.to in tree.procs) && !(tree.procs[send.to].parent in tree.procs);
 
   if (receiverAbsent && send.term.indexOf("{io_request,") == 0) return false;
-  if (send.to == 'code_server' && send.term.indexOf("{code_call,") == 0) return false;
+  if (send.toAtom == 'code_server' && send.term.indexOf("{code_call,") == 0) return false;
   if (senderToplevel && send.term.indexOf("{shell_cmd,") == 0) return false;
   if (receiverToplevel && send.term.indexOf("{shell_rep,") == 0) return false;
 
@@ -53,6 +53,7 @@ class App extends React.Component {
       hoveredItem: null,
       selectedItem: null,
       inputAllowed: false,
+      shellStartAllowed: false,
       scenarios: null
     };
   }
@@ -60,14 +61,22 @@ class App extends React.Component {
   componentDidMount() {
     let hash = window.location.hash;
 
+    V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
+    setTimeout(this.checkSocketState.bind(this), 1000);
+
     if (!hash) {
       this.requestScenarousList();
-      // this.startNewShell();
     } else if (hash.slice(0,2) == '#/') {
       let url = '/scenarios/' + hash.slice(2);
       this.fetchCsvAndLoad(url);
     } else {
       this.setState({errorText: 'Wrong '+hash+' hash address'});
+    }
+  }
+
+  checkSocketState() {
+    if (V.socket.readyState == WebSocket.OPEN) {
+      this.setState({shellStartAllowed: true});
     }
   }
 
@@ -80,7 +89,6 @@ class App extends React.Component {
   }
 
   startNewShell() {
-    V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
     V.socket.onmessage = (function (event) {
       if (event.data.slice(0,7) == "events ") {
         let rows = JSON.parse(event.data.slice(7));
@@ -91,9 +99,8 @@ class App extends React.Component {
         window.location.hash = "/" + path;
       }
     }).bind(this);
-    V.socket.onopen = function (event) {
-      V.socket.send("start_shell");
-    };
+
+    V.socket.send("start_shell");
   }
 
   fetchCsvAndLoad(url) {
@@ -144,11 +151,14 @@ class App extends React.Component {
   }
 
   renderMainPage() {
-    return <div className="content-page">
-      <div className="head-block">
+    let shellBlock = null;
+    if (this.state.shellStartAllowed) {
+      shellBlock = <div className="head-block">
         <button className="btn" onClick={this.startNewShell.bind(this)}>Start new shell</button>
-      </div>
-
+      </div>;
+    }
+    return <div className="content-page">
+      {shellBlock}
       <ScenariosList scenarios={this.state.scenarios} />
     </div>;
   }
