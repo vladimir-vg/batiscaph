@@ -59,18 +59,35 @@ class SelectedItemInfo extends React.Component {
 
     if (this.props.selectedItem.type == 'proc') {
       let proc = this.props.tree.procs[this.props.selectedItem.key];
-      body = <div>
-        <div>pid: {this.tryRenderPid(proc.pid)}</div>
-        <div>mfa: {proc.mfa}</div>
-        <div>parent: {this.tryRenderPid(proc.parent)}</div>
-        <div> termination reason:
+      let registered = null;
+      let terminated = null;
+      if (proc.atom) {
+        registered = " ("+ proc.atom +")";
+      }
+      if (proc.reason) {
+        terminated = <div> termination reason:
           <pre>{this.renderTextContent(proc.reason)}</pre>
-        </div>
+        </div>;
+      }
+      body = <div>
+        <div>pid: {this.tryRenderPid(proc.pid)} {registered}</div>
+        <div>spawn function: {proc.mfa}</div>
+        <div>parent: {this.tryRenderPid(proc.parent)}</div>
+        {terminated}
       </div>;
+
     } else if (this.props.selectedItem.type == 'send') {
       let send = this.props.tree.sends[this.props.selectedItem.key];
+      let receiver = null;
+      if (send.to && send.toAtom) {
+        receiver = <span>{this.tryRenderPid(send.to, 'to')} ({send.toAtom})</span>;
+      } else if (send.to) {
+        receiver = <span>{this.tryRenderPid(send.to, 'to')}</span>;
+      } else {
+        receiver = <span>{send.toAtom}</span>;
+      }
       body = <div>
-        <div>{this.tryRenderPid(send.from, 'from')} &rarr; {this.tryRenderPid(send.to, 'to')}</div>
+        <div>{this.tryRenderPid(send.from, 'from')} &rarr; {receiver}</div>
         <br />
         <div>
           message:

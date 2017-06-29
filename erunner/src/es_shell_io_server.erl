@@ -71,6 +71,12 @@ handle_cast(Cast, State) ->
 
 
 
+handle_io_request(From, ReplyAs, {put_chars,unicode,Binary}, #shell_io{collector_pid = CollectorPid} = State) when is_binary(Binary) ->
+  Event = shell_output_event_now([{put_chars,unicode,Binary}]),
+  CollectorPid ! Event,
+  From ! {io_reply, ReplyAs, ok},
+  {ok, State};
+
 handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}, #shell_io{collector_pid = CollectorPid} = State) ->
   Event = shell_output_event_now([{put_chars,unicode,io_lib,format,[Format,Args]}]),
   CollectorPid ! Event,

@@ -198,12 +198,28 @@ let addMessageSend = (keys, values, tree) => {
 
   // ignore message if both sender and received are not displayed
   if (!(pidFrom in tree.procs) && !(pidTo in tree.procs)) return;
-  let e = {at: at, atMcs: atMcs, term: term, from: pidFrom, to: pidTo || atomTo};
+  let e = {at: at, atMcs: atMcs, term: term, from: pidFrom, to: pidTo, toAtom: atomTo};
+
+  if (atomTo && atomTo in tree.registeredAtoms) {
+    e.to = tree.registeredAtoms[atomTo];
+  }
 
   e.y = tree._currentRow.y;
   tree._currentRow.y += 1;
 
   tree.sends.push(e);
+};
+
+
+
+let registerAtom = (keys, values, tree) => {
+  let at = get(keys, values, 'at');
+  let atMcs = get(keys, values, 'at_mcs');
+  let pid = get(keys, values, 'pid');
+  let atom = get(keys, values, 'atom');
+
+  tree.procs[pid].atom = atom;
+  tree.registeredAtoms[atom] = pid;
 };
 
 
@@ -217,6 +233,7 @@ let processEvent = (keys, rows, i, tree) => {
   case 'spawn': spawnProc(keys, values, tree); break;
   case 'exit': exitProc(keys, values, tree); break;
   case 'send': addMessageSend(keys, values, tree); break;
+  case 'register': registerAtom(keys, values, tree); break;
 
   case 'shell_input_expected':
     let prompt = get(keys, values, 'prompt');
@@ -250,6 +267,8 @@ V.processEvents = function (tree, rows, keys) {
 
     // these are output fields that later gonna be used for visualization
     procs: {},
+
+    registeredAtoms: {}, // atom: pid
 
     // sorted list of events with length (in cells)
     shellIO: [],
