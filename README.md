@@ -1,6 +1,6 @@
 This project at first should provide visual interface to Erlang shell.
 
-Particularly to illustrate traces for some code examples in [Learn you some Erlang](http://learnyousomeerlang.com/content) book.
+Particularly to illustrate traces for some code examples in [Learn you some Erlang](http://learnyousomeerlang.com/content) book. One example from hexlet Erlang course: https://ru.hexlet.io/courses/erlang_101/lessons/practical_erlang_gen_server/theory_unit
 
 Actually I've tried to create tool that collects and visualizes events from Common Test runs before: [screen1](/common_test_prev_attempt1.png), [screen2](/common_test_prev_attempt2.png), [screen3](/common_test_prev_attempt3.png). But it was too coupled with proprietary code from my last workplace, so I decided to start it from scratch.
 
