@@ -27,6 +27,23 @@ V.walkInfoText = (text, onText, onPid) => {
 
 
 
+// some messages are shell-related and not really interesting for user
+// this function tells them apart
+V.isMessageValuable = (send, tree) => {
+  let receiverAbsent = send.to && !(send.to in tree.procs);
+  let senderToplevel = (send.from in tree.procs) && !(tree.procs[send.from].parent in tree.procs);
+  let receiverToplevel = (send.to in tree.procs) && !(tree.procs[send.to].parent in tree.procs);
+
+  if (receiverAbsent && send.term.indexOf("{io_request,") == 0) return false;
+  if (send.to == 'code_server' && send.term.indexOf("{code_call,") == 0) return false;
+  if (senderToplevel && send.term.indexOf("{shell_cmd,") == 0) return false;
+  if (receiverToplevel && send.term.indexOf("{shell_rep,") == 0) return false;
+
+  return true;
+}
+
+
+
 class App extends React.Component {
   constructor() {
     super();

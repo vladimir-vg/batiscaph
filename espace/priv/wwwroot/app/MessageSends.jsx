@@ -25,8 +25,13 @@ class MessageSends extends React.Component {
       x2 = outerX;
     }
 
+    let className = "message-send";
+    if (!V.isMessageValuable(e, this.props.tree)) {
+      className += " muted";
+    }
+
     return <g key={y}>
-      <line x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="message-send" />
+      <line x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className={className} />
     </g>;
   }
 

@@ -64,12 +64,14 @@ class ShellIOView extends React.Component {
           let prompt = e.blocks[j].prompt;
           let y1 = y + V.SHELL_LINE_HEIGHT*n - V.SHELL_LINE_TOP_PADDING;
 
-          texts.push(<text key={n} x={V.CELL_WIDTH} y={y1} className="shell-text">{this.renderTextContent(line)}</text>);
+          let className = "shell-text";
           if (prompt) {
             texts.push(<text key={'prompt-' + n} x={-V.SHELL_SIDELINE_WIDTH} y={y1} className="shell-prompt-left unselectable">{prompt}</text>);
           } else {
-            texts.push(<text key={'prompt-' + n} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center unselectable">...</text>);
+            texts.push(<text key={'prompt-' + n} x={-V.SHELL_SIDELINE_WIDTH/2} y={y1} className="shell-prompt-center unselectable muted">...</text>);
+            className += " muted";
           }
+          texts.push(<text key={n} x={V.CELL_WIDTH} y={y1} className={className}>{this.renderTextContent(line)}</text>);
 
           n += 1;
         }

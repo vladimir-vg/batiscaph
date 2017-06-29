@@ -92,6 +92,12 @@ line.message-send {
   marker-end: url(#markerSendEnd);
 }
 
+line.message-send.muted {
+  stroke: #999;
+  marker-start: url(#muted-markerSendStart);
+  marker-end: url(#muted-markerSendEnd);
+}
+
 circle.marker-send-start {
   stroke: none;
   fill: #3771c8;
@@ -99,6 +105,14 @@ circle.marker-send-start {
 
 path.marker-send-end {
   fill: #3771c8;
+}
+
+circle.marker-send-start.muted {
+  fill: #999;
+}
+
+path.marker-send-end.muted {
+  fill: #999;
 }
 
 
@@ -142,6 +156,13 @@ text.shell-prompt-center {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 16px;
 }
+
+text.shell-prompt-center.muted,
+text.shell-text.muted {
+  fill: #888;
+}
+
+
 
 text.shell-prompt-center {
   text-anchor: middle;

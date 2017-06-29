@@ -134,6 +134,14 @@ class SvgView extends React.Component {
         <marker id="markerSendEnd" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
           <path d="M0,2 L0,7 L6,4 L0,2" className="marker-send-end" />
         </marker>
+
+        <marker id="muted-markerSendStart" markerWidth="8" markerHeight="8" refX="5" refY="5">
+          <circle cx="5" cy="5" r="2" className="muted marker-send-start" />
+        </marker>
+
+        <marker id="muted-markerSendEnd" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
+          <path d="M0,2 L0,7 L6,4 L0,2" className="muted marker-send-end" />
+        </marker>
       </defs>
 
       {/* transform={"translate(0,"+this.state.posY+")"} */}
