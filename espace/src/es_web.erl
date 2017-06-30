@@ -6,10 +6,6 @@
 
 
 restart_cowboy() ->
-  % try create cache table if not created
-  % useful to cache babel output
-  catch ets:new(web_page_cache, [public, named_table, set]),
-
   {ok, Port} = application:get_env(espace, http_port),
   Dispatch = cowboy_router:compile([
     {'_', [

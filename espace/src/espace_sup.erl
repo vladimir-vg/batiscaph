@@ -14,4 +14,7 @@ start_link() ->
 
 
 init([]) ->
+  % useful to cache babel output
+  web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
+
   {ok, { {one_for_all, 0, 1}, []} }.
