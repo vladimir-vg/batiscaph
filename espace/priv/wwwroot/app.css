@@ -23,16 +23,28 @@ svg .unselectable::selection {
 }
 
 .container {
-  display: flex;
+  /*display: flex;*/
 }
 
 .container > .svg-area {
-  flex: 3;
+  /*flex: 3;*/
+  width: 100%;
 }
 .container > .aside-area {
+  position: fixed;
+  top: 0;
+  right: 0;
   background-color: #fff;
   border-left: 1px solid #d7e3f4;
+  border-bottom: 1px solid #d7e3f4;
   min-width: 450px;
+  max-width: 690px;
+  max-height: 100%;
+  overflow-y: auto;
+
+  -webkit-box-shadow: 0px 0px 10px -2px rgba(0,0,0,0.75);
+  -moz-box-shadow: 0px 0px 10px -2px rgba(0,0,0,0.75);
+  box-shadow: 0px 0px 10px -2px rgba(0,0,0,0.75);
 }
 
 
@@ -174,17 +186,20 @@ text.shell-prompt-left {
 
 
 
-svg text tspan.pid.hovered {
+svg text tspan.pid {
   fill: #5599ff;
 }
+svg text tspan.pid.hovered,
 svg text tspan.pid.selected {
   fill: #5599ff;
   font-weight: bold;
 }
 
-.selected-item-info .pid.hovered {
+.selected-item-info .pid {
   color: #5599ff;
+  font-family: 'Ubuntu Mono', monospace;
 }
+.selected-item-info .pid.hovered,
 .selected-item-info .pid.selected {
   color: #5599ff;
   font-weight: bold;
@@ -192,12 +207,17 @@ svg text tspan.pid.selected {
 
 
 .selected-item-info {
-  position: fixed;
-  margin-left: 20px;
-  margin-top: 20px;
-  width: 410px; /* depends on .container > .aside-area width */
-  height: 100%;
-  overflow-y: auto;
+  /*position: fixed;*/
+  /*margin-left: 20px;
+  margin-top: 20px;*/
+  /*width: 450px; /* depends on .container > .aside-area width */*/
+  /*height: 100%;*/
+  /*overflow-y: auto;*/
+}
+.selected-item-info .attrs {
+  padding: 20px;
+  line-height: 1.3em;
+  font-family: Helvetica, sans-serif;
 }
 
 .selected-item-info > div {
@@ -205,7 +225,14 @@ svg text tspan.pid.selected {
 }
 
 .selected-item-info pre {
+  margin: 0;
+  padding: 20px;
+  background-color: #f3f7fc;
   white-space: pre-wrap;
+  font-family: 'Ubuntu Mono', monospace;
+}
+.selected-item-info code {
+  font-family: 'Ubuntu Mono', monospace;
 }
 
 

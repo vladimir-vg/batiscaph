@@ -50,53 +50,63 @@ class SelectedItemInfo extends React.Component {
     return this.renderPid(pid, key);
   }
 
+  renderProc() {
+    let proc = this.props.tree.procs[this.props.selectedItem.key];
+    let registered = null;
+    let terminatedAttr = null;
+    let terminated = null;
+    if (proc.atom) {
+      registered = <div>registered as: <code>{proc.atom}</code></div>;
+    }
+    if (proc.reason) {
+      terminatedAttr = <div>
+        <br />
+        <div>termination reason:</div>
+      </div>
+      terminated = <pre>{this.renderTextContent(proc.reason)}</pre>;
+    }
+    return <div>
+      <div className="attrs">
+        <div>process: {this.tryRenderPid(proc.pid)}</div>
+        <div>parent: {this.tryRenderPid(proc.parent)}</div>
+        <div>spawn as: <code>{proc.mfa}</code></div>
+        {registered}
+        {terminatedAttr}
+      </div>
+      {terminated}
+    </div>;
+  }
+
+  renderMessageSend() {
+    let send = this.props.tree.sends[this.props.selectedItem.key];
+    let receiver = null;
+
+    if (send.to && send.toAtom) {
+      receiver = <span>{this.tryRenderPid(send.to, 'to')} (<code>{send.toAtom}</code>)</span>;
+    } else if (send.to) {
+      receiver = <span>{this.tryRenderPid(send.to, 'to')}</span>;
+    } else {
+      receiver = <code>{send.toAtom}</code>;
+    }
+
+    return <div>
+      <div className="attrs">message {this.tryRenderPid(send.from, 'from')} &rarr; {receiver}</div>
+      <pre>{this.renderTextContent(send.term)}</pre>
+    </div>;
+  }
+
   render() {
     if (!this.props.selectedItem) {
       return null;
     }
 
     let body = null;
-
     if (this.props.selectedItem.type == 'proc') {
-      let proc = this.props.tree.procs[this.props.selectedItem.key];
-      let registered = null;
-      let terminated = null;
-      if (proc.atom) {
-        registered = " ("+ proc.atom +")";
-      }
-      if (proc.reason) {
-        terminated = <div> termination reason:
-          <pre>{this.renderTextContent(proc.reason)}</pre>
-        </div>;
-      }
-      body = <div>
-        <div>pid: {this.tryRenderPid(proc.pid)} {registered}</div>
-        <div>spawn function: {proc.mfa}</div>
-        <div>parent: {this.tryRenderPid(proc.parent)}</div>
-        {terminated}
-      </div>;
-
+      body = this.renderProc();
     } else if (this.props.selectedItem.type == 'send') {
-      let send = this.props.tree.sends[this.props.selectedItem.key];
-      let receiver = null;
-      if (send.to && send.toAtom) {
-        receiver = <span>{this.tryRenderPid(send.to, 'to')} ({send.toAtom})</span>;
-      } else if (send.to) {
-        receiver = <span>{this.tryRenderPid(send.to, 'to')}</span>;
-      } else {
-        receiver = <span>{send.toAtom}</span>;
-      }
-      body = <div>
-        <div>{this.tryRenderPid(send.from, 'from')} &rarr; {receiver}</div>
-        <br />
-        <div>
-          message:
-          <pre>{this.renderTextContent(send.term)}</pre>
-        </div>
-      </div>;
+      body = this.renderMessageSend();
     }
 
-    // width is hardcoded, 450 - 20 - 20 ()
     return <div className="selected-item-info">
       {body}
     </div>;
