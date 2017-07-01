@@ -256,25 +256,31 @@ let processEvent = (keys, rows, i, tree) => {
 
 
 V.processEvents = function (tree, rows, keys) {
-  var tree = tree || {
-    // these are state fields that used during processing
-    _availColumns: [], // free columns that might be occupied by new processes
-    _currentColumns: {}, // currently occupied columns, {pid: column}
-    _currentRow: {y: 0},
 
-    // not null if input is expected by remote shell
-    currentPrompt: null,
+  if (!tree) {
+    tree = {
+      // these are state fields that used during processing
+      _availColumns: [], // free columns that might be occupied by new processes
+      _currentColumns: {}, // currently occupied columns, {pid: column}
+      _currentRow: {y: 0},
 
-    // these are output fields that later gonna be used for visualization
-    procs: {},
+      // not null if input is expected by remote shell
+      currentPrompt: null,
 
-    registeredAtoms: {}, // atom: pid
+      // these are output fields that later gonna be used for visualization
+      procs: {},
 
-    // sorted list of events with length (in cells)
-    shellIO: [],
+      registeredAtoms: {}, // atom: pid
 
-    sends: [],
-  };
+      // sorted list of events with length (in cells)
+      shellIO: [],
+
+      sends: [],
+    };
+  }
+
+  // create new reference for tree, to allow compare old tree prop with new
+  tree = Object.assign({}, tree);
 
   for (let i = 0; i < rows.length; i += 1) {
     // it may process several consecutive events

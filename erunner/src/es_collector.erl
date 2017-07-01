@@ -195,6 +195,6 @@ event_with_timestamp({MegaSec, Sec, MicroSec}, E) ->
 mfa_str({proc_lib,init_p,[_Parent, _Ancestors, _Fun]}) -> <<"proc_lib:init_p/3">>;
 mfa_str({proc_lib,init_p,[_Parent, _Ancestors, gen, init_it, Args]}) -> mfa_str({gen, init_it, Args});
 mfa_str({proc_lib,init_p,[_Parent, _Ancestors, M, F, A]}) -> mfa_str({M, F, A});
-mfa_str({gen,init_it,[gen_server, _, _, M, A, _Opts]}) -> mfa_str({M,init,A});
-mfa_str({gen,init_it,[gen_server, _, _, _Name, M, A, _Opts]}) -> mfa_str({M,init,A});
+mfa_str({gen,init_it,[gen_server, _, _, M, _A, _Opts]}) -> mfa_str({M,init,[placeholder]});
+mfa_str({gen,init_it,[gen_server, _, _, _Name, M, _A, _Opts]}) -> mfa_str({M,init,[placeholder]});
 mfa_str({M,F,A}) -> iolist_to_binary([atom_to_binary(M,latin1), ":", atom_to_binary(F,latin1), "/", integer_to_binary(length(A))]).

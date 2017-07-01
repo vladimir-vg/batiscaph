@@ -56,6 +56,14 @@ class App extends React.Component {
       shellStartAllowed: false,
       scenarios: null
     };
+
+    // avoid repeating .bind(this) by doing it once
+    this.startNewShell = this.startNewShell.bind(this);
+    this.onModuleStore = this.onModuleStore.bind(this);
+    this.onShellInput = this.onShellInput.bind(this);
+    this.onRestartRequest = this.onRestartRequest.bind(this);
+    this.onItemSelect = this.onItemSelect.bind(this);
+    this.onItemHover = this.onItemHover.bind(this);
   }
 
   componentDidMount() {
@@ -154,7 +162,7 @@ class App extends React.Component {
     let shellBlock = null;
     if (this.state.shellStartAllowed) {
       shellBlock = <div className="head-block">
-        <button className="btn" onClick={this.startNewShell.bind(this)}>Start new shell</button>
+        <button className="btn" onClick={this.startNewShell}>Start new shell</button>
       </div>;
     }
     return <div className="content-page">
@@ -178,8 +186,8 @@ class App extends React.Component {
 
     let inputPanel = null;
     if (this.state.tree && this.state.inputAllowed) {
-      inputPanel = <InputPanel tree={this.state.tree} storeModule={this.onModuleStore.bind(this)}
-        submitInput={this.onShellInput.bind(this)} requestRestart={this.onRestartRequest.bind(this)} />;
+      inputPanel = <InputPanel key="huy" tree={this.state.tree} storeModule={this.onModuleStore}
+        submitInput={this.onShellInput} requestRestart={this.onRestartRequest} />;
     }
 
     if (this.state.tree) {
@@ -188,22 +196,22 @@ class App extends React.Component {
       return <div className="container">
         <SvgView className="svg-area" padding={V.WORKSPACE_PADDING} paddedWidth={paddedWidth} paddedHeight={paddedHeight}>
           <HoverSelection tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
-            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
+            onItemSelect={this.onItemSelect} onItemHover={this.onItemHover} />
           <ProcessTreeView tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
-            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
+            onItemSelect={this.onItemSelect} onItemHover={this.onItemHover} />
           <ShellIOView tree={this.state.tree} width={paddedWidth}
             selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
-            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
+            onItemSelect={this.onItemSelect} onItemHover={this.onItemHover} />
           <MessageSends tree={this.state.tree} selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
-            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
+            onItemSelect={this.onItemSelect} onItemHover={this.onItemHover} />
         </SvgView>
         <div className="aside-area">
           <SelectedItemInfo tree={this.state.tree}
             selectedItem={this.state.selectedItem} hoveredItem={this.state.hoveredItem}
-            onItemSelect={this.onItemSelect.bind(this)} onItemHover={this.onItemHover.bind(this)} />
+            onItemSelect={this.onItemSelect} onItemHover={this.onItemHover} />
         </div>
 
-        {inputPanel}
+        <div>{inputPanel}</div>
       </div>;
     }
 
@@ -216,3 +224,32 @@ class App extends React.Component {
 document.addEventListener("DOMContentLoaded", function(event) {
   ReactDOM.render(<App />, document.getElementById('react-app'));
 });
+
+
+
+
+// polyfill
+if (typeof Object.assign != 'function') {
+  Object.assign = function(target, varArgs) { // .length of function is 2
+    'use strict';
+    if (target == null) { // TypeError if undefined or null
+      throw new TypeError('Cannot convert undefined or null to object');
+    }
+
+    var to = Object(target);
+
+    for (var index = 1; index < arguments.length; index++) {
+      var nextSource = arguments[index];
+
+      if (nextSource != null) { // Skip over if undefined or null
+        for (var nextKey in nextSource) {
+          // Avoid bugs when hasOwnProperty is shadowed
+          if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+            to[nextKey] = nextSource[nextKey];
+          }
+        }
+      }
+    }
+    return to;
+  };
+}

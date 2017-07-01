@@ -43,7 +43,7 @@ class InputPanel extends React.Component {
   }
 
   componentWillReceiveProps(props) {
-    if (props.tree.currentPrompt) {
+    if (props.tree.currentPrompt != this.props.tree.currentPrompt) {
       // unlock restart request after prompt became alive again
       this.setState({restartRequested: false, showRestartButton: false, moduleName: null, text: ""});
     }
