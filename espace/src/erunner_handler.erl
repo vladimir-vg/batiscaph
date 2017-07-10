@@ -86,4 +86,5 @@ handle_info(Message, State) ->
 
 handle_runner_message({events, Events}, #erunner_handler{id = Id} = State) ->
   catch gproc:send({n, l, {websocket, Id}}, {events, Events}), % try to send events if websocket is alive
+  ok = es_events:store(Id, Events),
   {ok, State}.

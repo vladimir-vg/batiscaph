@@ -32,21 +32,9 @@ get_prop(Name) ->
 
 
 create_tables() ->
-  DBName = get_prop(clickhouse_dbname),
-  SQL = iolist_to_binary([
-    "CREATE TABLE `", DBName, "`.events (\n",
-    "\tevent_date Date DEFAULT toDate(reported_at),\n",
-    "\tinstance_id String,\n",
-    "\tevent_type String,\n",
-    "\tpid String,\n",
-    "\treported_at DateTime\n",
-    ") ENGINE=MergeTree(event_date, (instance_id, event_type, pid, reported_at), 8192)\n"
-  ]),
-  ok = clickhouse:execute(SQL),
+  ok = es_events:create_table(),
   ok.
 
 drop_tables() ->
-  DBName = get_prop(clickhouse_dbname),
-  SQL = iolist_to_binary(["DROP TABLE `", DBName, "`.events\n"]),
-  ok = clickhouse:execute(SQL),
+  ok = es_events:drop_table(),
   ok.
