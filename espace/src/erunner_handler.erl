@@ -1,11 +1,11 @@
--module(es_v0_handler).
+-module(erunner_handler).
 -export([init/3, upgrade/4, handle_info/2, terminate/2]).
 
 -define(BUFFER_FLUSH_SIZE, 2*1024).
 -define(BUFFER_FLUSH_INTERVAL, 1000).
 
 
--record(v0_handler, {
+-record(erunner_handler, {
   id,
   transport,
   socket
@@ -42,7 +42,7 @@ upgrade(Req, Env, ?MODULE, []) ->
 
   lager:info("Opened connection with ~s", [Id]),
 
-  gen_server:enter_loop(?MODULE, [], #v0_handler{
+  gen_server:enter_loop(?MODULE, [], #erunner_handler{
     id = Id,
     transport = Transport,
     socket = Socket
@@ -50,27 +50,27 @@ upgrade(Req, Env, ?MODULE, []) ->
 
 
 
-handle_info(shell_restart, #v0_handler{transport = Transport, socket = Socket} = State) ->
+handle_info(shell_restart, #erunner_handler{transport = Transport, socket = Socket} = State) ->
   lager:info("restarting shell"),
   Transport:send(Socket, erlang:term_to_binary(shell_restart)),
   {noreply, State};
 
-handle_info({shell_input, Input}, #v0_handler{transport = Transport, socket = Socket} = State) ->
+handle_info({shell_input, Input}, #erunner_handler{transport = Transport, socket = Socket} = State) ->
   lager:info("sending input: ~p", [Input]),
   Transport:send(Socket, erlang:term_to_binary({shell_input, Input})),
   {noreply, State};
 
-handle_info({store_module, Name, Body}, #v0_handler{transport = Transport, socket = Socket} = State) ->
+handle_info({store_module, Name, Body}, #erunner_handler{transport = Transport, socket = Socket} = State) ->
   lager:info("storing module: ~p with ~p bytes body", [Name, byte_size(Body)]),
   Transport:send(Socket, erlang:term_to_binary({store_module, Name, Body})),
   {noreply, State};
 
-handle_info({tcp, Socket, Binary}, #v0_handler{transport = Transport} = State) ->
+handle_info({tcp, Socket, Binary}, #erunner_handler{transport = Transport} = State) ->
   Transport:setopts(Socket, [{active,once}]),
   {ok, State1} = handle_runner_message(erlang:binary_to_term(Binary), State),
   {noreply, State1};
 
-handle_info({tcp_closed, Socket}, #v0_handler{socket = Socket, id = Id} = State) ->
+handle_info({tcp_closed, Socket}, #erunner_handler{socket = Socket, id = Id} = State) ->
   lager:info("Closed connection with ~s", [Id]),
   {stop, normal, State};
 
@@ -84,6 +84,6 @@ handle_info(Message, State) ->
 
 
 
-handle_runner_message({events, Events}, #v0_handler{id = Id} = State) ->
+handle_runner_message({events, Events}, #erunner_handler{id = Id} = State) ->
   catch gproc:send({n, l, {websocket, Id}}, {events, Events}), % try to send events if websocket is alive
   {ok, State}.

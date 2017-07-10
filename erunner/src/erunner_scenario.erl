@@ -79,11 +79,11 @@ connect_to_master(#runner{socket = undefined, master_port = Port, id = Id} = Sta
   Opts = [binary, {packet, http}, {send_timeout, ?SOCKET_OPEN_TIMEOUT}],
   {ok, Socket} = gen_tcp:connect("127.0.0.1", Port, Opts, ?SOCKET_OPEN_TIMEOUT),
   gen_tcp:send(Socket, [
-    "CONNECT /api/v0?id=", Id, " HTTP/1.1\r\n",
+    "CONNECT /api/erunner?id=", Id, " HTTP/1.1\r\n",
     "Host: 127.0.0.1\r\n",
     "Connection: Upgrade\r\n",
     "User-Agent: ERunner\r\n",
-    "Upgrade: application/espace-v0\r\n",
+    "Upgrade: application/espace-erunner\r\n",
     "\r\n"
   ]),
   ok = receive_initial_info(Socket),

@@ -9,7 +9,7 @@ restart_cowboy() ->
   {ok, Port} = application:get_env(espace, http_port),
   Dispatch = cowboy_router:compile([
     {'_', [
-      {"/api/v0", es_v0_handler, []},
+      {"/api/erunner", erunner_handler, []},
       {"/websocket", es_ws_handler, []},
       {"/vendor/[...]", cowboy_static, {priv_dir, espace, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, espace, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
