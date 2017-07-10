@@ -64,7 +64,7 @@ let spawnProc = (keys, values, tree) => {
   let atMcs = get(keys, values, 'at_mcs');
 
   let pid = get(keys, values, 'pid');
-  let parent = get(keys, values, 'pid_arg');
+  let parent = get(keys, values, 'pid1');
   let mfa = get(keys, values, 'mfa');
 
   let proc = {startedAt: at, startedAtMcs: atMcs, pid: pid, parent: parent, mfa: mfa};
@@ -192,7 +192,7 @@ let addMessageSend = (keys, values, tree) => {
   let at = get(keys, values, 'at');
   let atMcs = get(keys, values, 'at_mcs');
   let pidFrom = get(keys, values, 'pid');
-  let pidTo = get(keys, values, 'pid_arg');
+  let pidTo = get(keys, values, 'pid1');
   let atomTo = get(keys, values, 'atom');
   let term = get(keys, values, 'term');
 

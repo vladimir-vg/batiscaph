@@ -9,7 +9,8 @@ columns() ->
     {<<"at_mcs">>, <<"UInt32">>},
     {<<"instance_id">>, <<"String">>},
     {<<"pid">>, <<"String">>},
-    {<<"type">>, <<"String">>}
+    {<<"type">>, <<"String">>},
+    {<<"pid1">>, <<"String">>}
   ].
 
 create_table() ->

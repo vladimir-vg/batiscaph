@@ -24,7 +24,7 @@ start_link(ParentPid, Path) ->
 
 init([ParentPid, Path]) ->
   {ok, Fd} = file:open(Path, [write]),
-  file:write(Fd, <<"at,at_mcs,type,pid,pid_arg,mfa,atom,prompt,message,term,size,hash\n">>),
+  file:write(Fd, <<"at,at_mcs,type,pid,pid1,mfa,atom,prompt,message,term,size,hash\n">>),
   {ok, #collector{fd = Fd, parent_pid = ParentPid}}.
 
 
@@ -81,7 +81,7 @@ save_events_for_sending(Events1, #collector{acc_events = Events} = State) ->
 
 format_event(#{<<"at">> := At, <<"at_mcs">> := Mcs, <<"type">> := Type} = E) ->
   Pid = escape_string(iolist_to_binary(maps:get(<<"pid">>, E, <<>>))),
-  PidArg = escape_string(iolist_to_binary(maps:get(<<"pid_arg">>, E, <<>>))),
+  PidArg = escape_string(iolist_to_binary(maps:get(<<"pid1">>, E, <<>>))),
   MFA = escape_string(iolist_to_binary(maps:get(<<"mfa">>, E, <<>>))),
   Atom = escape_string(iolist_to_binary(maps:get(<<"atom">>, E, <<>>))),
   Prompt = escape_string(iolist_to_binary(maps:get(<<"prompt">>, E, <<>>))),
@@ -125,18 +125,18 @@ handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}) -> {ok, []
 handle_trace_message0({trace_ts, _Pid, spawn, _ParentPid, _MFA, _Timestamp}) -> {ok, []};
 
 handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_pid(Pid1) ->
-  E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid_arg">> => erlang:pid_to_list(Pid1)},
+  E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
 handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when is_pid(Pid1) ->
-  E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid_arg">> => erlang:pid_to_list(Pid1)},
+  E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
 handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) ->
   MFA1 = mfa_str(MFA),
-  E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid_arg">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
+  E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
@@ -158,7 +158,7 @@ handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}) ->
 
 handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) ->
   E = case To of
-    _ when is_pid(To) -> #{<<"pid_arg">> => erlang:pid_to_list(To)};
+    _ when is_pid(To) -> #{<<"pid1">> => erlang:pid_to_list(To)};
     _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
   end,
   E1 = E#{<<"type">> => <<"send">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
@@ -170,7 +170,7 @@ handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Tim
     _ when is_pid(To) -> erlang:pid_to_list(To);
     _ when is_atom(To) -> atom_to_binary(To, latin1)
   end,
-  E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid_arg">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
+  E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
@@ -185,7 +185,7 @@ event_with_timestamp({MegaSec, Sec, MicroSec}, E) ->
   E1 = E#{<<"at">> => Sec1, <<"at_mcs">> => MicroSec},
   maps:fold(fun
     (<<"pid">>, V, Acc) when is_list(V) -> Acc#{<<"pid">> => list_to_binary(V)};
-    (<<"pid_arg">>, V, Acc) when is_list(V) -> Acc#{<<"pid_arg">> => list_to_binary(V)};
+    (<<"pid1">>, V, Acc) when is_list(V) -> Acc#{<<"pid1">> => list_to_binary(V)};
     (<<"term">>, V, Acc) when is_list(V) -> Acc#{<<"term">> => list_to_binary(V)};
     (K, V, Acc) -> Acc#{K => V}
   end, #{}, E1).
