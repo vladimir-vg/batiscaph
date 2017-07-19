@@ -28,15 +28,10 @@ start_link(Id) ->
   gen_server:start_link(?MODULE, [Id], []).
 
 init([Id]) ->
-  self() ! init,
   self() ! check_events,
   {ok, #graph_builder{id = Id}}.
 
 
-
-handle_info(init, State) ->
-  {ok, State1} = create_instance_node(State),
-  {noreply, State1};
 
 handle_info(new_events_stored, State) ->
   {ok, State1} = set_fetch_timer(State),
@@ -118,12 +113,6 @@ fetch_events(#graph_builder{last_checked_at = LastAt, id = Id} = State) ->
 
 
 
-create_instance_node(#graph_builder{id = Id} = State) ->
-  {ok, _} = neo4j:commit([{"CREATE (:Instance {id: {id}})", #{id => Id}}]),
-  {ok, State}.
-
-
-
 process_events(Id, Events) ->
   Statements = process_events(Id, Events, []),
   case Statements of
@@ -137,17 +126,16 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
   Statements = [
     % create parent process if not existed before
-    { "MATCH (i:Instance)\n" ++
-      "WHERE i.id = {id}\n" ++
-      "MERGE (parent:Process { pid: {parent} })\n" ++
-      "ON CREATE SET parent.first_mentioned_at = {at}, parent.first_mentioned_at_mcs = {at_mcs}\n"
-      "MERGE (i)-[:FROM]->(parent)\n",
+    { "MERGE (parent:Process { pid: {parent}, instance_id: {id} })\n"
+      "ON CREATE SET parent.first_mentioned_at = {at}, parent.first_mentioned_at_mcs = {at_mcs}\n",
       #{id => Id, parent => Parent, at => At, at_mcs => Mcs} },
 
     % create new process
-    { "MATCH (i:Instance)-[:FROM]->(parent:Process)\n" ++
-      "WHERE i.id = {id} AND parent.pid = {parent}\n" ++
-      "CREATE (proc:Process { pid: {pid}, spawned_at: {at}, spawned_at_mcs: {at_mcs} }), (parent)-[:SPAWN { at: {at}, at_mcs: {at_mcs} }]->(proc)\n",
+    { "MATCH (parent:Process)\n"
+      "WHERE parent.instance_id = {id} AND parent.pid = {parent}\n"
+      "CREATE\n"
+      "\t(proc:Process { instance_id: {id}, pid: {pid}, spawned_at: {at}, spawned_at_mcs: {at_mcs} }),\n"
+      "\t(parent)-[:SPAWN { at: {at}, at_mcs: {at_mcs} }]->(proc)\n",
       #{id => Id, parent => Parent, at => At, at_mcs => Mcs, pid => Pid} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
