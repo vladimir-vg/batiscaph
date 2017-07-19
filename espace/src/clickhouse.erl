@@ -1,5 +1,6 @@
 -module(clickhouse).
 -export([execute/1, insert/4, insert/5]).
+-export([id_in_values_sql/2, parse_rows/2]).
 -define(TIMEOUT, 10000).
 
 
@@ -27,15 +28,15 @@ execute(SQL, Suffix) ->
     {ok, 500, _RespHeaders, ClientRef} ->
       case hackney:body(ClientRef) of
         {ok, <<>>} -> {error, unknown_500};
-        {ok, Body} when is_binary(Body) ->
-          lager:error("Clickhouse error:\n~s", [Body]),
-          {error, Body}
+        {ok, RespBody} when is_binary(Body) ->
+          lager:error("Clickhouse error:\n~s", [RespBody]),
+          {error, RespBody}
       end;
 
     {ok, 200, _RespHeaders, ClientRef} ->
       case hackney:body(ClientRef) of
         {ok, <<>>} -> ok;
-        {ok, Body} when is_binary(Body) -> {ok, Body}
+        {ok, RespBody} when is_binary(RespBody) -> {ok, RespBody}
       end
   end.
 
@@ -110,3 +111,88 @@ escape_string(<<A, Rest/binary>>, Acc) when A < 16 ->
   escape_string(Rest, <<Acc/binary, "\\x0", (integer_to_binary(A, 16))/binary>>);
 escape_string(<<A, Rest/binary>>, Acc) ->
   escape_string(Rest, <<Acc/binary, "\\x", (integer_to_binary(A, 16))/binary>>).
+
+
+
+id_in_values_sql(Key, Values) ->
+  <<",", Values1/binary>> = iolist_to_binary([[",'", escape_string(V), "'"] || V <- Values]),
+  [Key, " IN (", Values1, ")"].
+
+
+
+% Binary supposed to be in TabSeparatedWithNamesAndTypes format
+parse_rows(ReturnType, Binary) ->
+  [ColumnsRaw, Rest1] = binary:split(Binary, <<"\n">>),
+  Columns = binary:split(ColumnsRaw, <<"\t">>, [global]),
+  [TypesRaw, Rest2] = binary:split(Rest1, <<"\n">>),
+  Types = binary:split(TypesRaw, <<"\t">>, [global]),
+  parse_rows(ReturnType, lists:zip(Columns, Types), Rest2, []).
+
+% currently no other return types supported than 'maps'
+parse_rows(maps, _Columns, <<>>, Acc) -> {ok, lists:reverse(Acc)};
+parse_rows(ReturnType, Columns, Binary, Acc) ->
+  {Row, Rest} = read_row(Columns, Binary),
+  Acc1 = collect_row(ReturnType, Columns, Row, Acc),
+  parse_rows(ReturnType, Columns, Rest, Acc1).
+
+read_row(Columns, Binary) ->
+  {Row, Rest} = lists:foldl(fun ({_Name, Type}, {Row, Rest1}) ->
+    {Value, Rest2} = read_value(Type, Rest1),
+    {[Value | Row], Rest2}
+  end, {[], Binary}, Columns),
+  {lists:reverse(Row), Rest}.
+
+
+
+read_value(<<"DateTime">>, Binary) -> read_int(Binary); % error(not_implemented);
+read_value(<<"UInt64">>, Binary) -> read_int(Binary);
+read_value(<<"UInt32">>, Binary) -> read_int(Binary);
+read_value(<<"UInt16">>, Binary) -> read_int(Binary);
+read_value(<<"UInt8">>, Binary) -> read_int(Binary);
+read_value(<<"Int64">>, Binary) -> read_int(Binary);
+read_value(<<"Int32">>, Binary) -> read_int(Binary);
+read_value(<<"Int16">>, Binary) -> read_int(Binary);
+read_value(<<"Int8">>, Binary) -> read_int(Binary);
+read_value(<<"Float64">>, Binary) -> read_float(Binary);
+
+read_value(<<"String">>, Binary) ->
+  {ok, Val, Rest} = read_sting(Binary, <<>>),
+  {Val, Rest}.
+
+
+
+read_sting(<<>>, Acc) -> {ok, Acc, <<>>};
+read_sting(<<"\\\t", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\t">>);
+read_sting(<<"\\\n", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\n">>);
+read_sting(<<"\\\r", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\r">>);
+read_sting(<<"\\\\", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\\">>);
+read_sting(<<"\\t", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\t">>);
+read_sting(<<"\\n", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\n">>);
+read_sting(<<"\\r", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\r">>);
+read_sting(<<"\t", Rest/binary>>, Acc) -> {ok, Acc, Rest};
+read_sting(<<"\n", Rest/binary>>, Acc) -> {ok, Acc, Rest};
+read_sting(<<C, Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, C>>).
+
+
+
+read_int(Binary) ->
+  [Val, Rest] = binary:split(Binary, [<<"\t">>, <<"\n">>]),
+  {binary_to_integer(Val), Rest}.
+
+
+
+read_float(Binary) ->
+  [Val, Rest] = binary:split(Binary, [<<"\t">>, <<"\n">>]),
+  Val1 =
+    try binary_to_float(Val)
+    catch error:badarg -> binary_to_integer(Val)
+    end,
+  {Val1, Rest}.
+
+
+
+collect_row(maps, Columns, Values, Acc) ->
+  Row = lists:foldl(fun ({{Col, _Type}, Value}, Row1) ->
+    Row1#{Col => Value}
+  end, #{}, lists:zip(Columns, Values)),
+  [Row | Acc].

@@ -5,10 +5,12 @@
 -define(BUFFER_FLUSH_INTERVAL, 1000).
 
 
+
 -record(erunner_handler, {
-  id,
-  transport,
-  socket
+  id :: binary(),
+  transport :: atom(),
+  socket,
+  graph_producer_pid :: pid()
 }).
 
 
@@ -40,12 +42,15 @@ upgrade(Req, Env, ?MODULE, []) ->
 
   true = gproc:reg({n, l, {erunner, Id}}),
 
+  {ok, GrapProducer} = graph_builder:start_link(Id),
+
   lager:info("Opened connection with ~s", [Id]),
 
   gen_server:enter_loop(?MODULE, [], #erunner_handler{
     id = Id,
     transport = Transport,
-    socket = Socket
+    socket = Socket,
+    graph_producer_pid = GrapProducer
   }).
 
 
@@ -84,7 +89,8 @@ handle_info(Message, State) ->
 
 
 
-handle_runner_message({events, Events}, #erunner_handler{id = Id} = State) ->
+handle_runner_message({events, Events}, #erunner_handler{id = Id, graph_producer_pid = ProducerPid} = State) ->
   catch gproc:send({n, l, {websocket, Id}}, {events, Events}), % try to send events if websocket is alive
   ok = es_events:store(Id, Events),
+  ProducerPid ! new_events_stored,
   {ok, State}.

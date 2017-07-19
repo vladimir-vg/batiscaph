@@ -15,17 +15,20 @@ create_index(Label, Props) ->
     {ok, 409, _RespHeaders, ClientRef} ->
       case hackney:body(ClientRef) of
         {ok, <<>>} -> {error, conflict};
-        {ok, Body1} when is_binary(Body1) ->
-          JSON = jsx:decode(Body1, [return_maps]),
+        {ok, RespBody} when is_binary(RespBody) ->
+          JSON = jsx:decode(RespBody, [return_maps]),
           {error, {conflict, JSON}}
       end;
 
     {ok, 200, _RespHeaders, ClientRef} ->
       case hackney:body(ClientRef) of
         {ok, <<>>} -> {error, empty_body};
-        {ok, Body1} when is_binary(Body1) ->
-          JSON = jsx:decode(Body1, [return_maps]),
+        {ok, RespBody} when is_binary(RespBody) ->
+          JSON = jsx:decode(RespBody, [return_maps]),
           #{<<"label">> := Label, <<"property_keys">> := [_|_]} = JSON,
           ok
       end
   end.
+
+% use Cypher API for other queries
+% <<BaseURL/binary, "db/data/cypher">>
