@@ -28,10 +28,15 @@ start_link(Id) ->
   gen_server:start_link(?MODULE, [Id], []).
 
 init([Id]) ->
+  self() ! init,
   self() ! check_events,
   {ok, #graph_builder{id = Id}}.
 
 
+
+handle_info(init, State) ->
+  {ok, State1} = create_instance_node(State),
+  {noreply, State1};
 
 handle_info(new_events_stored, State) ->
   {ok, State1} = set_fetch_timer(State),
@@ -44,6 +49,8 @@ handle_info(check_events, State) ->
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
+
+
 
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
@@ -111,7 +118,40 @@ fetch_events(#graph_builder{last_checked_at = LastAt, id = Id} = State) ->
 
 
 
+create_instance_node(#graph_builder{id = Id} = State) ->
+  {ok, _} = neo4j:commit([{"CREATE (:Instance {id: {id}})", #{id => Id}}]),
+  {ok, State}.
+
+
+
 process_events(Id, Events) ->
-  % TODO: update graph according to collected events
-  lager:info("process events: ~p~n~p", [Id, Events]),
-  ok.
+  Statements = process_events(Id, Events, []),
+  case Statements of
+    [] -> ok;
+    _ -> {ok, _} = neo4j:commit(Statements), ok
+  end.
+
+process_events(_Id, [], Acc) -> lists:flatten(lists:reverse(Acc));
+
+process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
+  Statements = [
+    % create parent process if not existed before
+    { "MATCH (i:Instance)\n" ++
+      "WHERE i.id = {id}\n" ++
+      "MERGE (parent:Process { pid: {parent} })\n" ++
+      "ON CREATE SET parent.first_mentioned_at = {at}, parent.first_mentioned_at_mcs = {at_mcs}\n"
+      "MERGE (i)-[:FROM]->(parent)\n",
+      #{id => Id, parent => Parent, at => At, at_mcs => Mcs} },
+
+    % create new process
+    { "MATCH (i:Instance)-[:FROM]->(parent:Process)\n" ++
+      "WHERE i.id = {id} AND parent.pid = {parent}\n" ++
+      "CREATE (proc:Process { pid: {pid}, spawned_at: {at}, spawned_at_mcs: {at_mcs} }), (parent)-[:SPAWN { at: {at}, at_mcs: {at_mcs} }]->(proc)\n",
+      #{id => Id, parent => Parent, at => At, at_mcs => Mcs, pid => Pid} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [_ | Events], Acc) ->
+  % not implemented yet
+  process_events(Id, Events, Acc).

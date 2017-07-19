@@ -44,6 +44,8 @@ drop_tables() ->
 
 
 setup_graph_schema() ->
+  ok = neo4j:create_index(<<"Instance">>, [<<"id">>]),
+
   ok = neo4j:create_index(<<"Process">>, [<<"spawned_at">>, <<"spawned_at_mcs">>]),
   ok = neo4j:create_index(<<"Process">>, [<<"first_mentioned_at">>, <<"first_mentioned_at_mcs">>]),
   ok = neo4j:create_index(<<"Process">>, [<<"exited_at">>, <<"exited_at_mcs">>]),
