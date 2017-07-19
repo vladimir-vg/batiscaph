@@ -127,16 +127,66 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   Statements = [
     % create parent process if not existed before
     { "MERGE (parent:Process { pid: {parent}, instance_id: {id} })\n"
-      "ON CREATE SET parent.first_mentioned_at = {at}, parent.first_mentioned_at_mcs = {at_mcs}\n",
-      #{id => Id, parent => Parent, at => At, at_mcs => Mcs} },
+      "ON CREATE SET parent.first_mentioned_at = {at}, parent.first_mentioned_at_mcs = {at_mcs}\n"
+    , #{id => Id, parent => Parent, at => At, at_mcs => Mcs} },
 
     % create new process
     { "MATCH (parent:Process)\n"
       "WHERE parent.instance_id = {id} AND parent.pid = {parent}\n"
       "CREATE\n"
       "\t(proc:Process { instance_id: {id}, pid: {pid}, spawned_at: {at}, spawned_at_mcs: {at_mcs} }),\n"
-      "\t(parent)-[:SPAWN { at: {at}, at_mcs: {at_mcs} }]->(proc)\n",
-      #{id => Id, parent => Parent, at => At, at_mcs => Mcs, pid => Pid} }
+      "\t(parent)-[:SPAWN { at: {at}, at_mcs: {at_mcs} }]->(proc)\n"
+    , #{id => Id, parent => Parent, at => At, at_mcs => Mcs, pid => Pid} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  Statements = [
+    % create parent process if not existed before
+    { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.exited_at = {at}, proc.exited_at_mcs = {at_mcs}, proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+      "ON MATCH SET proc.exited_at = {at}, proc.exited_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid, at => At, at_mcs => Mcs} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
+  Statements = [
+    % create both process if not existed before
+    { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid, at => At, at_mcs => Mcs} },
+
+    { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid1, at => At, at_mcs => Mcs} },
+
+    { "MATCH (proc1:Process { pid: {pid1}, instance_id: {id} }), (proc2:Process { pid: {pid2}, instance_id: {id} })\n"
+      "CREATE (proc1)-[:LINK { linked_at: {at}, linked_at_mcs: {at_mcs} }]->(proc2)\n"
+    , #{id => Id, pid1 => Pid, pid2 => Pid1, at => At, at_mcs => Mcs} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
+  Statements = [
+    % create both process if not existed before
+    { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid, at => At, at_mcs => Mcs} },
+    { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid1, at => At, at_mcs => Mcs} },
+
+    { "MATCH (proc1:Process)-[link:LINK]-(proc2:Process)\n"
+      "WHERE\n"
+      "\tproc1.instance_id = {id} AND proc1.pid = {pid1} AND\n"
+      "\tproc2.instance_id = {id} AND proc2.pid = {pid2} AND\n"
+      "\tlink.unlinked_at = null\n"
+      "SET link.unlinked_at = {at}, link.unlinked_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid1, at => At, at_mcs => Mcs} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 

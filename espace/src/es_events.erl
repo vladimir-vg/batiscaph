@@ -63,6 +63,7 @@ select(Opts) ->
     "SELECT ", select_columns_sql(), "\n",
     "FROM `", DBName, "`.events\n",
     WhereClause,
+    "ORDER BY at, at_mcs\n",
     LimitClause,
     "FORMAT TabSeparatedWithNamesAndTypes\n"
   ]),
