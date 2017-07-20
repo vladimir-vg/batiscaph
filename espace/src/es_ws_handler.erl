@@ -29,7 +29,7 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{date = undefined, sce
   {ok, State1} = start_shell(State),
   #ws_state{date = Dir, scenario_id = Id} = State1,
   true = gproc:reg({n,l,{websocket,Id}}),
-  {reply, {text, <<"shell_started ", Dir/binary, "/", Id/binary>>}, Req, State1};
+  {reply, {text, <<"shell_started ", Id/binary>>}, Req, State1};
 
 websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{scenario_id = Id} = State) ->
   gproc:send({n, l, {erunner, Id}}, {shell_input, Input}),

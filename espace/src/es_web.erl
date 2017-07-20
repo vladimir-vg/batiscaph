@@ -34,7 +34,7 @@ restart_cowboy() ->
 
     _ ->
       ranch:stop_listener(espace_http),
-      {ok, _} = cowboy:start_http(espace_http, 100, [{port, Port}], Opts),
+      {ok, _} = cowboy:start_http(espace_http, 5, [{port, Port}], Opts),
       lager:info("Started http server on ~p port", [Port]),
       ok
   end,

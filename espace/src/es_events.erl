@@ -1,5 +1,5 @@
 -module(es_events).
--export([create_table/0, drop_table/0, store/2, select/1]).
+-export([columns/0, create_table/0, drop_table/0, store/2, select/1]).
 
 
 
@@ -15,7 +15,14 @@ columns() ->
     {<<"pid">>, <<"String">>},
     {<<"type">>, <<"String">>},
     {<<"pid1">>, <<"String">>},
-    {<<"atom">>, <<"String">>}
+    {<<"atom">>, <<"String">>},
+
+    {<<"mfa">>, <<"String">>},
+    {<<"term">>, <<"String">>},
+    {<<"prompt">>, <<"String">>},
+    {<<"message">>, <<"String">>},
+    {<<"size">>, <<"Int32">>},
+    {<<"hash">>, <<"String">>}
   ].
 
 create_table() ->

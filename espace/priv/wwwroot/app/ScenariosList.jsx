@@ -7,29 +7,21 @@ class ScenariosList extends React.Component {
     window.location.reload();
   }
 
-  renderScenarioBlock(block) {
-    let items = [];
-    for (let i in block.items) {
-      let path = "/#/" + block.dir + "/" + block.items[i];
-      items.push(<div key={block.items[i]}>
-        <a href={path} onClick={this.forceReload.bind(this)} className="item">{block.items[i]}</a>
-      </div>);
-    }
-
-    return <div key={block.dir} className="scenarios-list-block">
-      <h1>{block.dir}</h1>
-      <div>{items}</div>
+  renderScenario(scenario) {
+    let path = "/#/" + scenario.instance_id;
+    return <div key={scenario.instance_id}>
+      <a href={path} onClick={this.forceReload.bind(this)} className="item">{scenario.instance_id}</a>
     </div>;
   }
 
   render() {
-    let blocks = [];
+    let scenarios = [];
     for (let i in this.props.scenarios) {
-      blocks.push(this.renderScenarioBlock(this.props.scenarios[i]))
+      scenarios.push(this.renderScenario(this.props.scenarios[i]))
     }
 
-    return <div>
-      {blocks}
+    return <div className="scenarios-list-block">
+      {scenarios}
     </div>;
   }
 };

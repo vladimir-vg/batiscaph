@@ -69,14 +69,14 @@ stringify_value(Name, Type, Item) ->
 
 default_value(<<"String">>) -> <<>>;
 default_value(<<"DateTime">>) -> <<"0000000000">>;
-default_value(<<"UInt8">>) -> <<"0">>;
-default_value(<<"UInt16">>) -> <<"0">>;
-default_value(<<"UInt32">>) -> <<"0">>;
-default_value(<<"UInt64">>) -> <<"0">>;
-default_value(<<"Int8">>) -> <<"0">>;
-default_value(<<"Int16">>) -> <<"0">>;
-default_value(<<"Int32">>) -> <<"0">>;
-default_value(<<"Int64">>) -> <<"0">>;
+default_value(<<"UInt8">>) -> 0;
+default_value(<<"UInt16">>) -> 0;
+default_value(<<"UInt32">>) -> 0;
+default_value(<<"UInt64">>) -> 0;
+default_value(<<"Int8">>) -> 0;
+default_value(<<"Int16">>) -> 0;
+default_value(<<"Int32">>) -> 0;
+default_value(<<"Int64">>) -> 0;
 default_value(Type) -> error({unknown_default_column_value, Type}).
 
 stringify_value0(Value, <<"String">>) -> escape_string(Value);
@@ -144,7 +144,7 @@ read_row(Columns, Binary) ->
 
 
 
-read_value(<<"DateTime">>, Binary) -> read_int(Binary); % error(not_implemented);
+read_value(<<"DateTime">>, Binary) -> read_int(Binary);
 read_value(<<"UInt64">>, Binary) -> read_int(Binary);
 read_value(<<"UInt32">>, Binary) -> read_int(Binary);
 read_value(<<"UInt16">>, Binary) -> read_int(Binary);
