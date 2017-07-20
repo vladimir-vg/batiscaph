@@ -57,7 +57,6 @@ handle_info({tcp_closed, Socket}, #runner{socket = Socket} = State) ->
 handle_info(Msg, State) ->
   io:format("from slave unknown msg: ~p~n", [Msg]),
   {noreply, State}.
-  % {stop, {unknown_info, Msg}, State}.
 
 
 
@@ -113,9 +112,9 @@ receive_initial_info(Socket) ->
 
 
 
-start_shell(#runner{id = Id} = State) ->
+start_shell(#runner{} = State) ->
   Self = self(),
-  {ok, CollectorPid} = es_collector:start_link(Self, <<Id/binary, ".csv">>),
+  {ok, CollectorPid} = es_collector:start_link(Self),
   {ok, IoServerPid} = es_shell_io_server:start_link(#{collector => CollectorPid, parent => Self}),
   {ok, ShellPid} = es_shell_runner:start_link(CollectorPid),
 

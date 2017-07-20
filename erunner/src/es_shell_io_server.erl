@@ -6,8 +6,7 @@
 -record(shell_io, {
   collector_pid,
   parent_pid,
-  % stale_timeout,
-  % stale_timer,
+
   pending_get_until, % {From, ReplyAs, Prompt, Continuation, ExtraArgs}
   input_string = "" % just plain string that will be scanned
 }).
@@ -30,8 +29,7 @@ start_link(Opts) ->
   gen_server:start_link(?MODULE, [Opts], []).
 
 init([#{collector := Pid, parent := ParentPid}]) ->
-  State = #shell_io{collector_pid = Pid, parent_pid = ParentPid}, % , stale_timeout = Timeout
-  % State1 = refresh_stale_timer(State),
+  State = #shell_io{collector_pid = Pid, parent_pid = ParentPid},
   {ok, State}.
 
 
@@ -115,7 +113,6 @@ continue_pending_input(#shell_io{pending_get_until = Pending, collector_pid = Co
   #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt} = Pending,
   case attempt_scan(State#shell_io{pending_get_until = Pending}) of
     {ok, Scanned, Result, State1} ->
-      % State2 = refresh_stale_timer(State1),
       Event = shell_input_event_now(Prompt, Scanned),
 
       % make sure that input logged first, and only then execution starts
@@ -194,13 +191,3 @@ shell_input_event_now(Prompt, Result) ->
 
 pending_input(#shell_io{pending_get_until = undefined}) -> not_pending;
 pending_input(#shell_io{pending_get_until = #pending_read{}, input_string = Input}) -> {pending, Input}.
-
-
-
-% refresh_stale_timer(#shell_io{stale_timer = OldTimer} = State) when OldTimer =/= undefined ->
-%   erlang:cancel_timer(OldTimer),
-%   refresh_stale_timer(State#shell_io{stale_timer = undefined});
-% 
-% refresh_stale_timer(#shell_io{stale_timer = undefined, stale_timeout = Timeout} = State) ->
-%   Timer = erlang:send_after(Timeout, self(), stale_alert),
-%   State#shell_io{stale_timer = Timer}.

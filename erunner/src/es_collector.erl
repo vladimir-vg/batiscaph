@@ -1,13 +1,12 @@
 -module(es_collector).
 -behaviour(gen_server).
--export([start_link/2]).
+-export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(EVENTS_FLUSH_INTERVAL, 300).
 
 -record(collector, {
   parent_pid,
-  fd,
   ignored_pids = [],
 
   events_flush_timer,
@@ -19,13 +18,11 @@
 code_change(_, State, _) -> {ok, State}.
 terminate(_,_State) -> ok.
 
-start_link(ParentPid, Path) ->
-  gen_server:start_link(?MODULE, [ParentPid, Path], []).
+start_link(ParentPid) ->
+  gen_server:start_link(?MODULE, [ParentPid], []).
 
-init([ParentPid, Path]) ->
-  {ok, Fd} = file:open(Path, [write]),
-  file:write(Fd, <<"at,at_mcs,type,pid,pid1,mfa,atom,prompt,message,term,size,hash\n">>),
-  {ok, #collector{fd = Fd, parent_pid = ParentPid}}.
+init([ParentPid]) ->
+  {ok, #collector{parent_pid = ParentPid}}.
 
 
 
@@ -34,16 +31,13 @@ handle_info(flush_acc_events, #collector{events_flush_timer = Timer, acc_events 
   ParentPid ! {events, lists:reverse(Events)},
   {noreply, State#collector{events_flush_timer = undefined, acc_events = []}};
 
-handle_info(#{<<"at">> := _, <<"at_mcs">> := _, <<"type">> := _} = Event, #collector{fd = Fd} = State) ->
+handle_info(#{<<"at">> := _, <<"at_mcs">> := _, <<"type">> := _} = Event, #collector{} = State) ->
   {ok, State1} = save_events_for_sending([Event], State),
-  Output = format_event(Event),
-  file:write(Fd, [Output, <<"\n">>]),
   {noreply, State1};
 
-handle_info(Message, #collector{fd = Fd} = State) when element(1, Message) == trace_ts ->
+handle_info(Message, #collector{} = State) when element(1, Message) == trace_ts ->
   {ok, Events} = handle_trace_message(Message, State),
   {ok, State1} = save_events_for_sending(Events, State),
-  [file:write(Fd, [format_event(E), <<"\n">>]) || E <- Events],
   {noreply, State1};
 
 handle_info(Msg, State) ->
@@ -76,30 +70,6 @@ save_events_for_sending(Events, #collector{events_flush_timer = undefined} = Sta
 
 save_events_for_sending(Events1, #collector{acc_events = Events} = State) ->
   {ok, State#collector{acc_events = Events1 ++ Events}}.
-
-
-
-format_event(#{<<"at">> := At, <<"at_mcs">> := Mcs, <<"type">> := Type} = E) ->
-  Pid = escape_string(iolist_to_binary(maps:get(<<"pid">>, E, <<>>))),
-  PidArg = escape_string(iolist_to_binary(maps:get(<<"pid1">>, E, <<>>))),
-  MFA = escape_string(iolist_to_binary(maps:get(<<"mfa">>, E, <<>>))),
-  Atom = escape_string(iolist_to_binary(maps:get(<<"atom">>, E, <<>>))),
-  Prompt = escape_string(iolist_to_binary(maps:get(<<"prompt">>, E, <<>>))),
-  Message = escape_string(iolist_to_binary(maps:get(<<"message">>, E, <<>>))),
-  Term = escape_string(iolist_to_binary(maps:get(<<"term">>, E, <<>>))),
-  Size = escape_string(integer_to_binary(maps:get(<<"size">>, E, -1))),
-  Hash = escape_string(iolist_to_binary(maps:get(<<"hash">>, E, <<>>))),
-  iolist_to_binary([
-    integer_to_binary(At), ",", integer_to_binary(Mcs), ",", Type, ",",
-    Pid, ",", PidArg, ",", MFA, ",", Atom, ",", Prompt, ",", Message, ",", Term, ",", Size, ",", Hash
-  ]).
-
-escape_string(<<>>) -> <<>>;
-escape_string(Binary) -> <<"\"", (escape_string(Binary, <<>>))/binary, "\"">>.
-
-escape_string(<<>>, Acc) -> Acc;
-escape_string(<<"\"", Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binary, "\"\"">>);
-escape_string(<<C, Binary/binary>>, Acc) -> escape_string(Binary, <<Acc/binary, C>>).
 
 
 
