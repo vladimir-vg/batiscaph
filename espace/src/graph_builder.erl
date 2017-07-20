@@ -147,7 +147,13 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
     { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
       "ON CREATE SET proc.exited_at = {at}, proc.exited_at_mcs = {at_mcs}, proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
       "ON MATCH SET proc.exited_at = {at}, proc.exited_at_mcs = {at_mcs}\n"
-    , #{id => Id, pid => Pid, at => At, at_mcs => Mcs} }
+    , #{id => Id, pid => Pid, at => At, at_mcs => Mcs} },
+
+    % unlink all links with this process if existed
+    { "MATCH (proc:Process)-[link:LINK]-(:Process)\n"
+      "WHERE proc.instance_id = {id} AND proc.pid = {pid}\n"
+      "SET link.unlinked_at = {at}, link.unlinked_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid, at => At, at_mcs => Mcs}}
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
@@ -186,7 +192,7 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
       "\tproc2.instance_id = {id} AND proc2.pid = {pid2} AND\n"
       "\tlink.unlinked_at = null\n"
       "SET link.unlinked_at = {at}, link.unlinked_at_mcs = {at_mcs}\n"
-    , #{id => Id, pid => Pid1, at => At, at_mcs => Mcs} }
+    , #{id => Id, pid1 => Pid, pid2 => Pid1, at => At, at_mcs => Mcs} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
