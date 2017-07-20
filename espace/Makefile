@@ -1,3 +1,3 @@
 
-run:
-	erl -pa `./rebar3 path` -run espace
+shell:
+	./rebar3 shell --sname espace
