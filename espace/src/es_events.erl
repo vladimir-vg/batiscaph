@@ -14,7 +14,8 @@ columns() ->
     {<<"instance_id">>, <<"String">>},
     {<<"pid">>, <<"String">>},
     {<<"type">>, <<"String">>},
-    {<<"pid1">>, <<"String">>}
+    {<<"pid1">>, <<"String">>},
+    {<<"atom">>, <<"String">>}
   ].
 
 create_table() ->

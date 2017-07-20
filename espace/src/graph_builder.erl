@@ -122,6 +122,8 @@ process_events(Id, Events) ->
 
 process_events(_Id, [], Acc) -> lists:flatten(lists:reverse(Acc));
 
+
+
 process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
   Statements = [
@@ -196,6 +198,27 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
-process_events(Id, [_ | Events], Acc) ->
-  % not implemented yet
-  process_events(Id, Events, Acc).
+process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
+  Statements = [
+    % create process and atom node, connect them
+    { "MERGE (reg:RegAtom { atom: {atom}, instance_id: {id} })\n"
+      "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+      "CREATE (reg)-[:REGISTER { registered_at: {at}, registered_at_mcs: {at_mcs} }]->(proc)\n"
+    , #{id => Id, pid => Pid, atom => Atom, at => At, at_mcs => Mcs} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
+  Statements = [
+    % create process and atom node, connect them
+    { "MERGE (reg:RegAtom { atom: {atom}, instance_id: {id} })\n"
+      "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
+      "ON CREATE SET proc.first_mentioned_at = {at}, proc.first_mentioned_at_mcs = {at_mcs}\n"
+      "MERGE (reg)-[rel:REGISTER]->(proc)\n"
+      "SET rel.unregistered_at = {at}, rel.unregistered_at_mcs = {at_mcs}\n"
+    , #{id => Id, pid => Pid, atom => Atom, at => At, at_mcs => Mcs} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc).
