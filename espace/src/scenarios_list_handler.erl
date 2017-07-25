@@ -35,7 +35,7 @@ handle(Req, State) ->
 get_items_list(MaxItems) ->
   DBName = espace:get_prop(clickhouse_dbname),
   SQL = iolist_to_binary([
-    "SELECT instance_id, MIN(toUInt64(at)) AS min_at\n",
+    "SELECT instance_id, min(toUInt64(at)) AS min_at\n",
     "FROM `", DBName, "`.events\n",
     "GROUP BY instance_id\n",
     "ORDER BY min_at DESC\n",

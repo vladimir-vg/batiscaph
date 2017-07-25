@@ -12,7 +12,8 @@
 -record(ws_state, {
   scenario_id,
   local_node_port,
-  remote_node
+  remote_node,
+  remote_scenario_pid
 }).
 
 
@@ -29,20 +30,22 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefin
   Id = bin_to_hex:bin_to_hex(crypto:strong_rand_bytes(10)),
   {ok, State1} = start_local_node(State#ws_state{scenario_id = Id}),
   {ok, State2} = start_remote_shell(State1),
-  true = gproc:reg({n,l,{websocket,Id}}), % to be removed
   {reply, {text, <<"shell_started ", Id/binary>>}, Req, State2};
 
-websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{scenario_id = Id} = State) ->
-  gproc:send({n, l, {erunner, Id}}, {shell_input, Input}),
+websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
+  ScenarioPid ! {shell_input, Input},
+  % gproc:send({n, l, {erunner, Id}}, {shell_input, Input}),
   {ok, Req, State};
 
-websocket_handle({text, <<"shell_restart">>}, Req, #ws_state{scenario_id = Id} = State) ->
-  gproc:send({n, l, {erunner, Id}}, shell_restart),
+websocket_handle({text, <<"shell_restart">>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
+  ScenarioPid ! shell_restart,
+  % gproc:send({n, l, {erunner, Id}}, shell_restart),
   {ok, Req, State};
 
-websocket_handle({text, <<"store_module ", Rest/binary>>}, Req, #ws_state{scenario_id = Id} = State) ->
+websocket_handle({text, <<"store_module ", Rest/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   [Name, Body] = binary:split(Rest, <<"\n">>),
-  gproc:send({n, l, {erunner, Id}}, {store_module, Name, Body}),
+  ScenarioPid ! {store_module, Name, Body},
+  % gproc:send({n, l, {erunner, Id}}, {store_module, Name, Body}),
   {ok, Req, State};
 
 websocket_handle({text, Msg}, Req, State) ->
@@ -97,9 +100,15 @@ wait_for_remote_node(RemoteNode, Timeout) ->
 
 
 
-start_remote_shell(#ws_state{remote_node = RemoteNode} = State) ->
-  ok = remote_node:load_local_module(RemoteNode, remote_espace_scenario),
-  {ok, Pid} = rpc:call(RemoteNode, remote_espace_scenario, start_link, [node(), #{die_on_node_disconnect => true}]),
-  unlink(Pid),
+start_remote_shell(#ws_state{remote_node = RemoteNode, scenario_id = Id} = State) ->
+  {ok, ReceiverPid} = remote_events_receiver:start_link(Id, self()),
+  ok = remote_node:load_local_module(RemoteNode, bin_to_hex),
+  ok = remote_node:load_local_module(RemoteNode, z__remote_collector),
+  ok = remote_node:load_local_module(RemoteNode, z__remote_io_server),
+  ok = remote_node:load_local_module(RemoteNode, z__remote_scenario),
+  ok = remote_node:load_local_module(RemoteNode, z__remote_shell),
+  ok = remote_node:load_local_module(RemoteNode, z__remote_sup),
+  Opts = #{nodestop_on_disconnect => true, nodestop_on_scenario_shutdown => true},
+  {ok, ScenarioPid} = rpc:call(RemoteNode, z__remote_scenario, start_link, [node(), ReceiverPid, Opts]),
   lager:info("Connected to remote shell on ~p", [RemoteNode]),
-  {ok, State}.
+  {ok, State#ws_state{remote_scenario_pid = ScenarioPid}}.
