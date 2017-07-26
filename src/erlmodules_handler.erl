@@ -25,7 +25,7 @@ handle(Req, State) ->
 handle0(Req, State) ->
   {Bindings, Req1} = cowboy_req:bindings(Req),
   Id = proplists:get_value(id, Bindings),
-  case gproc:lookup_pids({n, l, {erunner, Id}}) of
+  case gproc:lookup_pids({n, l, {websocket, Id}}) of
     [] ->
       {ok, Req2} = cowboy_req:reply(404, [], <<>>, Req1),
       {ok, Req2, State};
@@ -44,7 +44,7 @@ read_and_send_modules(Id, Req) ->
       {file, <<"modules">>, Filename, _ContentType, _TE} = cow_multipart:form_data(Headers),
       Name = filename:basename(Filename, <<".erl">>),
       {ok, Body, Req2} = read_body(Req1, <<>>),
-      gproc:send({n, l, {erunner, Id}}, {store_module, Name, Body}),
+      gproc:send({n, l, {websocket, Id}}, {store_module, Name, Body}),
       read_and_send_modules(Id, Req2)
   end.
 

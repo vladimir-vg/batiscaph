@@ -30,6 +30,7 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefin
   Id = bin_to_hex:bin_to_hex(crypto:strong_rand_bytes(10)),
   {ok, State1} = start_local_node(State#ws_state{scenario_id = Id}),
   {ok, State2} = start_remote_shell(State1),
+  true = gproc:reg({n, l, {websocket, Id}}),
   {reply, {text, <<"shell_started ", Id/binary>>}, Req, State2};
 
 websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
@@ -60,6 +61,10 @@ websocket_handle(_Data, Req, State) ->
 websocket_info({events, Events}, Req, State) ->
   JSON = jsx:encode(Events),
   {reply, {text, <<"events ", JSON/binary>>}, Req, State};
+
+websocket_info({store_module, Name, Body}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
+  ScenarioPid ! {store_module, Name, Body},
+  {ok, Req, State};
 
 websocket_info(Msg, Req, State) ->
   lager:error("Unknown message: ~p", [Msg]),
