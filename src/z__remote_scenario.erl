@@ -137,10 +137,10 @@ store_module(Name, Body, #scenario{} = State) ->
 module_stored_event_now(Name, Body) ->
   Now = erlang:system_time(micro_seconds),
   #{
-    at => (Now div (1000*1000)),
-    at_mcs => (Now rem (1000*1000)),
-    type => <<"module_stored">>,
-    atom => Name,
-    size => byte_size(Body),
-    hash => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
+    <<"at">> => (Now div (1000*1000)),
+    <<"at_mcs">> => (Now rem (1000*1000)),
+    <<"type">> => <<"module_stored">>,
+    <<"atom">> => Name,
+    <<"size">> => byte_size(Body),
+    <<"hash">> => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
   }.
