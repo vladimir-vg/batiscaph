@@ -32,7 +32,7 @@ After connection espace uploads client modules to remote node, it starts tracer 
 
 Espace collects events from remote node (including shell IO), stores it to database, and displays gathered information in browser.
 
-Espace collects not only traced events (spawn, link, exit) but also calls that may tell more info about explored system. For example `erlang:whereis/1` will add info about registered name to pid, even if this process was not traced and we had no information about it. Same for `erlang:process_info/1,2`. Therefore user can explore system using familiar calls and have returned information recorded and displayed on the map.
+Espace collects not only traced events (`spawn`, `link`, `exit`) but also calls that may tell more info about explored system. For example `erlang:whereis/1` will add info about registered name to pid, even if this process was not traced and we had no information about it. Same for `erlang:process_info/1,2`. Therefore user can explore system using familiar calls and have returned information recorded and displayed on the map.
 
 Collected events produce graph (neo4j) that gonna be used for querying.
 
@@ -43,3 +43,25 @@ Messages between processes are stored if there not too many of them, and they ar
 Having many processes and events recorded we should be able to query information. If we need to search for a process, not an event, then best way to do it is to construct a pattern of processes and their relationships. A pattern-matching query interface.
 
 It might be useful to have several queries in one workspace, and having interlapsing results highlighted.
+
+# Process tracing levels
+
+ 0. Process was mentioned by some other process. No tracing is enabled. Some mentions (but not every) are followed by `erlang:is_process_alive/1` call. If it is alive, it displayed as gray box (according to timestamp) on timeline. If it's dead -- displayed as X. One process may have several mentions connected on timeline.
+
+ 0. If mentioned process was selected by user, it turns into "explored" state. After that `exit`, `spawn`, `link` and `unlink` events are traced for this process. Same tracing applies to all process links recursively if process does not have trap_exit enabled. Such strategy will expand linked "islands" of processes, stopping at trap_exit-ed processes (usually supervisors, but also others). Also during exploration some other information gathered, if this process responds to OTP conventions, for example `$ancestors`.
+ 
+ It's important to remember which process was selected by user. If linked process unlinks from that user-selected process, then tracing for it should be stopped. This policy is needed to avoid tracing being trasmitted to too many processes, outside of "linked island" that we were interested in.
+
+ 0. Process was explicitly enabled to listen additional info. Currently it means collecting messages that were sent by this process. If number of message events exceeds some limit (process-wise and node-wise per second), then one summary event is generated instead. Also it might be great to trace work with ets tables, at least to count updates, inserts and deletions and to which table.
+
+# Other tracing
+
+Usually very few ports are used in apps. Probably it's safe to trace them all for `closed`, `open`, `link` and `unlink`, just like "explored" state for processes. But without having it recursively applied to linked processes. Just mention linked processes.
+
+Probably it's also safe to trace all `ets:new/2`, `ets:give_away/3` and `ets:setopts/2` globally. Collect information about ets tables just like about processes.
+
+If there would be a way to trace all `register`/`unregister` events, without tracing all processes in the system -- would love to have that.
+
+# Shell commands and map effects
+
+ * `[whereis(A) || A <- registered()].`. Will mention and put on the map all processes that were registered on the node.
