@@ -4,10 +4,16 @@
 
 
 start() ->
-  ok = read_config(),
-  application:ensure_all_started(espace),
-  es_web:restart_cowboy(),
-  ok.
+  case node() of
+    'nonode@nohost' ->
+      io:format("Erlang node started in non distributed mode, name must be specified\n"),
+      {error, no_node_name_specified};
+    _ ->
+      ok = read_config(),
+      application:ensure_all_started(espace),
+      es_web:restart_cowboy(),
+      ok
+  end.
 
 restart() ->
   es_web:restart_cowboy(),

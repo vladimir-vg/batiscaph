@@ -135,8 +135,7 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
     % create new process
     { "MATCH (parent:Process)\n"
       "WHERE parent.instance_id = {id} AND parent.pid = {parent}\n"
-      "CREATE\n"
-      "\t(proc:Process { instance_id: {id}, pid: {pid}, spawned_at: {at}, spawned_at_mcs: {at_mcs} }),\n"
+      "CREATE\t(proc:Process { instance_id: {id}, pid: {pid}, spawned_at: {at}, spawned_at_mcs: {at_mcs} }),\n"
       "\t(parent)-[:SPAWN { at: {at}, at_mcs: {at_mcs} }]->(proc)\n"
     , #{id => Id, parent => Parent, at => At, at_mcs => Mcs, pid => Pid} }
   ],
@@ -189,8 +188,7 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
     , #{id => Id, pid => Pid1, at => At, at_mcs => Mcs} },
 
     { "MATCH (proc1:Process)-[link:LINK]-(proc2:Process)\n"
-      "WHERE\n"
-      "\tproc1.instance_id = {id} AND proc1.pid = {pid1} AND\n"
+      "WHERE\tproc1.instance_id = {id} AND proc1.pid = {pid1} AND\n"
       "\tproc2.instance_id = {id} AND proc2.pid = {pid2} AND\n"
       "\tlink.unlinked_at = null\n"
       "SET link.unlinked_at = {at}, link.unlinked_at_mcs = {at_mcs}\n"
