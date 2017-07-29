@@ -1,18 +1,26 @@
-You need to install babel to use web interface in development mode:
+If you want to locally setup demo [that was described in my blog](http://vladimir-vg.me/erlang-shell-visualization-demo/), please check out [demo-07-2017](https://github.com/vladimir-vg/espace/tree/demo-07-2017) git tag.
+
+This branch is for ongoing development.
+
+# Development setup
+
+Unlike in demo, espace do not stores events in csv files anymore. Now it uses database for it.
+You need to install clickhouse (column oriented dbms) and neo4j (graph database).
+
+Specify neo4j url (`NEO4J_HTTP_URL`) with your login:pass if needed.
+You may take look at `espace:read_config/0` function for better understanding.
+
+Also you need to install babel to use web interface in development mode:
 
     npm install .
 
 To start server just type `make`.
 
-----
-
-If you're want to locally setup demo [that was described in my blog](http://vladimir-vg.me/erlang-shell-visualization-demo/), please check out [demo-07-2017](https://github.com/vladimir-vg/espace/tree/demo-07-2017) git tag.
-
 # Current goal
 
 Provide shell UI that encourages exploration of remote erlang node. Provide a map of processes and their relationships.
 
-Allow users to inspect processes and have tracing automatically enabled for specific processes.
+Allow users to inspect processes and have tracing automatically enabled.
 
 Record whole session to database, for later inspection. Might be very useful for referring to bugs in tickets.
 
