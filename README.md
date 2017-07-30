@@ -46,13 +46,13 @@ It might be useful to have several queries in one workspace, and having interlap
 
 # Process tracing levels
 
- 0. Process was mentioned by some other process. No tracing is enabled. Some mentions (but not every) are followed by `erlang:is_process_alive/1` call. If it is alive, it displayed as gray box (according to timestamp) on timeline. If it's dead -- displayed as X. One process may have several mentions connected on timeline.
+ 1. Process was mentioned by some other process. No tracing is enabled. Some mentions (but not every) are followed by `erlang:is_process_alive/1` call. If it is alive, it displayed as gray box (according to timestamp) on timeline. If it's dead -- displayed as X. One process may have several mentions connected on timeline.
 
- 0. If mentioned process was selected by user, it turns into "explored" state. After that `exit`, `spawn`, `link` and `unlink` events are traced for this process. Same tracing applies to all process links recursively if process does not have trap_exit enabled. Such strategy will expand linked "islands" of processes, stopping at trap_exit-ed processes (usually supervisors, but also others). Also during exploration some other information gathered, if this process responds to OTP conventions, for example `$ancestors`.
- 
- It's important to remember which process was selected by user. If linked process unlinks from that user-selected process, then tracing for it should be stopped. This policy is needed to avoid tracing being trasmitted to too many processes, outside of "linked island" that we were interested in.
+ 1. If mentioned process was selected by user, it turns into "explored" state. After that `exit`, `spawn`, `link` and `unlink` events are traced for this process. Same tracing applies to all process links recursively if process does not have trap_exit enabled. Such strategy will expand linked "islands" of processes, stopping at trap_exit-ed processes (usually supervisors, but also others). Also during exploration some other information gathered, if this process responds to OTP conventions, for example `$ancestors`.
+    
+    It's important to remember which process was selected by user. If linked process unlinks from that user-selected process, then tracing for it should be stopped. This policy is needed to avoid tracing being trasmitted to too many processes, outside of "linked island" that we were interested in.
 
- 0. Process was explicitly enabled to listen additional info. Currently it means collecting messages that were sent by this process. If number of message events exceeds some limit (process-wise and node-wise per second), then one summary event is generated instead. Also it might be great to trace work with ets tables, at least to count updates, inserts and deletions and to which table.
+1. Process was explicitly enabled to listen additional info. Currently it means collecting messages that were sent by this process. If number of message events exceeds some limit (process-wise and node-wise per second), then one summary event is generated instead. Also it might be great to trace work with ets tables, at least to count updates, inserts and deletions and to which table.
 
 # Other tracing
 
