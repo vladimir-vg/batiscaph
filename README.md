@@ -65,3 +65,23 @@ If there would be a way to trace all `register`/`unregister` events, without tra
 # Shell commands and map effects
 
  * `[whereis(A) || A <- registered()].`. Will mention and put on the map all processes that were registered on the node.
+
+# TODO
+
+Remote tracing code.
+
+- [ ] Implement fetching info for mentioned processes.
+- [ ] Implement "explored" tracing state for processes, propagate it recursively for links.
+- [ ] Trace globally open/close, link/unlink events for ports.
+- [ ] Trace globally ets new/delete and give_away events. Watch for table controlling processes.
+
+Events collecting code.
+
+- [ ] Build graph nodes for ports and ets events.
+
+Frontend code.
+
+- [ ] Write new visualization code using d3 instead of plain React SVG. React is not convenient for animations that we gonna need in future.
+- [ ] Figure out how to organize complicated map code. Try to keep it described as components, while having it rendered as several layers.
+- [ ] Figure out better representation for nodes on map and their events. Generate coordinates from it. Allow to regroup, sort or drag different objects on the map.
+- [ ] Use proper router that supports html5-history (get rid of demo routing bugs).
