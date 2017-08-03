@@ -186,7 +186,7 @@ class App extends React.Component {
 
     let inputPanel = null;
     if (this.state.tree && this.state.inputAllowed) {
-      inputPanel = <InputPanel key="huy" tree={this.state.tree} storeModule={this.onModuleStore}
+      inputPanel = <InputPanel tree={this.state.tree} storeModule={this.onModuleStore}
         submitInput={this.onShellInput} requestRestart={this.onRestartRequest} />;
     }
 

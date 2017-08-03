@@ -10,7 +10,7 @@ restart_cowboy() ->
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/websocket", es_ws_handler, []},
-      {"/vendor/[...]", cowboy_static, {priv_dir, espace, "wwwroot/vendor", [{mimetypes, cow_mimetypes, all}]}},
+      {"/lib/[...]", cowboy_static, {priv_dir, espace, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, espace, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       {"/scenarios.json", scenarios_list_handler, []},
       {"/scenarios/[:id]/erlmodules", erlmodules_handler, []},
