@@ -25,7 +25,7 @@ start_link(Id, WebsocketPid) ->
   gen_server:start_link(?MODULE, [Id, WebsocketPid], []).
 
 init([Id, WebsocketPid]) ->
-  {ok, ProducerPid} = graph_builder:start_link(Id),
+  {ok, ProducerPid} = graph_producer:start_link(Id),
   {ok, #remote_control{id = Id, websocket_pid = WebsocketPid, graph_producer_pid = ProducerPid}}.
 
 
