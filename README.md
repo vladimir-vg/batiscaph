@@ -65,3 +65,7 @@ If there would be a way to trace all `register`/`unregister` events, without tra
 # Shell commands and map effects
 
  * `[whereis(A) || A <- registered()].`. Will mention and put on the map all processes that were registered on the node.
+
+# Other technical details
+
+ * Clickhouse team recommends to store timestamps with more than second precision in two columns: https://github.com/yandex/ClickHouse/issues/525#issuecomment-282576661, that's why we have at_s and at_mcs. But it's much easier to operate with one column outside of Clickhouse. Neo4j and JavaScript limit integers to be < 2^53, and full millisecond timestamp fits in it. So one `at` field is used outside of Clickhouse.
