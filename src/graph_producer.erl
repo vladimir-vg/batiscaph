@@ -99,7 +99,7 @@ fetch_events(#graph_producer{last_checked_at = LastAt, id = Id} = State) ->
     _ -> Opts#{'after' => LastAt}
   end,
 
-  case es_events:select(Opts1) of
+  case clk_events:select(Opts1) of
     {ok, []} -> {ok, [], State};
 
     {ok, Events} when length(Events) == ?MAX_EVENTS_PER_FETCH ->

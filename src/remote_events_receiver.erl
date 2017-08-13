@@ -32,7 +32,7 @@ init([Id, WebsocketPid]) ->
 
 handle_info({events, Events}, #remote_control{id = Id, websocket_pid = WebsocketPid, graph_producer_pid = ProducerPid} = State) ->
   WebsocketPid ! {events, Events}, % try to send events if websocket is alive
-  ok = es_events:store(Id, Events),
+  ok = clk_events:store(Id, Events),
   ProducerPid ! new_events_stored,
   {noreply, State};
 

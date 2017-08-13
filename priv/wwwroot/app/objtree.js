@@ -13,7 +13,9 @@
 //   If process mentioned twice and two mentions create connection,
 //   then process should be moved to new right column
 //   If mentioned process was expanded, then it also moved into new column
-// * spawn and following link event should collapse into one visible event
+// * Spawn and following link event should collapse into one visible event
+// * Several mentions, if they're not connected to certain processes should line up in one Y coordinate.
+//   This might be very convenient for initial [whereis(R) || R <- registered()] lookup.
 //
 
 

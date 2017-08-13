@@ -40,11 +40,11 @@ get_prop(Name) ->
 
 
 create_tables() ->
-  ok = es_events:create_table(),
+  ok = clk_events:create_table(),
   ok.
 
 drop_tables() ->
-  ok = es_events:drop_table(),
+  ok = clk_events:drop_table(),
   ok.
 
 
