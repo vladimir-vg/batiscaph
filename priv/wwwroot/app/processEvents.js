@@ -60,7 +60,7 @@ let insertProc = (proc, tree) => {
 };
 
 let spawnProc = (keys, values, tree) => {
-  let at = get(keys, values, 'at');
+  let at = get(keys, values, 'at_s');
   let atMcs = get(keys, values, 'at_mcs');
 
   let pid = get(keys, values, 'pid');
@@ -87,7 +87,7 @@ let spawnProc = (keys, values, tree) => {
 
 
 let exitProc = (keys, values, tree) => {
-  let at = get(keys, values, 'at');
+  let at = get(keys, values, 'at_s');
   let atMcs = get(keys, values, 'at_mcs');
 
   let pid = get(keys, values, 'pid');
@@ -137,7 +137,7 @@ let addShellIO = (keys, rows, i, tree) => {
     let next = rows[i+1];
 
     let type = get(keys, values, 'type');
-    let at = get(keys, values, 'at');
+    let at = get(keys, values, 'at_s');
     let atMcs = get(keys, values, 'at_mcs');
     let prompt = get(keys, values, 'prompt');
     let message = get(keys, values, 'message');
@@ -189,7 +189,7 @@ let addShellIO = (keys, rows, i, tree) => {
 
 
 let addMessageSend = (keys, values, tree) => {
-  let at = get(keys, values, 'at');
+  let at = get(keys, values, 'at_s');
   let atMcs = get(keys, values, 'at_mcs');
   let pidFrom = get(keys, values, 'pid');
   let pidTo = get(keys, values, 'pid1');
@@ -213,7 +213,7 @@ let addMessageSend = (keys, values, tree) => {
 
 
 let registerAtom = (keys, values, tree) => {
-  let at = get(keys, values, 'at');
+  let at = get(keys, values, 'at_s');
   let atMcs = get(keys, values, 'at_mcs');
   let pid = get(keys, values, 'pid');
   let atom = get(keys, values, 'atom');

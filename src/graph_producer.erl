@@ -103,11 +103,11 @@ fetch_events(#graph_producer{last_checked_at = LastAt, id = Id} = State) ->
     {ok, []} -> {ok, [], State};
 
     {ok, Events} when length(Events) == ?MAX_EVENTS_PER_FETCH ->
-      #{<<"at">> := At, <<"at_mcs">> := Mcs} = lists:last(Events),
+      #{<<"at_s">> := At, <<"at_mcs">> := Mcs} = lists:last(Events),
       {more, Events, State#graph_producer{last_checked_at = {At, Mcs}}};
 
     {ok, Events} ->
-      #{<<"at">> := At, <<"at_mcs">> := Mcs} = lists:last(Events),
+      #{<<"at_s">> := At, <<"at_mcs">> := Mcs} = lists:last(Events),
       {ok, Events, State#graph_producer{last_checked_at = {At, Mcs}}}
   end.
 
@@ -125,7 +125,7 @@ process_events(_Id, [], Acc) -> lists:flatten(lists:reverse(Acc));
 
 
 process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
+  #{<<"at_s">> := At, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
   Statements = [
     % create parent process if not existed before
     { "MERGE (parent:Process { pid: {parent}, instance_id: {id} })\n"
@@ -142,7 +142,7 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  #{<<"at_s">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
   Statements = [
     % create parent process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
@@ -159,7 +159,7 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
+  #{<<"at_s">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Statements = [
     % create both process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
@@ -177,7 +177,7 @@ process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
+  #{<<"at_s">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Statements = [
     % create both process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instance_id: {id} })\n"
@@ -197,7 +197,7 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
+  #{<<"at_s">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
   Statements = [
     % create process and atom node, connect them
     { "MERGE (reg:RegAtom { atom: {atom}, instance_id: {id} })\n"
@@ -209,7 +209,7 @@ process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
+  #{<<"at_s">> := At, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
   Statements = [
     % create process and atom node, connect them
     { "MERGE (reg:RegAtom { atom: {atom}, instance_id: {id} })\n"

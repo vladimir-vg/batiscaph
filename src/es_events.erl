@@ -9,7 +9,7 @@
 
 columns() ->
   [
-    {<<"at">>, <<"DateTime">>},
+    {<<"at_s">>, <<"DateTime">>},
     {<<"at_mcs">>, <<"UInt32">>},
     {<<"instance_id">>, <<"String">>},
     {<<"pid">>, <<"String">>},
@@ -31,8 +31,8 @@ create_table() ->
   SQL = iolist_to_binary([
     "CREATE TABLE `", DBName, "`.events (\n",
     Columns,
-    "\tevent_date Date DEFAULT toDate(at)\n",
-    ") ENGINE=MergeTree(event_date, (instance_id, type, pid, at), 8192)\n"
+    "\tevent_date Date DEFAULT toDate(at_s)\n",
+    ") ENGINE=MergeTree(event_date, (instance_id, type, pid, at_s), 8192)\n"
   ]),
   ok = clickhouse:execute(SQL),
   ok.
@@ -71,7 +71,7 @@ select(Opts) ->
     "SELECT ", select_columns_sql(), "\n",
     "FROM `", DBName, "`.events\n",
     WhereClause,
-    "ORDER BY at, at_mcs\n",
+    "ORDER BY at_s, at_mcs\n",
     LimitClause,
     "FORMAT TabSeparatedWithNamesAndTypes\n"
   ]),
@@ -102,7 +102,7 @@ where_cond(Opts) ->
       [Cond | Acc];
 
     ('after', {At, Mcs}, Acc) ->
-      Cond = [<<"((toUInt64(at), at_mcs) > (">>, integer_to_binary(At), <<", ">>, integer_to_binary(Mcs), <<"))">>],
+      Cond = [<<"((toUInt64(at_s), at_mcs) > (">>, integer_to_binary(At), <<", ">>, integer_to_binary(Mcs), <<"))">>],
       [Cond | Acc];
 
     (type_in, Vals, Acc) when is_list(Vals) ->

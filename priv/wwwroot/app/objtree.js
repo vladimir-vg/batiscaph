@@ -3,7 +3,8 @@
 //
 // Server should return timestamps as single values in microseconds
 // Even though resulting integers gonna be large, it should fit into JS
-// number type without being rounded (< 2^53)
+// number type without being rounded (< 2^53).
+// Turns out that Neo4j have same limitations for integers (< 2^53).
 //
 // Rules of layout:
 //

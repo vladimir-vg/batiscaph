@@ -30,7 +30,7 @@ handle_info(flush_acc_events, #collector{} = State) ->
   {ok, State1} = flush_acc_events(State),
   {noreply, State1};
 
-handle_info(#{<<"at">> := _, <<"at_mcs">> := _, <<"type">> := _} = Event, #collector{} = State) ->
+handle_info(#{<<"at_s">> := _, <<"at_mcs">> := _, <<"type">> := _} = Event, #collector{} = State) ->
   {ok, State1} = save_events_for_sending([Event], State),
   {noreply, State1};
 
@@ -151,7 +151,7 @@ handle_trace_message0(Message) ->
 
 event_with_timestamp({MegaSec, Sec, MicroSec}, E) ->
   Sec1 = MegaSec*1000*1000 + Sec,
-  E1 = E#{<<"at">> => Sec1, <<"at_mcs">> => MicroSec},
+  E1 = E#{<<"at_s">> => Sec1, <<"at_mcs">> => MicroSec},
   maps:fold(fun
     (<<"pid">>, V, Acc) when is_list(V) -> Acc#{<<"pid">> => list_to_binary(V)};
     (<<"pid1">>, V, Acc) when is_list(V) -> Acc#{<<"pid1">> => list_to_binary(V)};
