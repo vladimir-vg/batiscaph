@@ -25,7 +25,9 @@
 %  * UNLINK { at }
 %  * REGISTER { at } -- connected to a RegisteredName node
 %  * UNREGISTER { at } -- same
-%  * MENTION { at, context } -- context is just a string like: 'ancestors', 'monitor', 'shell'
+%  * EXPLICIT_MENTION { at, context } -- context is just a string like: 'ancestors', 'monitor', 'shell'
+%    if you link previously unknown process, you mention it implicitly and it will appear on the map untraced.
+%    In some cases it might be useful to mention explicitly, when no special event occured (e.g. after process_info call)
 %
 % also Process may have relationships to himself:
 %  * TRACE_STARTED { at }
@@ -39,11 +41,17 @@
 % Currently it can select only all processes.
 delta_json(#{instance_id := Id}) ->
   Statements = [
-    { "MATCH (p1:Process {instanceId: {id}})-[rel]-(:Process {instanceId: {id}})\n"
-      "WHERE TYPE(rel) IN [\"MENTION\", \"TRACE_STARTED\", \"TRACE_STOPPED\"]\n"
+
+    % for some weird reason OPTIONAL MATCH (p1)-[rel]-(p1)
+    % returned null relationship that was impossible to filter out by WHERE
+    % but got rid of this null value by using COLLECT, and then map it by EXTRACT
+
+    { "MATCH (p1:Process {instanceId: {id}})\n"
+      "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
+      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\"]\n"
       "WITH p1, rel\n"
       "ORDER BY rel.at\n"
-      "WITH p1, COLLECT({at: rel.at, type: TYPE(rel)}) AS events\n"
+      "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
       "ORDER BY p1.appearedAt\n"
       "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, events\n"
     , #{id => Id} },
