@@ -113,33 +113,6 @@ fetch_events(#graph_producer{last_checked_at = LastAt, id = Id} = State) ->
 
 
 
-%
-% Process node have following properties:
-%  * instanceId -- mandatory
-%  * pid -- mandatory
-%  * appearedAt -- equals to spawnedAt or timestamp of first mention. Mandatory
-%  * spawnedAt -- May be missing, present only if such event was actually collected.
-%  * exitedAt -- same
-%  * exitReason -- same
-%
-% Process may have following relationships to other processes:
-%  * SPAWN { at }
-%  * LINK { at }
-%  * UNLINK { at }
-%  * REGISTER { at } -- connected to a RegisteredName node
-%  * UNREGISTER { at } -- same
-%  * MENTION { at, context } -- context is just a string like: 'ancestors', 'monitor', 'shell'
-%
-% also Process may have relationships to himself:
-%  * TRACE_STARTED { at }
-%  * TRACE_STOPPED { at }
-%
-% output always include all properties of Process, but not necessary all relationships.
-% relationships must be sorted
-%
-
-
-
 process_events(Id, Events) ->
   Statements = process_events(Id, Events, []),
   case Statements of
@@ -163,7 +136,7 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
     % create new process
     { "MATCH (parent:Process)\n"
       "WHERE parent.instanceId = {id} AND parent.pid = {parent}\n"
-      "CREATE\t(proc:Process { instanceId: {id}, pid: {pid}, spawnedAt: {at} }),\n"
+      "CREATE\t(proc:Process { instanceId: {id}, pid: {pid}, spawnedAt: {at}, appearedAt: {at} }),\n"
       "\t(parent)-[:SPAWN { at: {at} }]->(proc)\n"
     , #{id => Id, parent => Parent, at => At, pid => Pid} }
   ],

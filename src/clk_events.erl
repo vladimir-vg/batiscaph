@@ -3,7 +3,9 @@
 
 
 
+%%%
 %%% This module handles work with clickhouse events table
+%%%
 
 
 

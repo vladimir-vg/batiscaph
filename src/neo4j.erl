@@ -27,7 +27,8 @@ commit(Statements) ->
 
   lager:info("Neo4j commit:\n~s", [StatementsText]),
   case post_json(<<"db/data/transaction/commit">>, #{statements => Statements1}) of
-    {ok, #{} = RespJSON} -> {ok, RespJSON}
+    {ok, #{<<"errors">> := [], <<"results">> := Results}} -> {ok, Results};
+    {ok, #{<<"errors">> := Errors}} -> {error, Errors}
   end.
 
 
