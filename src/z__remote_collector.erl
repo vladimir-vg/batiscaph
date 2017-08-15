@@ -91,7 +91,6 @@ handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}) when i
 handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
 handle_trace_message0({trace_ts, _Pid, link, _PidPort, _Timestamp}) -> {ok, []};
 handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, spawn, _ParentPid, _MFA, _Timestamp}) -> {ok, []};
 
 handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_pid(Pid1) ->
   E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
@@ -103,11 +102,40 @@ handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when i
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
+
+
+% We may receive both 'spawn' and 'spawned' events, if 'set_on_spawn' is set.
+% But we should send only one 'spawn' event to collector.
+% Also if it was 'spawned' event, then 'trace_started' event should be also generated for child.
+% Better trace_started event to have exactly same timestamp as spawn event.
+% But we don't know it advance when processing 'spawn' event would 'spawned' follow or not.
+%
+% To handle that we just check tracing flags on parent process, is there set_on_spawn or not.
+% if it there, then do not generate events, they would be generated in 'spawned' clause.
+%
+% This is temporary solution. It will not work with set_on_first_spawn flag.
+% It will also fail if tracing was cleared on parent process before collector consumed 'spawn' event.
+handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}) ->
+  {flags, Flags} = erlang:trace_info(ParentPid),
+  case lists:member(set_on_spawn, Flags) of
+    true -> {ok, []}; % everything will be processed in spawned event
+    false ->
+      MFA1 = mfa_str(MFA),
+      E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
+      E1 = event_with_timestamp(Timestamp, E),
+      {ok, [E1]}
+  end;
+
+% spawned is received only if ChildPid is already traced (unlike spawn)
 handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) ->
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+  F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
+  F1 = event_with_timestamp(Timestamp, F),
+  {ok, [E1, F1]};
+
+
 
 handle_trace_message0({trace_ts, Pid, exit, Reason, Timestamp}) ->
   E = #{<<"type">> => <<"exit">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Reason])},

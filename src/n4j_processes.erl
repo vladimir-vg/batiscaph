@@ -77,7 +77,7 @@ update(Id, Events) ->
 
 
 desired_event_types() ->
-  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>].
+  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>, <<"trace_started">>, <<"trace_stopped">>].
 
 
 
@@ -102,14 +102,14 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"term">> := Reason} = E,
   At = AtS*1000*1000 + Mcs,
   Statements = [
     % create parent process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.exitedAt = {at}, proc.appearedAt = {at}\n"
-      "ON MATCH SET proc.exitedAt = {at}\n"
-    , #{id => Id, pid => Pid, at => At} }
+      "ON CREATE SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.appearedAt = {at}\n"
+      "ON MATCH SET proc.exitedAt = {at}, proc.exitReason = {reason}\n"
+    , #{id => Id, pid => Pid, at => At, reason => Reason} }
 
     % % unlink all links with this process if existed
     % { "MATCH (proc:Process)-[link:LINK]-(:Process)\n"
@@ -186,5 +186,29 @@ process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
       "ON CREATE SET proc.appearedAt = {at}\n"
       "CREATE (reg)-[:UNREGISTER { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, atom => Atom, at => At} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  At = AtS*1000*1000 + Mcs,
+  Statements = [
+    % create parent process if not existed before
+    { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}\n"
+      "CREATE (proc)-[:TRACE_STARTED { at: {at} }]->(proc)\n"
+    , #{id => Id, pid => Pid, at => At} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  At = AtS*1000*1000 + Mcs,
+  Statements = [
+    % create parent process if not existed before
+    { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}\n"
+      "CREATE (proc)-[:TRACE_STOPPED { at: {at} }]->(proc)\n"
+    , #{id => Id, pid => Pid, at => At} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
