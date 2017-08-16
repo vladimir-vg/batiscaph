@@ -15,8 +15,9 @@ terminate(_Reason, _Req, _State) ->
 
 
 handle(Req, State) ->
-  {<<"/scenarios2/", Path/binary>>, Req1} = cowboy_req:path(Req),
-  JSON = n4j_processes:delta_json(#{instance_id => Path}),
+  {Bindings, Req1} = cowboy_req:bindings(Req),
+  Id = proplists:get_value(id, Bindings),
+  JSON = n4j_processes:delta_json(#{instance_id => Id}),
   Body = jsx:encode(JSON),
   {ok, Req2} = cowboy_req:reply(200, [{<<"content-type">>, <<"application/json">>}], Body, Req1),
   {ok, Req2, State}.

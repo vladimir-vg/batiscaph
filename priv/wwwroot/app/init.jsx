@@ -223,6 +223,9 @@ class App extends React.Component {
 
 document.addEventListener("DOMContentLoaded", function(event) {
   ReactDOM.render(<App />, document.getElementById('react-app'));
+
+  // experimental
+  // ReactDOM.render(<ReactRouterDOM.BrowserRouter><App2 /></ReactRouterDOM.BrowserRouter>, document.getElementById('react-app'));
 });
 
 

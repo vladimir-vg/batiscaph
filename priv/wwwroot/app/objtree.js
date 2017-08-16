@@ -64,10 +64,15 @@
 //
 // this function destructively updates layout
 V.updateLayout = (delta, layout) => {
+  layout.processes = layout.processes || {};
+  layout.timestamps = layout.timestamps || [];
+  layout.columnsOrder = layout.columnsOrder || [];
+  layout.columns = layout.columns || {};
+
   for (var i in delta.processes) {
     updateProcessInLayout(delta.processes[i], layout);
   }
-  return layout;
+  return undefined; // all changes made in place
 };
 
 let updateProcessInLayout = (proc, layout) => {
@@ -256,7 +261,7 @@ let selectColumnAvailableAt = (at, layout) => {
 
 // this function walks layout and produces objtree with objects that visible in
 // from-to range.
-V.produceTree = (from, to, layout) => {
+V.produceTree = (layout, from, to) => {
   return {};
 };
 
