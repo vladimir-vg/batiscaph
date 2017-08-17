@@ -59,6 +59,7 @@ delta_json(#{instance_id := Id}) ->
     , #{id => Id} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
+      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"]\n"
       "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
       "ORDER BY rel.at\n"
     , #{id => Id} }

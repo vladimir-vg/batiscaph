@@ -8,7 +8,7 @@
 //
 // Rules of layout:
 //
-// * Spawned children should be always to the right of parent.
+// * (Temporarly dismissed) Spawned children should be always to the right of parent.
 // * Mentions of the processes should be located in leftmost column.
 //   If process mentioned twice and two mentions create connection,
 //   then process should be moved to new right column
@@ -83,14 +83,22 @@ V.updateLayout = (delta, layout) => {
   for (var i in delta.processes) {
     updateProcessInLayout(delta.processes[i], layout);
   }
+
+  layout.events = layout.events || [];
+  delta.events.forEach(function (event) {
+    insertTimestampIntoOrder(event.at, layout);
+    layout.events.push(event);
+  });
+  layout.events.sort(eventCmpFunction);
+
   return undefined; // all changes made in place
 };
 
 let updateProcessInLayout = (data, layout) => {
-  layout.processes[data.pid] = layout.processes[data.pid] || {events: []};
+  layout.processes[data.pid] = layout.processes[data.pid] || {pid: data.pid, events: []};
   let proc = layout.processes[data.pid];
 
-  let wasOpened = !!proc.appearedAt;
+  let wasOpen = !!proc.appearedAt;
   let wasClosed = !!proc.disappearedAt;
 
   // these properties should return up to date with every delta
@@ -110,11 +118,14 @@ let updateProcessInLayout = (data, layout) => {
     proc.events.push(event);
   });
 
-  if (!wasOpened) {
+  proc.events.sort(eventCmpFunction);
+
+  if (!wasOpen) {
     if (proc.columnId) { console.error("proc not supposed to have columnId, was just opened", proc); return; }
     let columnId = selectColumnAvailableAt(proc.appearedAt, layout);
+    proc.columnId = columnId;
     layout.columns[columnId].processes.push({pid: proc.pid, appearedAt: proc.appearedAt, disappearedAt: proc.disappearedAt});
-  } if (wasOpened && !wasClosed) {
+  } if (wasOpen && !wasClosed) {
     if (!proc.columnId) { console.error("proc supposed to have columnId, was already opened before", proc); return; }
     let column = layout.columns[oldProc.columnId];
     let colproc = column.processes[column.processes.length-1];
@@ -123,6 +134,14 @@ let updateProcessInLayout = (data, layout) => {
   }
 
   return null;
+};
+
+
+
+let eventCmpFunction = function (a, b) {
+  if (a.at < b.at) { return -1; }
+  if (a.at > b.at) { return 1; }
+  return 0;
 };
 
 
@@ -164,116 +183,78 @@ let selectColumnAvailableAt = (at, layout) => {
 
 
 
-// let updateProcessInLayout = (proc, layout) => {
-//   if (proc.pid in layout.processes) {
-//     let oldProc = layout.processes[proc.pid];
-//     if (oldProc.appearedAt != proc.appearedAt) {
-//       console.error("process from delta have different apperance time", proc, oldProc);
-//       return;
-//     }
-// 
-//     // process stopped
-//     if (proc.disappearedAt && !oldProc.disappearedAt) {
-//       oldProc.disappearedAt = proc.disappearedAt;
-//       let y2 = allocateYPositionAt(proc.disappearedAt, layout);
-//       let column = layout.columns[oldProc.columnId];
-//       let p = column.processes[column.processes.length-1];
-//       if (p.pid != proc.pid) {
-//         console.error("expected last process in column to be the updating one", proc, oldProc, column);
-//         return;
-//       }
-// 
-//       // calculate y coordinate of start
-//       let y1 = findYPositionAt(proc.appearedAt, layout);
-//       p.yLength = y2 - y1;
-//     }
-//   } else {
-//     let columnId = selectColumnAvailableAt(proc.appearedAt, layout);
-//     let y1 = allocateYPositionAt(proc.appearedAt, layout);
-//     layout.processes[proc.pid] = {
-//       appearedAt: proc.appearedAt,
-//       columnId: columnId,
-//       events: []
-//     };
-//     if (proc.disappearedAt) {
-//       // y1 and y2 are not fixed and may change after any update
-//       // here needed only to properly calculate length
-//       let y2 = allocateYPositionAt(proc.appearedAt, layout);
-//       layout.columns[columnId].processes.push({pid: proc.pid, yLength: y2-y1})
-//     } else {
-//       layout.columns[columnId].processes.push({pid: proc.pid});
-//     }
-//   }
-// };
+// this function walks layout and produces objtree with objects
+// later from-to options should be added, for rendering big set of objects
+// all events in layount expected to be sorted
+//
+// should produce ready to render tree, no additional check should be necessary, plain mapping to pixels
+V.produceTree = (layout) => {
+  // some events could be collapsed into one (like SPAWN,LINK pair)
+  // to achieve that we need to collect mapping that T1,T2 translate into one Y coord
+  // so events should be processed first
+  // only then processes
+  // TODO: implemented collapsing
 
-// let selectColumnAvailableAt = (at, layout) => {
-//   if (layout.columnsOrder.length == 0) {
-//     
-//   }
-// };
+  let tree = {processes: {}, links: {}, spawns: {}, messages: {}};
 
+  let xFromPid = function (pid) {
+    let columnId = layout.processes[pid].columnId;
+    let x = layout.columnsOrder.indexOf(columnId);
+    if (x == -1) { console.error("for -1 for columnId check", columnId, layout.processes[pid], layout.columnsOrder); return; }
+    return x;
+  }
 
+  let yFromTimestamp = function (at) {
+    let y = layout.timestamps.indexOf(at);
+    if (y == -1) { console.error("got -1 for event.at timestamp search", event); debugger; return; }
+    return y;
+  }
 
-// let findYPositionAt = (at, layout) => {
-//   let y = undefined;
-//   let lastAt = undefined; // current candidate for closest position
-// 
-//   // this function asseses given position and 
-//   let checkValue = (at1, y1) = {
-//     if (at1 == at) {
-//       y = y1;
-//       return 'found';
-//     } else if (at1 > at) {
-//       return 'too_big';
-//     } else if (!lastAt) {
-//       lastAt = at1;
-//       y = y1;
-//       return 'good';
-//     } else {
-//       if (lastAt >= at1) {
-//         return 'skip';
-//       } else {
-//         lastAt = at1;
-//         y = y1;
-//         return 'good';
-//       }
-//     }
-//   };
-// 
-//   // first find all suitable processes where position is localted
-//   // then search inside each process
-//   let suitableProcesses = {};
-// 
-//   for (let i in layout.columnsOrder) {
-//     let column = layout.columns[layout.columnsOrder[i]];
-//     // let checked = checkValue(column.startAt, column.startY);
-//     // if (column.startAt == at) {
-//     //   return column.startY;
-//     // }
-//     let processOffset = column.startY;
-//     for (let j in column.processes) {
-//       let p = column.processes[j];
-//       let result = checkValue(layout.processes[p.pid].appearedAt, processOffset);
-//       if (result == 'found') {
-//         return processOffset;
-//       } else if (result == 'too_big') {
-//         // process in this column starts too late
-//         // should check next column
-//         break;
-//       }
-//       case 'found': return processOffset;
-//       case 'too_big': break;
-//       }
-//       
-//     }
-//   }
-// };
+  layout.events.forEach(function (event) {
+    let y = yFromTimestamp(event.at);
+    let key;
+    switch (event.type) {
+    case 'SPAWN':
+      key = 'spawn-' + event.at + '-' + event.pid1 + '-' + event.pid2;
+      tree.spawns[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
+      break;
+    case 'LINK':
+      key = 'link-' + event.at + '-' + event.pid1 + '-' + event.pid2;
+      tree.links[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
+      break;
+    }
+  });
 
+  // take timestamp a bit ahead of last as now
+  // will be used for not terminated processes
+  let nowY = layout.timestamps.length + 1;
 
-// this function walks layout and produces objtree with objects that visible in
-// from-to range.
-V.produceTree = (layout, from, to) => {
-  return {};
+  for (const pid in layout.processes) {
+    let p = layout.processes[pid];
+    let x = xFromPid(p.pid);
+    let startY = yFromTimestamp(p.appearedAt);
+    let stopY = p.disappearedAt ? yFromTimestamp(p.disappearedAt) : nowY;
+    let parts = [];
+
+    let traceStartedAt = null;
+    p.events.forEach(function (event) {
+      if (event.type == 'TRACE_STARTED') {
+        traceStartedAt = event.at;
+      } else if (event.type == 'TRACE_STOPPED') {
+        if (!traceStartedAt) { console.error("expected to receive TRACE_STARTED before TRACE_STOPPED", event, p); return; }
+        parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(event.at)});
+        traceStartedAt = null;
+      }
+    });
+
+    if (traceStartedAt) {
+      parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: nowY});
+      traceStartedAt = null;
+    }
+    tree.processes[pid] = {x: x, startY: startY, stopY: stopY, parts: parts};
+  }
+
+  return tree;
 };
 
 
@@ -287,30 +268,23 @@ V.produceTree = (layout, from, to) => {
 // let objtree = {
 //   processes: {
 //     pid: {
-//       // column doesn't equal to X coordinate, X calculated from it
-//       // to have uneven gutter (like 25px column and 4px spacing)
-//       // this needed to adjust best spacing
-//       column: N,
-// 
-//       startY: N,
-//       stopY: N,
-// 
-//       spawnedBy: pid,
-//       spawnWithLink: true/false,
-// 
+//       x: N,
+//       startY: N, // appearedAt, disappearedAt
+//       stopY: N,  // don't really need for display, only for debug
 //       parts: [
-//         {type, y, length} // mentioned, mentioned dead, traced
+//         {type: 'MENTIONED', y: N},
+//         {type: 'TRACED', fromY: N, toY: N},
 //       ]
 //     }
 //   },
-// 
+//
 //   messages: {
-//     y: N,
-//     fromPid: pid,
-//     toPid: pid
+//     key: {y: N, fromX: N, toX: N}
 //   },
-// 
-//   links: [
-//     {type, pids} // type: link, unlink
-//   ]
+//   spawns: {
+//     key: {y: N, fromX: N, toX: N}
+//   }
+//   links: {
+//     key: {y: N, fromX: N, toX: N}
+//   }
 // };
