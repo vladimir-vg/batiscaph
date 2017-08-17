@@ -248,7 +248,7 @@ V.produceTree = (layout) => {
     });
 
     if (traceStartedAt) {
-      parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: nowY});
+      parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: stopY});
       traceStartedAt = null;
     }
     tree.processes[pid] = {x: x, startY: startY, stopY: stopY, parts: parts};

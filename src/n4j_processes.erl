@@ -55,7 +55,7 @@ delta_json(#{instance_id := Id}) ->
       "ORDER BY rel.at\n"
       "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
       "ORDER BY p1.appearedAt\n"
-      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, events\n"
+      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, events\n"
     , #{id => Id} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
@@ -118,8 +118,8 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
   Statements = [
     % create parent process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.appearedAt = {at}\n"
-      "ON MATCH SET proc.exitedAt = {at}, proc.exitReason = {reason}\n"
+      "ON CREATE SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.appearedAt = {at}, proc.disappearedAt = {at}\n"
+      "ON MATCH SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.disappearedAt = {at}\n"
     , #{id => Id, pid => Pid, at => At, reason => Reason} }
 
     % % unlink all links with this process if existed
