@@ -18,6 +18,7 @@
 %  * spawnedAt -- May be missing, present only if such event was actually collected.
 %  * exitedAt -- same
 %  * exitReason -- same
+%  * disappearedAt -- equals to exitedAt or timestamp of discovering that process is dead
 %
 % Process may have following relationships to other processes:
 %  * SPAWN { at }
@@ -32,6 +33,7 @@
 % also Process may have relationships to himself:
 %  * TRACE_STARTED { at }
 %  * TRACE_STOPPED { at }
+%  * FOUND_DEAD { at } -- after failed test is_process_alive while trying to start trace
 %
 
 
@@ -48,7 +50,7 @@ delta_json(#{instance_id := Id}) ->
 
     { "MATCH (p1:Process {instanceId: {id}})\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
-      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\"]\n"
+      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"]\n"
       "WITH p1, rel\n"
       "ORDER BY rel.at\n"
       "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"

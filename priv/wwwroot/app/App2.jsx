@@ -16,6 +16,8 @@ class ScenarioView2 extends React.Component {
       response.json().then((delta) => {
         V.updateLayout(delta, this._layout);
         let tree = V.produceTree(this._layout);
+        console.log("layout", this._layout);
+        console.log("tree", tree);
         this.setState({tree: tree});
       });
     });

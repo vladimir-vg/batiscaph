@@ -36,10 +36,21 @@
 //     pid: {
 //       columnId: id,
 //       appearedAt: at,
+//       exitedAt: at,
+//       exitReason: "normal",
 //       disappearedAt: at,
+//
+//       // only related to appearance of the process,
+//       // like TRACE_STARTED, TRACE_STOPPED and MENTION
 //       events: []
 //     }
 //   },
+//
+//  // other events like SEND, LINK, UNLINK, SPAWN
+//  events: [
+//    {at: at, type: TYPE, pid1: pid, pid2: pid},
+//    ...
+//  ]
 //
 //   timestamps: [at, ...],
 //   columnsOrder: [columnId, columnId, ...],
@@ -75,52 +86,49 @@ V.updateLayout = (delta, layout) => {
   return undefined; // all changes made in place
 };
 
-let updateProcessInLayout = (proc, layout) => {
-  if (proc.pid in layout.processes) {
-    let oldProc = layout.processes[proc.pid];
-    if (proc.appearedAt && oldProc.appearedAt != proc.appearedAt) {
-      console.error("process from delta have different apperance time", proc, oldProc);
-      return;
-    }
+let updateProcessInLayout = (data, layout) => {
+  layout.processes[data.pid] = layout.processes[data.pid] || {events: []};
+  let proc = layout.processes[data.pid];
 
-    // process stopped
-    if (proc.disappearedAt && !oldProc.disappearedAt) {
-      oldProc.disappearedAt = proc.disappearedAt;
-      insertTimestampIntoOrder(proc.disappearedAt, layout);
+  let wasOpened = !!proc.appearedAt;
+  let wasClosed = !!proc.disappearedAt;
 
-      let column = layout.columns[oldProc.columnId];
-      let colproc = column.processes[column.processes.length-1];
-      if (colproc.pid != proc.pid) {
-        console.error("expected last process in column to be the updating one", proc, oldProc, column);
-        return;
-      }
+  // these properties should return up to date with every delta
+  // so simply update them
+  proc.appearedAt = data.appearedAt;
+  proc.spawnedAt = data.spawnedAt;
+  proc.exitedAt = data.exitedAt;
+  proc.exitedReason = data.exitedReason;
+  proc.disappearedAt = data.disappearedAt;
+  if (proc.appearedAt) { insertTimestampIntoOrder(proc.appearedAt, layout); }
+  if (proc.spawnedAt) { insertTimestampIntoOrder(proc.spawnedAt, layout); }
+  if (proc.exitedAt) { insertTimestampIntoOrder(proc.exitedAt, layout); }
+  if (proc.disappearedAt) { insertTimestampIntoOrder(proc.disappearedAt, layout); }
 
-      colproc.disappearedAt = proc.disappearedAt;
-    }
-  } else {
+  data.events.forEach(function (event) {
+    insertTimestampIntoOrder(event.at, layout);
+    proc.events.push(event);
+  });
+
+  if (!wasOpened) {
+    if (proc.columnId) { console.error("proc not supposed to have columnId, was just opened", proc); return; }
     let columnId = selectColumnAvailableAt(proc.appearedAt, layout);
-    layout.processes[proc.pid] = {
-      appearedAt: proc.appearedAt,
-      columnId: columnId,
-      events: []
-    };
-    let colproc = {pid: proc.pid, appearedAt: proc.appearedAt};
-    insertTimestampIntoOrder(proc.appearedAt, layout);
-    if (proc.disappearedAt) {
-      colproc.disappearedAt = proc.disappearedAt;
-      insertTimestampIntoOrder(proc.disappearedAt, layout);
-      layout.columns[columnId].processes.push(colproc);
-    } else {
-      layout.columns[columnId].processes.push(colproc);
-    }
+    layout.columns[columnId].processes.push({pid: proc.pid, appearedAt: proc.appearedAt, disappearedAt: proc.disappearedAt});
+  } if (wasOpened && !wasClosed) {
+    if (!proc.columnId) { console.error("proc supposed to have columnId, was already opened before", proc); return; }
+    let column = layout.columns[oldProc.columnId];
+    let colproc = column.processes[column.processes.length-1];
+    if (colproc.pid != proc.pid) { console.error("last segment in column must be this process", column, proc, colproc); return; }
+    colproc.disappearedAt = proc.disappearedAt;
   }
+
+  return null;
 };
 
+
+
 let insertTimestampIntoOrder = (at, layout) => {
-  if (!at) {
-    console.error("got bad value to insert: ", at);
-    return;
-  }
+  if (!at) { console.error("got bad value to insert: ", at); return; }
 
   // slow, but simple
   if (layout.timestamps.indexOf(at) == -1) {
@@ -130,6 +138,8 @@ let insertTimestampIntoOrder = (at, layout) => {
 };
 
 let selectColumnAvailableAt = (at, layout) => {
+  if (!at) { console.error("got bad value for column select: ", at); return; }
+
   for (let i in layout.columnsOrder) {
     let id = layout.columnsOrder[i];
     let lastProc = layout.columns[id].processes[layout.columns[id].processes.length-1];
@@ -151,6 +161,7 @@ let selectColumnAvailableAt = (at, layout) => {
   layout.columnsOrder.push(columnId);
   return columnId;
 };
+
 
 
 // let updateProcessInLayout = (proc, layout) => {
