@@ -4,6 +4,8 @@ const CELL_HEIGHT2 = 10;
 const CELL_HGUTTER2 = 5;
 // const CELL_VGUTTER2 = 2;
 
+const MENTION_PADDING = 2;
+
 const Route = ReactRouterDOM.Route;
 
 class ProcessElement extends React.Component {
@@ -15,12 +17,29 @@ class ProcessElement extends React.Component {
     return <rect key={i} x={x} y={y} width={width} height={height} style={{fill: '#D9D9D9'}} />;
   }
 
+  renderMentionPart(part, i) {
+    let x = (CELL_WIDTH2+CELL_HGUTTER2)*this.props.data.x;
+    let y = CELL_HEIGHT2*part.y + Math.floor(CELL_HEIGHT2/2);
+    let width = CELL_WIDTH2;
+    let height = CELL_HEIGHT2;
+
+    let mX = x + MENTION_PADDING;
+    let mWidth = width - 2*MENTION_PADDING;
+
+    return <g key={i}>
+      <rect x={x} y={y} width={width} height={height} style={{fill: '#D9D9D9'}} />
+      <rect x={mX} y={y} width={mWidth} height={height} style={{fill: '#EDEDED'}} />
+    </g>;
+  }
+
   render() {
     let nodes = [];
-    for (var i in this.props.data.parts) {
+    for (const i in this.props.data.parts) {
       let part = this.props.data.parts[i];
       if (part.type == 'TRACED') {
         nodes.push(this.renderTracedPart(part, i));
+      } else if (part.type == 'MENTION') {
+        nodes.push(this.renderMentionPart(part, i));
       }
     }
     return <g>

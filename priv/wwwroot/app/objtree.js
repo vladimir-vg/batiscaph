@@ -210,15 +210,29 @@ V.produceTree = (layout) => {
     return y;
   }
 
+  // these mentions will be used to generate mention parts ready to render
+  let saveMention = function (at, pid) {
+    if (!pid) { console.error("bad pid for saveMention", pid); return; }
+    if (!tree.processes[pid]) { tree.processes[pid] = {}; }
+    if (!tree.processes[pid].mentions) { tree.processes[pid].mentions = []; }
+    if (tree.processes[pid].mentions.indexOf(at) != -1) { return; }
+    tree.processes[pid].mentions.push(at);
+  };
+
   layout.events.forEach(function (event) {
     let y = yFromTimestamp(event.at);
     let key;
     switch (event.type) {
     case 'SPAWN':
+      saveMention(event.at, event.pid1);
+      saveMention(event.at, event.pid2);
       key = 'spawn-' + event.at + '-' + event.pid1 + '-' + event.pid2;
       tree.spawns[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
       break;
+
     case 'LINK':
+      saveMention(event.at, event.pid1);
+      saveMention(event.at, event.pid2);
       key = 'link-' + event.at + '-' + event.pid1 + '-' + event.pid2;
       tree.links[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
       break;
@@ -230,28 +244,74 @@ V.produceTree = (layout) => {
   let nowY = layout.timestamps.length + 1;
 
   for (const pid in layout.processes) {
-    let p = layout.processes[pid];
-    let x = xFromPid(p.pid);
-    let startY = yFromTimestamp(p.appearedAt);
-    let stopY = p.disappearedAt ? yFromTimestamp(p.disappearedAt) : nowY;
-    let parts = [];
+    if (!tree.processes[pid]) { tree.processes[pid] = {mentions: []}; }
+    tree.processes[pid].mentions.sort();
 
-    let traceStartedAt = null;
-    p.events.forEach(function (event) {
-      if (event.type == 'TRACE_STARTED') {
-        traceStartedAt = event.at;
-      } else if (event.type == 'TRACE_STOPPED') {
-        if (!traceStartedAt) { console.error("expected to receive TRACE_STARTED before TRACE_STOPPED", event, p); return; }
-        parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(event.at)});
+    let p = layout.processes[pid];
+    tree.processes[pid].x = xFromPid(p.pid);
+    tree.processes[pid].startY = yFromTimestamp(p.appearedAt);
+    tree.processes[pid].stopY = p.disappearedAt ? yFromTimestamp(p.disappearedAt) : nowY;
+
+    // now need to iterate over events and over mentions
+    // if mention happened during tracing, then ignore it
+    // if outside, then make it into visible point
+    let produceVisibleParts = function (events, mentions, stopY) {
+      let eI = 0, mI = 0;
+      let parts = [];
+      let traceStartedAt = null;
+
+      let processEvent = function (e) {
+        if (e.type == 'TRACE_STARTED') {
+          if (traceStartedAt) { console.error("expected to receive TRACE_STARTED once", e, p); return; }
+          traceStartedAt = e.at;
+        } else if (event.type == 'TRACE_STOPPED') {
+          if (!traceStartedAt) { console.error("expected to receive TRACE_STARTED before TRACE_STOPPED", event, p); return; }
+          parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(event.at)});
+          traceStartedAt = null;
+        }
+      }
+
+      let processMention = function (m) {
+        if (!traceStartedAt) {
+          // we're currently not in trace and encountered mention
+          // otherwise just skip this mention
+          parts.push({type: 'MENTION', y: yFromTimestamp(m)});
+        }
+      }
+
+      while (events[eI] || mentions[mI]) {
+        let e = events[eI], m = mentions[mI];
+
+        if (e && m) {
+          if (m == e.at) {
+            // if trace event and mentioned happened at the same time
+            // then just ignore that mention
+            mI += 1;
+          } else if (m < e.at) {
+            processMention(m);
+            mI += 1;
+          } else {
+            processEvent(e);
+            eI += 1;
+          }
+        } else if (e) {
+          processEvent(e);
+          eI += 1;
+        } else if (m) {
+          processMention(m);
+          mI += 1;
+        }
+      }
+
+      if (traceStartedAt) {
+        parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: stopY});
         traceStartedAt = null;
       }
-    });
 
-    if (traceStartedAt) {
-      parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: stopY});
-      traceStartedAt = null;
+      return parts;
     }
-    tree.processes[pid] = {x: x, startY: startY, stopY: stopY, parts: parts};
+
+    tree.processes[pid].parts = produceVisibleParts(p.events, tree.processes[pid].mentions, tree.processes[pid].stopY);
   }
 
   return tree;
@@ -272,7 +332,7 @@ V.produceTree = (layout) => {
 //       startY: N, // appearedAt, disappearedAt
 //       stopY: N,  // don't really need for display, only for debug
 //       parts: [
-//         {type: 'MENTIONED', y: N},
+//         {type: 'MENTION', y: N},
 //         {type: 'TRACED', fromY: N, toY: N},
 //       ]
 //     }
