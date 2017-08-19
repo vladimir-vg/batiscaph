@@ -79,13 +79,13 @@ handle_trace_message({trace_ts, _Pid, send, _Msg, _PidTo, _} = Message, #collect
   % end;
   handle_trace_message0(Message);
 
-handle_trace_message(Message, #collector{ignored_pids = IgnoredPids}) ->
-  Pid = element(2, Message),
-  case lists:member(Pid, IgnoredPids) of
-    true -> {ok, []};
-    false ->
-      handle_trace_message0(Message)
-  end.
+handle_trace_message(Message, #collector{ignored_pids = _IgnoredPids}) ->
+  % Pid = element(2, Message),
+  % case lists:member(Pid, IgnoredPids) of
+  %   true -> {ok, []};
+  %   false ->
+  % end.
+  handle_trace_message0(Message).
 
 handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
 handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
@@ -116,7 +116,7 @@ handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when i
 % This is temporary solution. It will not work with set_on_first_spawn flag.
 % It will also fail if tracing was cleared on parent process before collector consumed 'spawn' event.
 handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}) ->
-  {flags, Flags} = erlang:trace_info(ParentPid),
+  {flags, Flags} = erlang:trace_info(ParentPid, flags),
   case lists:member(set_on_spawn, Flags) of
     true -> {ok, []}; % everything will be processed in spawned event
     false ->

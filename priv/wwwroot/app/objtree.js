@@ -106,7 +106,7 @@ let updateProcessInLayout = (data, layout) => {
   proc.appearedAt = data.appearedAt;
   proc.spawnedAt = data.spawnedAt;
   proc.exitedAt = data.exitedAt;
-  proc.exitedReason = data.exitedReason;
+  proc.exitReason = data.exitReason;
   proc.disappearedAt = data.disappearedAt;
   if (proc.appearedAt) { insertTimestampIntoOrder(proc.appearedAt, layout); }
   if (proc.spawnedAt) { insertTimestampIntoOrder(proc.spawnedAt, layout); }

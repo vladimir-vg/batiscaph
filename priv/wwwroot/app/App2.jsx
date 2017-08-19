@@ -1,5 +1,5 @@
 
-const CELL_WIDTH2 = 8;
+const CELL_WIDTH2 = 10;
 const CELL_HEIGHT2 = 10;
 const CELL_HGUTTER2 = 5;
 // const CELL_VGUTTER2 = 2;
