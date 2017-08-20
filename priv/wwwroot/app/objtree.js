@@ -266,7 +266,12 @@ V.produceTree = (layout) => {
           traceStartedAt = e.at;
         } else if (event.type == 'TRACE_STOPPED') {
           if (!traceStartedAt) { console.error("expected to receive TRACE_STARTED before TRACE_STOPPED", event, p); return; }
-          parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(event.at)});
+          let part = {type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(event.at)};
+          if (e.at == p.exitedAt) {
+            part.exitMark = true;
+            part.unnormalExit = (p.exitReason != 'normal')
+          }
+          parts.push(part);
           traceStartedAt = null;
         }
       }
@@ -304,7 +309,12 @@ V.produceTree = (layout) => {
       }
 
       if (traceStartedAt) {
-        parts.push({type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: stopY});
+        let part = {type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: stopY};
+        if (p.exitedAt) {
+          part.exitMark = true;
+          part.unnormalExit = (p.exitReason != 'normal')
+        }
+        parts.push(part);
         traceStartedAt = null;
       }
 

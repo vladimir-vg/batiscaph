@@ -14,7 +14,16 @@ class ProcessElement extends React.Component {
     let y = CELL_HEIGHT2*part.fromY;
     let width = CELL_WIDTH2;
     let height = CELL_HEIGHT2*(part.toY - part.fromY);
-    return <rect key={i} x={x} y={y} width={width} height={height} style={{fill: '#D9D9D9'}} />;
+
+    let exitRect = null;
+    if (part.exitMark) {
+      let h = part.unnormalExit ? (CELL_HEIGHT2/2) : 2;
+      exitRect = <rect x={x} y={y+height-h} width={width} height={h} style={{fill: '#FC8888'}} />
+    }
+    return <g key={i}>
+      <rect x={x} y={y} width={width} height={height} style={{fill: '#D9D9D9'}} />
+      {exitRect}
+    </g>;
   }
 
   renderMentionPart(part, i) {
