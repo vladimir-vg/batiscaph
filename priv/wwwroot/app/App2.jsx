@@ -19,7 +19,7 @@ class ProcessElement extends React.Component {
 
   renderMentionPart(part, i) {
     let x = (CELL_WIDTH2+CELL_HGUTTER2)*this.props.data.x;
-    let y = CELL_HEIGHT2*part.y + Math.floor(CELL_HEIGHT2/2);
+    let y = CELL_HEIGHT2*part.y - Math.floor(CELL_HEIGHT2/2);
     let width = CELL_WIDTH2;
     let height = CELL_HEIGHT2;
 
@@ -50,13 +50,40 @@ class ProcessElement extends React.Component {
 
 class SpawnElement extends React.Component {
   render() {
-    return null;
+    let width = 2;
+    let fromX = this.props.data.fromX, toX = this.props.data.toX;
+    if (fromX < toX) {
+      let x1 = (CELL_WIDTH2+CELL_HGUTTER2)*fromX + CELL_WIDTH2;
+      let y = CELL_HEIGHT2*this.props.data.y;
+      let x2 = (CELL_WIDTH2+CELL_HGUTTER2)*toX + CELL_WIDTH2;
+      return <g>
+        <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x1-width/2} y1={y+width/2} x2={x1-width/2} y2={y-CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x2-width/2} y1={y+width/2} x2={x2-width/2} y2={y+CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+      </g>;
+    } else {
+      let x1 = (CELL_WIDTH2+CELL_HGUTTER2)*toX;
+      let y = CELL_HEIGHT2*this.props.data.y;
+      let x2 = (CELL_WIDTH2+CELL_HGUTTER2)*fromX;
+      return <g>
+        <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x1+width/2} y1={y+width/2} x2={x1+width/2} y2={y+CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x2+width/2} y1={y+width/2} x2={x2+width/2} y2={y-CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+      </g>;
+    }
   }
 }
 
 class LinkElement extends React.Component {
   render() {
-    return null;
+    let xs = [this.props.data.fromX, this.props.data.toX];
+    xs.sort();
+    let x1 = (CELL_WIDTH2+CELL_HGUTTER2)*xs[0];
+    let y = CELL_HEIGHT2*this.props.data.y;
+    let x2 = (CELL_WIDTH2+CELL_HGUTTER2)*xs[1] + CELL_WIDTH2;
+    return <g>
+      <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+    </g>;
   }
 }
 
@@ -102,10 +129,12 @@ class ScenarioView2 extends React.Component {
       processes.push(<LinkElement key={key} data={this.state.tree.links[key]} />);
     }
 
-    return <svg width={600} height={600} style={{marginTop: 10, marginLeft: 10}}>
-      <g>{processes}</g>
-      <g>{spawns}</g>
-      <g>{links}</g>
+    return <svg width={600} height={600}>
+      <g transform={"translate(30,30)"}>
+        <g>{processes}</g>
+        <g>{spawns}</g>
+        <g>{links}</g>
+      </g>
     </svg>;
   }
 }
