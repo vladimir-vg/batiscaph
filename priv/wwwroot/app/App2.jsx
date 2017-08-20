@@ -15,12 +15,23 @@ class ProcessElement extends React.Component {
     let width = CELL_WIDTH2;
     let height = CELL_HEIGHT2*(part.toY - part.fromY);
 
+    let untracedNode = null;
+    if (part.untracedHead) {
+      let mX = x + MENTION_PADDING;
+      let mWidth = width - 2*MENTION_PADDING;
+      untracedNode = <g>
+        <rect x={x} y={y-CELL_HEIGHT2/2} width={width} height={CELL_HEIGHT2/2} style={{fill: '#D9D9D9'}} />
+        <rect x={mX} y={y-CELL_HEIGHT2/2} width={mWidth} height={CELL_HEIGHT2/2} style={{fill: '#EDEDED'}} />
+      </g>;
+    }
+
     let exitRect = null;
     if (part.exitMark) {
       let h = part.unnormalExit ? (CELL_HEIGHT2/2) : 2;
       exitRect = <rect x={x} y={y+height-h} width={width} height={h} style={{fill: '#FC8888'}} />
     }
     return <g key={i}>
+      {untracedNode}
       <rect x={x} y={y} width={width} height={height} style={{fill: '#D9D9D9'}} />
       {exitRect}
     </g>;

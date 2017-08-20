@@ -271,6 +271,9 @@ V.produceTree = (layout) => {
             part.exitMark = true;
             part.unnormalExit = (p.exitReason != 'normal')
           }
+          if (!p.spawnedAt || (p.spawnedAt != traceStartedAt)) {
+            part.untracedHead = true;
+          }
           parts.push(part);
           traceStartedAt = null;
         }
@@ -313,6 +316,9 @@ V.produceTree = (layout) => {
         if (p.exitedAt) {
           part.exitMark = true;
           part.unnormalExit = (p.exitReason != 'normal')
+        }
+        if (!p.spawnedAt || (p.spawnedAt != traceStartedAt)) {
+          part.untracedHead = true;
         }
         parts.push(part);
         traceStartedAt = null;
