@@ -78,8 +78,8 @@ class SpawnElement extends React.Component {
       let x2 = (CELL_WIDTH2+CELL_HGUTTER2)*toX + CELL_WIDTH2;
       return <g>
         <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x1-width/2} y1={y+width/2} x2={x1-width/2} y2={y-CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x2-width/2} y1={y+width/2} x2={x2-width/2} y2={y+CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x1-width/2} y1={y+width/2} x2={x1-width/2} y2={y-CELL_HEIGHT2/2} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x2-width/2} y1={y} x2={x2-width/2} y2={y+CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
       </g>;
     } else {
       let x1 = (CELL_WIDTH2+CELL_HGUTTER2)*toX;
@@ -87,8 +87,8 @@ class SpawnElement extends React.Component {
       let x2 = (CELL_WIDTH2+CELL_HGUTTER2)*fromX;
       return <g>
         <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x1+width/2} y1={y+width/2} x2={x1+width/2} y2={y+CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x2+width/2} y1={y+width/2} x2={x2+width/2} y2={y-CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x1+width/2} y1={y} x2={x1+width/2} y2={y+CELL_HEIGHT2/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+        <line x1={x2+width/2} y1={y+width/2} x2={x2+width/2} y2={y-CELL_HEIGHT2/2} style={{stroke: '#666666', strokeWidth: width}} />
       </g>;
     }
   }
@@ -149,8 +149,21 @@ class ScenarioView2 extends React.Component {
       processes.push(<LinkElement key={key} data={this.state.tree.links[key]} />);
     }
 
-    return <svg width={600} height={600}>
-      <g transform={"translate(30,30)"}>
+    let gridLines = [];
+    for (let i = -10; i < 100; i++) {
+      let xa = i*(CELL_WIDTH2+CELL_HGUTTER2);
+      let xb = i*(CELL_WIDTH2+CELL_HGUTTER2) + CELL_WIDTH2;
+      gridLines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={1000} style={{stroke: '#ffdbdb'}} />);
+      gridLines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={1000} style={{stroke: '#ffdbdb'}} />);
+    }
+    for (let i = -10; i < 100; i++) {
+      let y = i*CELL_HEIGHT2;
+      gridLines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={1000} y2={y+0.5} style={{stroke: '#ffdbdb'}} />);
+    }
+
+    return <svg width={700} height={700}>
+      <g transform={"translate(50,50)"}>
+        <g>{gridLines}</g>
         <g>{processes}</g>
         <g>{spawns}</g>
         <g>{links}</g>
