@@ -88,7 +88,7 @@ update(Id, Events) ->
 
 
 desired_event_types() ->
-  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>, <<"trace_started">>, <<"trace_stopped">>].
+  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>, <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>].
 
 
 
@@ -220,6 +220,17 @@ process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}\n"
       "CREATE (proc)-[:TRACE_STOPPED { at: {at} }]->(proc)\n"
+    , #{id => Id, pid => Pid, at => At} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"found_dead">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  At = AtS*1000*1000 + Mcs,
+  Statements = [
+    { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}\n"
+      "CREATE (proc)-[:FOUND_DEAD { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, at => At} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).

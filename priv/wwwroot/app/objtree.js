@@ -264,9 +264,9 @@ V.produceTree = (layout) => {
         if (e.type == 'TRACE_STARTED') {
           if (traceStartedAt) { console.error("expected to receive TRACE_STARTED once", e, p); return; }
           traceStartedAt = e.at;
-        } else if (event.type == 'TRACE_STOPPED') {
-          if (!traceStartedAt) { console.error("expected to receive TRACE_STARTED before TRACE_STOPPED", event, p); return; }
-          let part = {type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(event.at)};
+        } else if (e.type == 'TRACE_STOPPED') {
+          if (!traceStartedAt) { console.error("expected to receive TRACE_STARTED before TRACE_STOPPED", e, p); return; }
+          let part = {type: "TRACED", fromY: yFromTimestamp(traceStartedAt), toY: yFromTimestamp(e.at)};
           if (e.at == p.exitedAt) {
             part.exitMark = true;
             part.unnormalExit = (p.exitReason != 'normal')
@@ -276,6 +276,8 @@ V.produceTree = (layout) => {
           }
           parts.push(part);
           traceStartedAt = null;
+        } else if (e.type == 'FOUND_DEAD') {
+          parts.push({type: 'DEAD', y: yFromTimestamp(e.at)});
         }
       }
 

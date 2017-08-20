@@ -52,6 +52,23 @@ class ProcessElement extends React.Component {
     </g>;
   }
 
+  renderDeadPart(part, i) {
+    let crossSize = Math.min(CELL_WIDTH2, CELL_HEIGHT2);
+
+    let x = (CELL_WIDTH2+CELL_HGUTTER2)*this.props.data.x;
+    let y = CELL_HEIGHT2*part.y - CELL_HEIGHT2/2;
+
+    let x1 = x+(CELL_WIDTH2-crossSize)/2;
+    let y1 = y+(CELL_HEIGHT2-crossSize)/2;
+    let x2 = x+CELL_WIDTH2-(CELL_WIDTH2-crossSize)/2;
+    let y2 = y+CELL_HEIGHT2-(CELL_HEIGHT2-crossSize)/2;
+
+    return <g key={i}>
+      <line x1={x1} y1={y1} x2={x2} y2={y2} style={{stroke: '#FC8888', strokeWidth: 2}} />
+      <line x1={x2} y1={y1} x2={x1} y2={y2} style={{stroke: '#FC8888', strokeWidth: 2}} />
+    </g>;
+  }
+
   render() {
     let nodes = [];
     for (const i in this.props.data.parts) {
@@ -60,6 +77,8 @@ class ProcessElement extends React.Component {
         nodes.push(this.renderTracedPart(part, i));
       } else if (part.type == 'MENTION') {
         nodes.push(this.renderMentionPart(part, i));
+      } else if (part.type == 'DEAD') {
+        nodes.push(this.renderDeadPart(part, i));
       }
     }
     return <g>
