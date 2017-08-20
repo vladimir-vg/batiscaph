@@ -49,6 +49,10 @@ websocket_handle({text, <<"store_module ", Rest/binary>>}, Req, #ws_state{remote
   % gproc:send({n, l, {erunner, Id}}, {store_module, Name, Body}),
   {ok, Req, State};
 
+websocket_handle({text, <<"trace_pid ", Pid/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
+  ScenarioPid ! {trace_pid, Pid},
+  {ok, Req, State};
+
 websocket_handle({text, Msg}, Req, State) ->
   lager:error("Unknown websocket command: ~p", [Msg]),
   {ok, Req, State};

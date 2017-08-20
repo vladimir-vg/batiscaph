@@ -63,6 +63,11 @@ handle_info({shell_input, Input}, State) ->
   z__remote_io_server ! {input, binary_to_list(Input)},
   {noreply, State};
 
+handle_info({trace_pid, Pid}, State) when is_binary(Pid) ->
+  Pid1 = list_to_pid(binary_to_list(Pid)),
+  ok = trace_pid(Pid1),
+  {noreply, State};
+
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
@@ -135,12 +140,43 @@ store_module(Name, Body, #scenario{} = State) ->
   {ok, State}.
 
 module_stored_event_now(Name, Body) ->
-  Now = erlang:system_time(micro_seconds),
-  #{
-    <<"at_s">> => (Now div (1000*1000)),
-    <<"at_mcs">> => (Now rem (1000*1000)),
+  E = event_now(),
+  E#{
     <<"type">> => <<"module_stored">>,
     <<"atom">> => Name,
     <<"size">> => byte_size(Body),
     <<"hash">> => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
   }.
+
+event_now() ->
+  Now = erlang:system_time(micro_seconds),
+  #{
+    <<"at_s">> => (Now div (1000*1000)),
+    <<"at_mcs">> => (Now rem (1000*1000))
+  }.
+
+
+
+trace_pid(Pid) ->
+  CollectorPid = whereis(z__remote_collector),
+  try erlang:trace(Pid, true, [procs, timestamp, {tracer, CollectorPid}]) of
+    1 ->
+      E = event_now(),
+      E1 = E#{<<"type">> => <<"trace_started">>, <<"pid">> => list_to_binary(pid_to_list(Pid))},
+      % TODO: check links, ancestors, trap_exit
+      CollectorPid ! E1,
+      ok
+  catch
+    error:badarg ->
+      case {erlang:is_process_alive(Pid), erlang:is_process_alive(CollectorPid)} of
+        {_, false} -> {error, try_trace_while_collector_is_dead};
+        {true, true} -> {error, failed_to_trace_alive_process};
+        {false, true} ->
+          % okay, process is dead already, meaningless to trace it
+          % just record event that it was dead at this timestamp already
+          E = event_now(),
+          E1 = E#{<<"type">> => <<"found_dead">>, <<"pid">> => list_to_binary(pid_to_list(Pid))},
+          CollectorPid ! E1,
+          ok
+      end
+  end.
