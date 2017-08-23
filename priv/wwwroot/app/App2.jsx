@@ -7,6 +7,7 @@ const CELL_HGUTTER2 = 5;
 const MENTION_PADDING = 2;
 
 const Route = ReactRouterDOM.Route;
+const Link = ReactRouterDOM.Link;
 
 class ProcessElement extends React.Component {
   renderTracedPart(part, i) {
@@ -192,6 +193,41 @@ class ScenarioView2 extends React.Component {
   }
 }
 
+class ScenariosList2 extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      items: []
+    };
+  }
+
+  componentDidMount() {
+    this.requestScenarousList();
+  }
+
+  requestScenarousList() {
+    fetch('/scenarios.json').then((response) => {
+      response.json().then((items) => {
+        this.setState({items: items});
+      });
+    });
+  }
+
+  render() {
+    let links = [];
+    for (const i in this.state.items) {
+      let id = this.state.items[i].instance_id;
+      links.push(<div key={i}><Link to={'/scenarios2/'+id} className="item">{id}</Link></div>);
+    }
+
+    return <div className="content-page">
+      <div className="scenarios-list-block">
+        {links}
+      </div>
+    </div>;
+  }
+}
+
 class App2 extends React.Component {
   constructor() {
     super();
@@ -203,7 +239,8 @@ class App2 extends React.Component {
 
   render() {
     return <div>
-      <Route path="/scenarios2/:id" component={ScenarioView2} fresh={true} />
+      <Route path="/" exact={true} component={ScenariosList2} />
+      <Route path="/scenarios2/:id" component={ScenarioView2} />
     </div>;
   }
 };
