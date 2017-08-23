@@ -154,6 +154,21 @@ class ScenarioView2 extends React.Component {
     });
   }
 
+  renderGrid() {
+    let lines = [];
+    for (let i = -10; i < 100; i++) {
+      let xa = i*(CELL_WIDTH2+CELL_HGUTTER2);
+      let xb = i*(CELL_WIDTH2+CELL_HGUTTER2) + CELL_WIDTH2;
+      lines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={2000} style={{stroke: '#ffdbdb'}} />);
+      lines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={2000} style={{stroke: '#ffdbdb'}} />);
+    }
+    for (let i = -10; i < 100; i++) {
+      let y = i*CELL_HEIGHT2;
+      lines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={2000} y2={y+0.5} style={{stroke: '#ffdbdb'}} />);
+    }
+    return lines;
+  }
+
   render() {
     if (!this.state.tree) { return <div />; }
 
@@ -168,26 +183,12 @@ class ScenarioView2 extends React.Component {
       processes.push(<LinkElement key={key} data={this.state.tree.links[key]} />);
     }
 
-    let gridLines = [];
-    for (let i = -10; i < 100; i++) {
-      let xa = i*(CELL_WIDTH2+CELL_HGUTTER2);
-      let xb = i*(CELL_WIDTH2+CELL_HGUTTER2) + CELL_WIDTH2;
-      gridLines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={1000} style={{stroke: '#ffdbdb'}} />);
-      gridLines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={1000} style={{stroke: '#ffdbdb'}} />);
-    }
-    for (let i = -10; i < 100; i++) {
-      let y = i*CELL_HEIGHT2;
-      gridLines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={1000} y2={y+0.5} style={{stroke: '#ffdbdb'}} />);
-    }
-
-    return <svg width={700} height={700}>
-      <g transform={"translate(50,50)"}>
-        <g>{gridLines}</g>
-        <g>{processes}</g>
-        <g>{spawns}</g>
-        <g>{links}</g>
-      </g>
-    </svg>;
+    return <SvgView2 padding={100} paddedWidth={1000} paddedHeight={1000}>
+      <g>{this.renderGrid()}</g>
+      <g>{processes}</g>
+      <g>{spawns}</g>
+      <g>{links}</g>
+    </SvgView2>;
   }
 }
 
@@ -202,7 +203,7 @@ class App2 extends React.Component {
 
   render() {
     return <div>
-      <Route path="/scenarios2/:id" component={ScenarioView2} />
+      <Route path="/scenarios2/:id" component={ScenarioView2} fresh={true} />
     </div>;
   }
 };
