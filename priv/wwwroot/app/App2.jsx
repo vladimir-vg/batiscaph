@@ -8,6 +8,7 @@ const MENTION_PADDING = 2;
 
 const Route = ReactRouterDOM.Route;
 const Link = ReactRouterDOM.Link;
+const Redirect = ReactRouterDOM.Redirect;
 
 class ProcessElement extends React.Component {
   renderTracedPart(part, i) {
@@ -218,21 +219,17 @@ class App2 extends React.Component {
   constructor() {
     super();
     this.state = {
-      tree: undefined
+      tree: undefined,
+      ongoingScenario: false // if active, then shell input/output is possible
     };
     this._layout = {};
 
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
-    this.onInstanceIdChange = this.onInstanceIdChange.bind(this)
+    this.startNewShell = this.startNewShell.bind(this);
+    this.onInstanceIdChange = this.onInstanceIdChange.bind(this);
+    this.onWSMessage = this.onWSMessage.bind(this);
   }
-
-  // componentDidMount() {
-    // debugger
-    // if (this.props.match.params.id) {
-    //   this.fetchInitialDelta(this.props.match.params.id);
-    // }
-  // }
 
   onInstanceIdChange(id) {
     this.fetchInitialDelta(id);
@@ -251,14 +248,35 @@ class App2 extends React.Component {
     });
   }
 
+  onWSMessage(event) {
+    if (event.data.slice(0,14) == "shell_started ") {
+      let id = event.data.slice(14);
+      this.setState({instanceId: id});
+    } else if (event.data.slice(0,6) == 'delta ') {
+      // apply delta to layout and produce new tree
+    }
+  }
+
   startNewShell() {
-    console.log('start shell')
+    this.setState({ongoingScenario: true});
+
+    V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
+    V.socket.addEventListener('message', this.onWSMessage);
+    V.socket.addEventListener('open', function () {
+      V.socket.send('start_shell');
+    });
   }
 
   render() {
+    let scenarioRedirect = null;
+    if (this.state.instanceId) {
+      scenarioRedirect = <Redirect to={"/scenarios2/" + this.state.instanceId} />;
+    }
+
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
       <Route path="/scenarios2/:id" render={(props) => <ScenarioView2 tree={this.state.tree} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
+      {scenarioRedirect}
     </div>;
   }
 };
