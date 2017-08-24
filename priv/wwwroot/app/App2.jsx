@@ -130,29 +130,8 @@ class LinkElement extends React.Component {
 
 
 class ScenarioView2 extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      tree: undefined
-    };
-    this._layout = {};
-  }
-
   componentDidMount() {
-    let url = '/api/scenarios2/' + this.props.match.params.id;
-    this.fetchInitialTree(url);
-  }
-
-  fetchInitialTree(url) {
-    fetch(url).then((response) => {
-      response.json().then((delta) => {
-        V.updateLayout(delta, this._layout);
-        let tree = V.produceTree(this._layout);
-        console.log("layout", this._layout);
-        console.log("tree", tree);
-        this.setState({tree: tree});
-      });
-    });
+    this.props.onInstanceIdChange(this.props.match.params.id);
   }
 
   renderGrid() {
@@ -160,28 +139,28 @@ class ScenarioView2 extends React.Component {
     for (let i = -10; i < 100; i++) {
       let xa = i*(CELL_WIDTH2+CELL_HGUTTER2);
       let xb = i*(CELL_WIDTH2+CELL_HGUTTER2) + CELL_WIDTH2;
-      lines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={2000} style={{stroke: '#ffdbdb'}} />);
-      lines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={2000} style={{stroke: '#ffdbdb'}} />);
+      lines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={2000} style={{stroke: '#fee'}} />);
+      lines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={2000} style={{stroke: '#fee'}} />);
     }
     for (let i = -10; i < 100; i++) {
       let y = i*CELL_HEIGHT2;
-      lines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={2000} y2={y+0.5} style={{stroke: '#ffdbdb'}} />);
+      lines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={2000} y2={y+0.5} style={{stroke: '#fee'}} />);
     }
     return lines;
   }
 
   render() {
-    if (!this.state.tree) { return <div />; }
+    if (!this.props.tree) { return <div />; }
 
     let processes = [], spawns = [], links = [];
-    for (let pid in this.state.tree.processes) {
-      processes.push(<ProcessElement key={pid} data={this.state.tree.processes[pid]} />);
+    for (let pid in this.props.tree.processes) {
+      processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} />);
     }
-    for (let key in this.state.tree.spawns) {
-      processes.push(<SpawnElement key={key} data={this.state.tree.spawns[key]} />);
+    for (let key in this.props.tree.spawns) {
+      processes.push(<SpawnElement key={key} data={this.props.tree.spawns[key]} />);
     }
-    for (let key in this.state.tree.links) {
-      processes.push(<LinkElement key={key} data={this.state.tree.links[key]} />);
+    for (let key in this.props.tree.links) {
+      processes.push(<LinkElement key={key} data={this.props.tree.links[key]} />);
     }
 
     return <SvgView2 padding={100} paddedWidth={1000} paddedHeight={1000}>
@@ -193,7 +172,9 @@ class ScenarioView2 extends React.Component {
   }
 }
 
-class ScenariosList2 extends React.Component {
+
+
+class MainPage extends React.Component {
   constructor() {
     super();
     this.state = {
@@ -221,6 +202,9 @@ class ScenariosList2 extends React.Component {
     }
 
     return <div className="content-page">
+      <div className="head-block">
+        <button className="btn" onClick={this.props.startNewShell}>Start new shell</button>
+      </div>
       <div className="scenarios-list-block">
         {links}
       </div>
@@ -228,19 +212,53 @@ class ScenariosList2 extends React.Component {
   }
 }
 
+
+
 class App2 extends React.Component {
   constructor() {
     super();
     this.state = {
+      tree: undefined
     };
+    this._layout = {};
 
-    // avoid repeating .bind(this) by doing it once
+    // because new EcmaScript standard is poorly designed
+    // we have to do bindings like that
+    this.onInstanceIdChange = this.onInstanceIdChange.bind(this)
+  }
+
+  // componentDidMount() {
+    // debugger
+    // if (this.props.match.params.id) {
+    //   this.fetchInitialDelta(this.props.match.params.id);
+    // }
+  // }
+
+  onInstanceIdChange(id) {
+    this.fetchInitialDelta(id);
+  }
+
+  fetchInitialDelta(id) {
+    let url = '/api/scenarios2/' + id;
+    fetch(url).then((response) => {
+      response.json().then((delta) => {
+        V.updateLayout(delta, this._layout);
+        let tree = V.produceTree(this._layout);
+        console.log("layout", this._layout);
+        console.log("tree", tree);
+        this.setState({tree: tree});
+      });
+    });
+  }
+
+  startNewShell() {
+    console.log('start shell')
   }
 
   render() {
     return <div>
-      <Route path="/" exact={true} component={ScenariosList2} />
-      <Route path="/scenarios2/:id" component={ScenarioView2} />
+      <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
+      <Route path="/scenarios2/:id" render={(props) => <ScenarioView2 tree={this.state.tree} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
     </div>;
   }
 };
