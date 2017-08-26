@@ -41,9 +41,36 @@
 % This function selects info about processes according to given options
 % and returns it in delta format that can be applied on frontend.
 % Currently it can select only all processes.
+delta_json(#{instance_id := Id, 'after' := At}) ->
+  Statements = [
+    % for some weird reason OPTIONAL MATCH (p1)-[rel]-(p1)
+    % returned null relationship that was impossible to filter out by WHERE
+    % but got rid of this null value by using COLLECT, and then map it by EXTRACT
+
+    { "MATCH (p1:Process {instanceId: {id}})\n"
+      "WHERE ((p1.disappearedAt IS NULL) OR p1.disappearedAt > {at})\n"
+      "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
+      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND (rel.at > {at})\n"
+      "WITH p1, rel\n"
+      "ORDER BY rel.at\n"
+      "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
+      "ORDER BY p1.appearedAt\n"
+      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, events\n"
+    , #{id => Id, at => At} },
+
+    { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
+      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND rel.at > {at}\n"
+      "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
+      "ORDER BY rel.at\n"
+    , #{id => Id, at => At} }
+  ],
+  {ok, [Processes, Events]} = neo4j:commit(Statements),
+  Processes1 = convert_rows_to_objects(Processes),
+  Events1 = convert_rows_to_objects(Events),
+  #{processes => Processes1, events => Events1};
+
 delta_json(#{instance_id := Id}) ->
   Statements = [
-
     % for some weird reason OPTIONAL MATCH (p1)-[rel]-(p1)
     % returned null relationship that was impossible to filter out by WHERE
     % but got rid of this null value by using COLLECT, and then map it by EXTRACT

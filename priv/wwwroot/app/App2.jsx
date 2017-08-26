@@ -239,11 +239,7 @@ class App2 extends React.Component {
     let url = '/api/scenarios2/' + id;
     fetch(url).then((response) => {
       response.json().then((delta) => {
-        V.updateLayout(delta, this._layout);
-        let tree = V.produceTree(this._layout);
-        console.log("layout", this._layout);
-        console.log("tree", tree);
-        this.setState({tree: tree});
+        this.applyDeltaSetState(delta);
       });
     });
   }
@@ -253,8 +249,17 @@ class App2 extends React.Component {
       let id = event.data.slice(14);
       this.setState({instanceId: id});
     } else if (event.data.slice(0,6) == 'delta ') {
-      // apply delta to layout and produce new tree
+      let delta = JSON.parse(event.data.slice(6));
+      this.applyDeltaSetState(delta);
     }
+  }
+
+  applyDeltaSetState(delta) {
+    V.updateLayout(delta, this._layout);
+    let tree = V.produceTree(this._layout);
+    console.log("layout", this._layout);
+    console.log("tree", tree);
+    this.setState({tree: tree});
   }
 
   startNewShell() {

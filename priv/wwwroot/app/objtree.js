@@ -127,7 +127,7 @@ let updateProcessInLayout = (data, layout) => {
     layout.columns[columnId].processes.push({pid: proc.pid, appearedAt: proc.appearedAt, disappearedAt: proc.disappearedAt});
   } if (wasOpen && !wasClosed) {
     if (!proc.columnId) { console.error("proc supposed to have columnId, was already opened before", proc); return; }
-    let column = layout.columns[oldProc.columnId];
+    let column = layout.columns[proc.columnId];
     let colproc = column.processes[column.processes.length-1];
     if (colproc.pid != proc.pid) { console.error("last segment in column must be this process", column, proc, colproc); return; }
     colproc.disappearedAt = proc.disappearedAt;

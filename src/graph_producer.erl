@@ -1,6 +1,6 @@
 -module(graph_producer).
 -behaviour(gen_server).
--export([start_link/1]).
+-export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(FETCH_AFTER, 1000).
@@ -15,7 +15,9 @@
 
 -record(graph_producer, {
   id :: binary(),
+  websocket_pid,
   fetch_timer,
+  last_delta_at :: undefined | non_neg_integer(),
   last_checked_at :: undefined | {Secs :: non_neg_integer(), Mcs :: non_neg_integer()}
 }).
 
@@ -24,12 +26,12 @@
 code_change(_, State, _) -> {ok, State}.
 terminate(_,_State) -> ok.
 
-start_link(Id) ->
-  gen_server:start_link(?MODULE, [Id], []).
+start_link(Id, WebsocketPid) ->
+  gen_server:start_link(?MODULE, [Id, WebsocketPid], []).
 
-init([Id]) ->
+init([Id, WebsocketPid]) ->
   self() ! check_events,
-  {ok, #graph_producer{id = Id}}.
+  {ok, #graph_producer{id = Id, websocket_pid = WebsocketPid}}.
 
 
 
@@ -40,7 +42,8 @@ handle_info(new_events_stored, State) ->
 handle_info(check_events, State) ->
   {ok, State1} = clear_fetch_timer(State),
   {ok, State2} = fetch_and_process_events(State1),
-  {noreply, State2};
+  {ok, State3} = send_delta_to_websocket(State2),
+  {noreply, State3};
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
@@ -106,3 +109,47 @@ fetch_events(#graph_producer{last_checked_at = LastAt, id = Id} = State) ->
   end.
 
 
+
+send_delta_to_websocket(#graph_producer{last_delta_at = undefined, id = Id, websocket_pid = Pid} = State) ->
+  Delta = n4j_processes:delta_json(#{instance_id => Id}),
+  {ok, LastAt1} = lastest_timestamp_in_delta(Delta),
+  lager:info("lastest timestamp: ~p", [LastAt1]),
+  Pid ! {delta, Delta},
+  {ok, State#graph_producer{last_delta_at = LastAt1}};
+
+send_delta_to_websocket(#graph_producer{last_delta_at = LastAt, id = Id, websocket_pid = Pid} = State) ->
+  Delta = n4j_processes:delta_json(#{instance_id => Id, 'after' => LastAt}),
+  {ok, LastAt1} = lastest_timestamp_in_delta(LastAt, Delta),
+  lager:info("lastest timestamp: ~p", [LastAt1]),
+  Pid ! {delta, Delta},
+  {ok, State#graph_producer{last_delta_at = LastAt1}}.
+
+
+
+% I know it's ugly, but works for now,
+% should be replaced with something more simple and effective
+lastest_timestamp_in_delta(Delta) ->
+  lastest_timestamp_in_delta(0, Delta).
+
+lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) when is_integer(LastAt) ->
+  LastAt1 = case lists:last([undefined | Events]) of
+    #{<<"at">> := At1} when At1 > LastAt -> At1;
+    _ -> LastAt
+  end,
+  ProcTimestamps = lists:map(fun (#{<<"events">> := Events1} = P) ->
+    EventsTimestamps = [At || #{<<"at">> := At} <- Events1],
+    AppearedAt = case maps:get(<<"appearedAt">>, P, null) of
+      At2 when is_integer(At2) -> At2;
+      null -> LastAt
+    end,
+    DisappearedAt = case maps:get(<<"disappearedAt">>, P, null) of
+      At3 when is_integer(At3) -> At3;
+      null -> LastAt
+    end,
+    lists:max([AppearedAt, DisappearedAt] ++ EventsTimestamps)
+  end, Processes),
+  LastAt2 = lists:max([LastAt1] ++ ProcTimestamps),
+  case LastAt2 of
+    0 -> {ok, undefined};
+    _ -> {ok, LastAt2}
+  end.

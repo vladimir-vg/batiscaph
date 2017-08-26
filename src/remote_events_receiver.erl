@@ -25,13 +25,12 @@ start_link(Id, WebsocketPid) ->
   gen_server:start_link(?MODULE, [Id, WebsocketPid], []).
 
 init([Id, WebsocketPid]) ->
-  {ok, ProducerPid} = graph_producer:start_link(Id),
+  {ok, ProducerPid} = graph_producer:start_link(Id, WebsocketPid),
   {ok, #remote_control{id = Id, websocket_pid = WebsocketPid, graph_producer_pid = ProducerPid}}.
 
 
 
 handle_info({events, Events}, #remote_control{id = Id, websocket_pid = WebsocketPid, graph_producer_pid = ProducerPid} = State) ->
-  WebsocketPid ! {events, Events}, % try to send events if websocket is alive
   ok = clk_events:store(Id, Events),
   ProducerPid ! new_events_stored,
   {noreply, State};

@@ -35,18 +35,15 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefin
 
 websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   ScenarioPid ! {shell_input, Input},
-  % gproc:send({n, l, {erunner, Id}}, {shell_input, Input}),
   {ok, Req, State};
 
 websocket_handle({text, <<"shell_restart">>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   ScenarioPid ! shell_restart,
-  % gproc:send({n, l, {erunner, Id}}, shell_restart),
   {ok, Req, State};
 
 websocket_handle({text, <<"store_module ", Rest/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   [Name, Body] = binary:split(Rest, <<"\n">>),
   ScenarioPid ! {store_module, Name, Body},
-  % gproc:send({n, l, {erunner, Id}}, {store_module, Name, Body}),
   {ok, Req, State};
 
 websocket_handle({text, <<"trace_pid ", Pid/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
@@ -65,6 +62,10 @@ websocket_handle(_Data, Req, State) ->
 websocket_info({events, Events}, Req, State) ->
   JSON = jsx:encode(Events),
   {reply, {text, <<"events ", JSON/binary>>}, Req, State};
+
+websocket_info({delta, Delta}, Req, State) ->
+  JSON = jsx:encode(Delta),
+  {reply, {text, <<"delta ", JSON/binary>>}, Req, State};
 
 websocket_info({store_module, Name, Body}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   ScenarioPid ! {store_module, Name, Body},
