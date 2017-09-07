@@ -64,9 +64,15 @@ handle_info({shell_input, Input}, State) ->
   {noreply, State};
 
 handle_info({trace_pid, Pid}, State) when is_binary(Pid) ->
-  Pid1 = list_to_pid(binary_to_list(Pid)),
-  ok = trace_pid(Pid1),
-  {noreply, State};
+  try list_to_pid(binary_to_list(Pid)) of
+    Pid1 ->
+      ok = trace_pid(Pid1),
+      {noreply, State}
+  catch
+    badarg ->
+      {noreply, State}
+  end;
+
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.

@@ -241,7 +241,7 @@ V.produceTree = (layout) => {
 
   // take timestamp a bit ahead of last as now
   // will be used for not terminated processes
-  let nowY = layout.timestamps.length + 1;
+  let nowY = layout.timestamps.length;
 
   for (const pid in layout.processes) {
     if (!tree.processes[pid]) { tree.processes[pid] = {mentions: []}; }

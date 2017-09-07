@@ -130,20 +130,53 @@ class LinkElement extends React.Component {
 
 
 
+class ShellIOView2 extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    }
+  }
+
+  render() {
+    let maxHeight = this.state.viewportHeight - 40;
+    // width: 300px;position: fixed;right: 20px;top: 20px;background-color: white;bottom: 20px;overflow-y: scroll;
+    return <div style={{width: this.props.width, position: 'fixed', right: 20, top: 20, maxHeight: maxHeight, backgroundColor: 'white', overflowY: 'scroll', border: '1px solid #C4C4C4', boxSizing: 'border-box', boxShadow: '2px 2px 6px 0px rgba(0,0,0,0.16)'}}>
+      ...
+    </div>
+  }
+}
+
+
+
 class ScenarioView2 extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      viewportWidth: Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
+      viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
+    }
+  }
+
   componentDidMount() {
     this.props.onInstanceIdChange(this.props.match.params.id);
   }
 
+  gridPositionFunc(x, y) {
+    return {x: x % (CELL_WIDTH2 + CELL_HGUTTER2), y: y % CELL_HEIGHT2};
+  }
+
   renderGrid() {
+    let maxX = 1 + this.state.viewportWidth/(CELL_WIDTH2+CELL_HGUTTER2);
+    let maxY = 1 + this.state.viewportHeight/CELL_HEIGHT2;
     let lines = [];
-    for (let i = -10; i < 100; i++) {
+    for (let i = -10; i < maxX; i++) {
       let xa = i*(CELL_WIDTH2+CELL_HGUTTER2);
       let xb = i*(CELL_WIDTH2+CELL_HGUTTER2) + CELL_WIDTH2;
       lines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={2000} style={{stroke: '#fee'}} />);
       lines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={2000} style={{stroke: '#fee'}} />);
     }
-    for (let i = -10; i < 100; i++) {
+    for (let i = -10; i < maxY; i++) {
       let y = i*CELL_HEIGHT2;
       lines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={2000} y2={y+0.5} style={{stroke: '#fee'}} />);
     }
@@ -164,12 +197,15 @@ class ScenarioView2 extends React.Component {
       processes.push(<LinkElement key={key} data={this.props.tree.links[key]} />);
     }
 
-    return <SvgView2 padding={100} paddedWidth={1000} paddedHeight={1000}>
-      <g>{this.renderGrid()}</g>
-      <g>{processes}</g>
-      <g>{spawns}</g>
-      <g>{links}</g>
-    </SvgView2>;
+    return <div>
+      <SvgView2 padding={100} paddedWidth={1000} paddedHeight={1000}>
+        <g positionFunction={this.gridPositionFunc}>{this.renderGrid()}</g>
+        <g>{processes}</g>
+        <g>{spawns}</g>
+        <g>{links}</g>
+      </SvgView2>
+      <ShellIOView2 width={300} />
+    </div>;
   }
 }
 
