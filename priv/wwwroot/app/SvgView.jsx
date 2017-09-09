@@ -1,4 +1,4 @@
-class SvgView2 extends React.Component {
+class SvgView extends React.Component {
   constructor(props) {
     super();
     this.state = {
@@ -151,7 +151,7 @@ class SvgView2 extends React.Component {
   }
 }
 
-SvgView2.propTypes = {
+SvgView.propTypes = {
   className: React.PropTypes.string,
   padding: React.PropTypes.number.isRequired,
   paddedWidth: React.PropTypes.number.isRequired,
