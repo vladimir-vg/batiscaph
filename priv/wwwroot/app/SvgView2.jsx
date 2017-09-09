@@ -4,49 +4,44 @@ class SvgView2 extends React.Component {
     this.state = {
       areaCursor: null,
 
-      // Commented out code that was handling dragging and scrolling inside <svg>
-      //
-      // // global position of the whole figure
       posX: props.padding,
       posY: props.padding
     }
   }
 
-  // Commented out code that was handling dragging and scrolling inside <svg>
-  //
   onMouseDown(e) {
     this.startDragging(e);
   }
-  
+
   onMouseMove(e) {
     this._lastMousePosX = e.clientX;
     this._lastMousePosY = e.clientY;
   
     this.moveDragging(e);
   }
-  
+
   onMouseUp() {
     this.stopDragging();
   }
-  
+
   onMouseLeave() {
     this.stopDragging();
   }
-  
+
   onWheel(e) {
     let x = this.state.posX;
     let y = this.state.posY - e.deltaY;
     let t = this.sanitizeXY(x, y);
     this.setState({posY: t.y});
   }
-  
+
   startDragging(e) {
     this._isDragging = true;
     this._dragStartX = e.clientX;
     this._dragStartY = e.clientY;
     this.setState({areaCursor: 'move'});
   }
-  
+
   moveDragging(e) {
     if (!this._isDragging) return;
     if (this._posMoveAnimationRequest) return;
@@ -57,43 +52,43 @@ class SvgView2 extends React.Component {
   
     this.setPosition(x,y);
   }
-  
+
   // do not allow to move out of padded space
   sanitizeXY(x,y) {
     var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-  
+
     if ((viewportWidth+(-x)) > (this.props.paddedWidth + this.props.padding)) {
       x = -(this.props.paddedWidth-viewportWidth+this.props.padding);
     }
     if (x > this.props.padding) { x = this.props.padding; }
-  
+
     if ((viewportHeight+(-y)) > (this.props.paddedHeight + this.props.padding)) {
       y = -(this.props.paddedHeight-viewportHeight+this.props.padding);
     }
     if (y > this.props.padding) { y = this.props.padding; }
-  
+
     return {x: x, y: y};
   }
-  
+
   setPosition(x,y) {
     let t = this.sanitizeXY(x, y);
     x = t.x;
     y = t.y;
-  
+
     if (x == this._dragX && y == this._dragY) return;
-  
+
     this._posMoveAnimationRequest = window.requestAnimationFrame((function () {
       // explicitly setting svg figure offset
       this.refs.posBase.transform.baseVal.getItem(0).setTranslate(x,y);
       this.refs.vposBase.transform.baseVal.getItem(0).setTranslate(0,y);
       this._dragX = x;
       this._dragY = y;
-  
+
       this._posMoveAnimationRequest = undefined;
     }).bind(this))
   }
-  
+
   stopDragging() {
     this._isDragging = false;
     if (this._dragX && this._dragY) {
@@ -162,3 +157,4 @@ SvgView2.propTypes = {
   paddedWidth: React.PropTypes.number.isRequired,
   paddedHeight: React.PropTypes.number.isRequired,
 };
+   

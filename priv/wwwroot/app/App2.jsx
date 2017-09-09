@@ -141,7 +141,7 @@ class ShellIOView2 extends React.Component {
   render() {
     let maxHeight = this.state.viewportHeight - 40;
     // width: 300px;position: fixed;right: 20px;top: 20px;background-color: white;bottom: 20px;overflow-y: scroll;
-    return <div style={{width: this.props.width, position: 'fixed', right: 20, top: 20, maxHeight: maxHeight, backgroundColor: 'white', overflowY: 'scroll', border: '1px solid #C4C4C4', boxSizing: 'border-box', boxShadow: '2px 2px 6px 0px rgba(0,0,0,0.16)'}}>
+    return <div style={{width: this.props.width, position: 'fixed', right: 20, bottom: 20, maxHeight: maxHeight, backgroundColor: 'rgba(255,255,255,0.7)', overflowY: 'scroll', boxSizing: 'border-box', boxShadow: '2px 2px 6px 0px rgba(0,0,0,0.16)'}}>
       ...
     </div>
   }
@@ -162,9 +162,9 @@ class ScenarioView2 extends React.Component {
     this.props.onInstanceIdChange(this.props.match.params.id);
   }
 
-  gridPositionFunc(x, y) {
-    return {x: x % (CELL_WIDTH2 + CELL_HGUTTER2), y: y % CELL_HEIGHT2};
-  }
+  // gridPositionFunc(x, y) {
+  //   return {x: x % (CELL_WIDTH2 + CELL_HGUTTER2), y: y % CELL_HEIGHT2};
+  // }
 
   renderGrid() {
     let maxX = 1 + this.state.viewportWidth/(CELL_WIDTH2+CELL_HGUTTER2);
@@ -199,12 +199,12 @@ class ScenarioView2 extends React.Component {
 
     return <div>
       <SvgView2 padding={100} paddedWidth={1000} paddedHeight={1000}>
-        <g positionFunction={this.gridPositionFunc}>{this.renderGrid()}</g>
+        <g>{this.renderGrid()}</g>
         <g>{processes}</g>
         <g>{spawns}</g>
         <g>{links}</g>
       </SvgView2>
-      <ShellIOView2 width={300} />
+      <ShellIOView2 width={400} />
     </div>;
   }
 }
