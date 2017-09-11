@@ -130,25 +130,6 @@ class LinkElement extends React.Component {
 
 
 
-class ShellIOView extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
-    }
-  }
-
-  render() {
-    let maxHeight = this.state.viewportHeight - 40;
-    // width: 300px;position: fixed;right: 20px;top: 20px;background-color: white;bottom: 20px;overflow-y: scroll;
-    return <div style={{width: this.props.width, position: 'fixed', right: 20, bottom: 20, maxHeight: maxHeight, backgroundColor: 'rgba(255,255,255,0.7)', overflowY: 'scroll', boxSizing: 'border-box', boxShadow: '2px 2px 6px 0px rgba(0,0,0,0.16)'}}>
-      ...
-    </div>
-  }
-}
-
-
-
 class ScenarioView extends React.Component {
   constructor() {
     super();
@@ -204,7 +185,7 @@ class ScenarioView extends React.Component {
         <g>{spawns}</g>
         <g>{links}</g>
       </SvgView>
-      <ShellIOView width={400} />
+      <ShellPanel width={400} shellInfo={this.props.shellInfo} />
     </div>;
   }
 }
@@ -256,6 +237,7 @@ class App extends React.Component {
     super();
     this.state = {
       tree: undefined,
+      shellInfo: undefined,
       ongoingScenario: false // if active, then shell input/output is possible
     };
     this._layout = {};
@@ -316,7 +298,7 @@ class App extends React.Component {
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
+      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellInfo={this.state.shellInfo} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
       {scenarioRedirect}
     </div>;
   }

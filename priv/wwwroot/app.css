@@ -1,6 +1,35 @@
 html, body { margin: 0; padding: 0; }
 
-svg .unselectable {
+.ShellPanel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background-color: rgba(255,255,255,0.7);
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 2px 2px 6px 0px rgba(0,0,0,0.16);
+}
+
+.ShellPanel .muted-text {
+  font-family: 'Fira Sans', sans-serif;;
+  font-size: 14px;
+  color: #828282;
+}
+
+.ShellPanel .item {
+  margin: 20px;
+}
+.ShellPanel .item.disabled-underline {
+  border-bottom: 2px solid #828282;
+  padding-bottom: 10px;
+}
+
+
+
+
+
+
+/*svg .unselectable {
   cursor: default;
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -9,11 +38,11 @@ svg .unselectable {
 }
 svg .unselectable::selection {
   background: none;
-}
+}*/
 
 /***/
 
-.content-page {
+/*.content-page {
   margin: 0 auto;
   width: 800px;
 }
@@ -22,12 +51,8 @@ svg .unselectable::selection {
   margin: 100px 0;
 }
 
-.container {
-  /*display: flex;*/
-}
 
 .container > .svg-area {
-  /*flex: 3;*/
   width: 100%;
 }
 .container > .aside-area {
@@ -93,7 +118,6 @@ rect.bad-reason {
   fill: none;
   stroke: #3771c8;
   stroke-width: 1;
-  /*marker-start: url(#markerSendStart);*/
   marker-end: url(#markerSendEnd);
 }
 
@@ -206,14 +230,7 @@ svg text tspan.pid.selected {
 }
 
 
-.selected-item-info {
-  /*position: fixed;*/
-  /*margin-left: 20px;
-  margin-top: 20px;*/
-  /*width: 450px; /* depends on .container > .aside-area width */*/
-  /*height: 100%;*/
-  /*overflow-y: auto;*/
-}
+
 .selected-item-info .attrs {
   padding: 20px;
   line-height: 1.3em;
@@ -281,4 +298,4 @@ svg text tspan.pid.selected {
   background-color: #f6f5f3;
   padding: 20px;
   margin: 20px 0;
-}
+}*/
