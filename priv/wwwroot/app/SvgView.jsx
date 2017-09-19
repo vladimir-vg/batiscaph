@@ -4,7 +4,7 @@ class SvgView extends React.Component {
     this.state = {
       areaCursor: null,
 
-      posX: props.padding,
+      posX: props.paddingLeft || props.padding,
       posY: props.padding
     }
   }
@@ -58,10 +58,12 @@ class SvgView extends React.Component {
     var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
+    var paddingLeft = this.props.paddingLeft || this.props.padding;
+
     if ((viewportWidth+(-x)) > (this.props.paddedWidth + this.props.padding)) {
       x = -(this.props.paddedWidth-viewportWidth+this.props.padding);
     }
-    if (x > this.props.padding) { x = this.props.padding; }
+    if (x > paddingLeft) { x = paddingLeft; }
 
     if ((viewportHeight+(-y)) > (this.props.paddedHeight + this.props.padding)) {
       y = -(this.props.paddedHeight-viewportHeight+this.props.padding);

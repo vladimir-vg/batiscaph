@@ -5,6 +5,7 @@ const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
 const CELL_HGUTTER = 5;
 const MENTION_PADDING = 2;
+const SHELL_WIDTH = 400;
 
 
 
@@ -159,15 +160,19 @@ class ScenarioView extends React.Component {
     let maxX = 1 + this.state.viewportWidth/(CELL_WIDTH+CELL_HGUTTER);
     let maxY = 1 + this.state.viewportHeight/CELL_HEIGHT;
     let lines = [];
-    for (let i = -10; i < maxX; i++) {
+
+    let minX = -Math.floor((SHELL_WIDTH+100)/(CELL_WIDTH+CELL_HGUTTER));
+    let minY = -10;
+
+    for (let i = minX; i < maxX; i++) {
       let xa = i*(CELL_WIDTH+CELL_HGUTTER);
       let xb = i*(CELL_WIDTH+CELL_HGUTTER) + CELL_WIDTH;
-      lines.push(<line key={'ha-' + i} x1={xa+0.5} y1={-100} x2={xa+0.5} y2={2000} style={{stroke: '#fee'}} />);
-      lines.push(<line key={'hb-' + i} x1={xb-0.5} y1={-100} x2={xb-0.5} y2={2000} style={{stroke: '#fee'}} />);
+      lines.push(<line key={'ha-' + i} x1={xa+0.5} y1={minY*CELL_HEIGHT} x2={xa+0.5} y2={maxY*CELL_HEIGHT} style={{stroke: '#fee'}} />);
+      lines.push(<line key={'hb-' + i} x1={xb-0.5} y1={minY*CELL_HEIGHT} x2={xb-0.5} y2={maxY*CELL_HEIGHT} style={{stroke: '#fee'}} />);
     }
-    for (let i = -10; i < maxY; i++) {
+    for (let i = minY; i < maxY; i++) {
       let y = i*CELL_HEIGHT;
-      lines.push(<line key={'v-' + i} x1={-100} y1={y+0.5} x2={2000} y2={y+0.5} style={{stroke: '#fee'}} />);
+      lines.push(<line key={'v-' + i} x1={minX*(CELL_WIDTH+CELL_HGUTTER)} y1={y+0.5} x2={maxX*(CELL_WIDTH+CELL_HGUTTER)} y2={y+0.5} style={{stroke: '#fee'}} />);
     }
     return lines;
   }
@@ -187,13 +192,13 @@ class ScenarioView extends React.Component {
     }
 
     return <div>
-      <SvgView padding={100} paddedWidth={1000} paddedHeight={1000}>
+      <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={1000} paddedHeight={1000}>
         <g>{this.renderGrid()}</g>
         <g>{processes}</g>
         <g>{spawns}</g>
         <g>{links}</g>
       </SvgView>
-      <ShellPanel width={400} shellInfo={this.props.shellInfo} />
+      <ShellPanel width={SHELL_WIDTH} shellInfo={this.props.shellInfo} />
     </div>;
   }
 }
