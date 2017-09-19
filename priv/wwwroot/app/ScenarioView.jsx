@@ -87,6 +87,8 @@ class ProcessElement extends React.Component {
   }
 }
 
+
+
 class SpawnElement extends React.Component {
   render() {
     let width = 2;
@@ -112,6 +114,8 @@ class SpawnElement extends React.Component {
     }
   }
 }
+
+
 
 class LinkElement extends React.Component {
   render() {

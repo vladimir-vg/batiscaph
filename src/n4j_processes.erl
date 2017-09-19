@@ -67,7 +67,7 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
   {ok, [Processes, Events]} = neo4j:commit(Statements),
   Processes1 = convert_rows_to_objects(Processes),
   Events1 = convert_rows_to_objects(Events),
-  #{processes => Processes1, events => Events1};
+  {ok, #{processes => Processes1, events => Events1}};
 
 delta_json(#{instance_id := Id}) ->
   Statements = [
@@ -94,7 +94,7 @@ delta_json(#{instance_id := Id}) ->
   {ok, [Processes, Events]} = neo4j:commit(Statements),
   Processes1 = convert_rows_to_objects(Processes),
   Events1 = convert_rows_to_objects(Events),
-  #{processes => Processes1, events => Events1}.
+  {ok, #{processes => Processes1, events => Events1}}.
 
 
 

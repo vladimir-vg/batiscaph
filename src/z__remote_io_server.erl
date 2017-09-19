@@ -67,19 +67,19 @@ handle_cast(Cast, State) ->
 
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,Binary}, #shell_io{} = State) when is_binary(Binary) ->
-  Event = shell_output_event_now([{put_chars,unicode,Binary}]),
+  Event = shell_output_event_now(From, [{put_chars,unicode,Binary}]),
   z__remote_collector ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}, #shell_io{} = State) ->
-  Event = shell_output_event_now([{put_chars,unicode,io_lib,format,[Format,Args]}]),
+  Event = shell_output_event_now(From, [{put_chars,unicode,io_lib,format,[Format,Args]}]),
   z__remote_collector ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
 handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined} = State) ->
-  Event = shell_input_expected_event_now(Prompt),
+  Event = shell_input_expected_event_now(From, Prompt),
   z__remote_collector ! Event,
   Pending = #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt, extra_args = ExtraArgs},
   {ok, State1} = continue_pending_input(State#shell_io{pending_get_until = Pending}),
@@ -94,7 +94,7 @@ handle_io_request(From, ReplyAs, getopts, State) ->
   {ok, State};
 
 handle_io_request(From, ReplyAs, {requests, Requests}, #shell_io{} = State) ->
-  Event = shell_output_event_now(Requests),
+  Event = shell_output_event_now(From, Requests),
   z__remote_collector ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
@@ -110,7 +110,7 @@ continue_pending_input(#shell_io{pending_get_until = Pending} = State) ->
   #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt} = Pending,
   case attempt_scan(State#shell_io{pending_get_until = Pending}) of
     {ok, Scanned, Result, State1} ->
-      Event = shell_input_event_now(Prompt, Scanned),
+      Event = shell_input_event_now(From, Prompt, Scanned),
 
       % make sure that input logged first, and only then execution starts
       ok = gen_server:call(z__remote_collector, {event, Event}),
@@ -141,12 +141,13 @@ take_prefix([C | Input1], Input) -> [C | take_prefix(Input1, Input)].
 
 
 
-shell_output_event_now(Requests) ->
+shell_output_event_now(Pid, Requests) ->
   Now = erlang:system_time(micro_seconds),
   Output = shell_output_event_now0(Requests, []),
   #{
     <<"at_s">> => (Now div (1000*1000)),
     <<"at_mcs">> => (Now rem (1000*1000)),
+    <<"pid">> => list_to_binary(pid_to_list(Pid)),
     <<"type">> => <<"shell_output">>,
     <<"message">> => iolist_to_binary(Output)
   }.
@@ -165,20 +166,22 @@ shell_output_event_now0([{put_chars,unicode,io_lib,format,[Format,Args]} | Reque
 
 
 
-shell_input_expected_event_now(Prompt) ->
+shell_input_expected_event_now(Pid, Prompt) ->
   Now = erlang:system_time(micro_seconds),
   #{
     <<"at_s">> => (Now div (1000*1000)),
     <<"at_mcs">> => (Now rem (1000*1000)),
+    <<"pid">> => list_to_binary(pid_to_list(Pid)),
     <<"type">> => <<"shell_input_expected">>,
     <<"prompt">> => iolist_to_binary(Prompt)
   }.
 
-shell_input_event_now(Prompt, Result) ->
+shell_input_event_now(Pid, Prompt, Result) ->
   Now = erlang:system_time(micro_seconds),
   #{
     <<"at_s">> => (Now div (1000*1000)),
     <<"at_mcs">> => (Now rem (1000*1000)),
+    <<"pid">> => list_to_binary(pid_to_list(Pid)),
     <<"type">> => <<"shell_input">>,
     <<"prompt">> => iolist_to_binary(Prompt),
     <<"message">> => iolist_to_binary(Result)

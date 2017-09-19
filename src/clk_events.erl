@@ -85,8 +85,9 @@ select(Opts) ->
 
 
 select_columns_sql() ->
-  <<", ", Columns/binary>> = iolist_to_binary(select_columns_sql(columns())),
-  Columns.
+  Columns = columns() -- [<<"at_s">>,<<"at_mcs">>],
+  <<", ", ColumnsBin/binary>> = iolist_to_binary(select_columns_sql(Columns)),
+  <<"(toUInt64(at_s)*1000*1000 + at_mcs) AS at, ", ColumnsBin/binary>>.
 
 select_columns_sql([]) -> [];
 select_columns_sql([{Name, <<"DateTime">>} | Rest]) ->
@@ -103,8 +104,10 @@ where_cond(Opts) ->
       Cond = [<<"(instance_id = '">>, Val, <<"')">>],
       [Cond | Acc];
 
-    ('after', {At, Mcs}, Acc) ->
-      Cond = [<<"((toUInt64(at_s), at_mcs) > (">>, integer_to_binary(At), <<", ">>, integer_to_binary(Mcs), <<"))">>],
+    ('after', At, Acc) when is_integer(At) ->
+      AtS = At div 1000*1000,
+      AtMcs = At rem 1000*1000,
+      Cond = [<<"((toUInt64(at_s), at_mcs) > (">>, integer_to_binary(AtS), <<", ">>, integer_to_binary(AtMcs), <<"))">>],
       [Cond | Acc];
 
     (type_in, Vals, Acc) when is_list(Vals) ->

@@ -1,5 +1,6 @@
 -module(graph_producer).
 -behaviour(gen_server).
+-export([delta_json/2]).
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -17,7 +18,7 @@
   id :: binary(),
   websocket_pid,
   fetch_timer,
-  last_delta_at :: undefined | non_neg_integer(),
+  last_delta_at = 0 :: non_neg_integer(),
   last_checked_at :: undefined | {Secs :: non_neg_integer(), Mcs :: non_neg_integer()}
 }).
 
@@ -110,31 +111,55 @@ fetch_events(#graph_producer{last_checked_at = LastAt, id = Id} = State) ->
 
 
 
-send_delta_to_websocket(#graph_producer{last_delta_at = undefined, id = Id, websocket_pid = Pid} = State) ->
-  Delta = n4j_processes:delta_json(#{instance_id => Id}),
-  {ok, LastAt1} = lastest_timestamp_in_delta(Delta),
-  lager:info("lastest timestamp: ~p", [LastAt1]),
-  Pid ! {delta, Delta},
-  {ok, State#graph_producer{last_delta_at = LastAt1}};
-
 send_delta_to_websocket(#graph_producer{last_delta_at = LastAt, id = Id, websocket_pid = Pid} = State) ->
-  Delta = n4j_processes:delta_json(#{instance_id => Id, 'after' => LastAt}),
+  {ok, Delta} = delta_json(Id, LastAt),
   {ok, LastAt1} = lastest_timestamp_in_delta(LastAt, Delta),
-  lager:info("lastest timestamp: ~p", [LastAt1]),
+
   Pid ! {delta, Delta},
   {ok, State#graph_producer{last_delta_at = LastAt1}}.
 
 
 
+delta_json(Id, LastAt) ->
+  ClkOpts = clickhouse_opts(Id, LastAt),
+  {ok, TableEvents} = clk_events:select(ClkOpts),
+  Neo4jOpts = neo4j_opts(Id, LastAt, TableEvents),
+  {ok, #{processes := Processes, events := GraphEvents}} = n4j_processes:delta_json(Neo4jOpts),
+  Delta = #{processes => Processes, graph_events => GraphEvents, table_events => TableEvents},
+  {ok, Delta}.
+
+
+table_events_types() ->
+  [<<"shell_input">>,<<"shell_input_expected">>,<<"shell_output">>].
+
+clickhouse_opts(Id, LastAt) ->
+  #{instance_id => Id, 'after' => LastAt, type_in => table_events_types()}.
+
+
+
+neo4j_opts(Id, LastAt, TableEvents) ->
+  Opts0 = #{instance_id => Id, 'after' => LastAt},
+  Pids = [P || #{<<"pid">> := P} <- TableEvents],
+  case Pids of
+    [] -> Opts0;
+    [_|_] -> Opts0#{include_processes => Pids}
+  end.
+
+
+
+% lastest_timestamp_in_delta(undefined, Delta) ->
+%   lastest_timestamp_in_delta(0, Delta);
+
 % I know it's ugly, but works for now,
 % should be replaced with something more simple and effective
-lastest_timestamp_in_delta(Delta) ->
-  lastest_timestamp_in_delta(0, Delta).
-
-lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) when is_integer(LastAt) ->
-  LastAt1 = case lists:last([undefined | Events]) of
+lastest_timestamp_in_delta(LastAt, #{processes := Processes, table_events := TableEvents, graph_events := GraphEvents}) when is_integer(LastAt) ->
+  LastAt1 = case lists:last([undefined | TableEvents]) of
     #{<<"at">> := At1} when At1 > LastAt -> At1;
     _ -> LastAt
+  end,
+  LastAt2 = case lists:last([undefined | GraphEvents]) of
+    #{<<"at">> := At4} when At4 > LastAt1 -> At4;
+    _ -> LastAt1
   end,
   ProcTimestamps = lists:map(fun (#{<<"events">> := Events1} = P) ->
     EventsTimestamps = [At || #{<<"at">> := At} <- Events1],
@@ -148,8 +173,4 @@ lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) 
     end,
     lists:max([AppearedAt, DisappearedAt] ++ EventsTimestamps)
   end, Processes),
-  LastAt2 = lists:max([LastAt1] ++ ProcTimestamps),
-  case LastAt2 of
-    0 -> {ok, undefined};
-    _ -> {ok, LastAt2}
-  end.
+  lists:max([LastAt2] ++ ProcTimestamps).

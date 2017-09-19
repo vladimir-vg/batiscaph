@@ -59,9 +59,9 @@ websocket_handle(_Data, Req, State) ->
 
 
 
-websocket_info({events, Events}, Req, State) ->
-  JSON = jsx:encode(Events),
-  {reply, {text, <<"events ", JSON/binary>>}, Req, State};
+% websocket_info({events, Events}, Req, State) ->
+%   JSON = jsx:encode(Events),
+%   {reply, {text, <<"events ", JSON/binary>>}, Req, State};
 
 websocket_info({delta, Delta}, Req, State) ->
   JSON = jsx:encode(Delta),
