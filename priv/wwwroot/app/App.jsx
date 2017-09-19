@@ -52,7 +52,7 @@ class App extends React.Component {
     super();
     this.state = {
       tree: undefined,
-      shellInfo: undefined,
+      shellInfo: {prompt: undefined, events: []},
       ongoingScenario: false // if active, then shell input/output is possible
     };
     this._layout = {};
@@ -66,7 +66,7 @@ class App extends React.Component {
 
   onInstanceIdChange(id) {
     this._layout = {};
-    this.setState({tree: undefined});
+    this.setState({tree: undefined, shellInfo: {prompt: undefined, events: []}});
     this.fetchInitialDelta(id);
   }
 
@@ -89,12 +89,30 @@ class App extends React.Component {
     }
   }
 
+  produceShellInfo(delta) {
+    let shellInfo = Object.assign({}, this.state.shellInfo);
+    for (let i in delta.table_events) {
+      let e = delta.table_events[i];
+      if (e.type == 'shell_input_expected') {
+        shellInfo.prompt = e.prompt;
+      } else if (e.type == 'shell_input') {
+        shellInfo.prompt = undefined;
+        shellInfo.events.push(e);
+      } else if (e.type == 'shell_output') {
+        shellInfo.events.push(e);
+      }
+    }
+    return shellInfo;
+  }
+
   applyDeltaSetState(delta) {
     V.updateLayout(delta, this._layout);
     let tree = V.produceTree(this._layout);
+    let shellInfo = this.produceShellInfo(delta);
     console.log("layout", this._layout);
     console.log("tree", tree);
-    this.setState({tree: tree});
+    console.log("shellInfo", shellInfo);
+    this.setState({tree: tree, shellInfo: shellInfo});
   }
 
   startNewShell() {

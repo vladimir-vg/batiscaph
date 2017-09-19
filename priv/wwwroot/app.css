@@ -1,5 +1,19 @@
 html, body { margin: 0; padding: 0; }
 
+code { font-family: 'Ubuntu Mono', monospace; }
+
+/* utilities */
+
+.unselectable {
+  cursor: default;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+/* / utilities */
+
 .ShellPanel {
   position: fixed;
   left: 20px;
@@ -17,11 +31,41 @@ html, body { margin: 0; padding: 0; }
 }
 
 .ShellPanel .item {
-  margin: 20px;
+  margin: 5px 10px;
+  display: flex;
 }
-.ShellPanel .item.disabled-underline {
-  border-bottom: 2px solid #828282;
+.ShellPanel .item.input,
+.ShellPanel .item.active {
+  margin-top: 20px;
+}
+.ShellPanel .item.output {
+  color: #828282;
+}
+
+.ShellPanel .item .prompt {
+  flex: 0 0 40px;
+}
+.ShellPanel .item .message {
+  flex: 1;
+}
+.ShellPanel .item code,
+.ShellPanel .item textarea {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 16px;
+}
+
+.ShellPanel .item.active.underline {
+  border-bottom: 2px solid #2F80ED;
   padding-bottom: 10px;
+}
+.ShellPanel .item.active .prompt {
+  color: #2F80ED;
+}
+
+.ShellPanel .item.active textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
 }
 
 
