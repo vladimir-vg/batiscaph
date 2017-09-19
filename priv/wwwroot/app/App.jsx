@@ -65,6 +65,8 @@ class App extends React.Component {
   }
 
   onInstanceIdChange(id) {
+    this._layout = {};
+    this.setState({tree: undefined});
     this.fetchInitialDelta(id);
   }
 

@@ -145,6 +145,12 @@ class ScenarioView extends React.Component {
     this.props.onInstanceIdChange(this.props.match.params.id);
   }
 
+  componentWillReceiveProps(props) {
+    if (this.props.match.params.id != props.match.params.id) {
+      this.props.onInstanceIdChange(this.props.match.params.id);
+    }
+  }
+
   // gridPositionFunc(x, y) {
   //   return {x: x % (CELL_WIDTH + CELL_HGUTTER), y: y % CELL_HEIGHT};
   // }

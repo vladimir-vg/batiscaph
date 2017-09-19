@@ -147,9 +147,6 @@ neo4j_opts(Id, LastAt, TableEvents) ->
 
 
 
-% lastest_timestamp_in_delta(undefined, Delta) ->
-%   lastest_timestamp_in_delta(0, Delta);
-
 % I know it's ugly, but works for now,
 % should be replaced with something more simple and effective
 lastest_timestamp_in_delta(LastAt, #{processes := Processes, table_events := TableEvents, graph_events := GraphEvents}) when is_integer(LastAt) ->
