@@ -133,6 +133,19 @@ class LinkElement extends React.Component {
 
 
 
+class PointElement extends React.Component {
+  render() {
+    let width = CELL_WIDTH+4;
+    let height = 2;
+
+    let x = Math.floor((CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + (CELL_WIDTH - width)/2);
+    let y = Math.floor(CELL_HEIGHT*this.props.data.y - height/2);
+    return <rect x={x} y={y} width={width} height={height} style={{fill: '#BDBDBD'}} />
+  }
+}
+
+
+
 class ScenarioView extends React.Component {
   constructor() {
     super();
@@ -180,15 +193,18 @@ class ScenarioView extends React.Component {
   render() {
     if (!this.props.tree) { return <div />; }
 
-    let processes = [], spawns = [], links = [];
+    let processes = [], spawns = [], links = [], points = [];
     for (let pid in this.props.tree.processes) {
       processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} />);
     }
     for (let key in this.props.tree.spawns) {
-      processes.push(<SpawnElement key={key} data={this.props.tree.spawns[key]} />);
+      spawns.push(<SpawnElement key={key} data={this.props.tree.spawns[key]} />);
     }
     for (let key in this.props.tree.links) {
-      processes.push(<LinkElement key={key} data={this.props.tree.links[key]} />);
+      links.push(<LinkElement key={key} data={this.props.tree.links[key]} />);
+    }
+    for (let key in this.props.tree.points) {
+      points.push(<PointElement key={key} data={this.props.tree.points[key]} />);
     }
 
     return <div>
@@ -197,6 +213,7 @@ class ScenarioView extends React.Component {
         <g>{processes}</g>
         <g>{spawns}</g>
         <g>{links}</g>
+        <g>{points}</g>
       </SvgView>
       <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
     </div>;
