@@ -59,10 +59,6 @@ websocket_handle(_Data, Req, State) ->
 
 
 
-% websocket_info({events, Events}, Req, State) ->
-%   JSON = jsx:encode(Events),
-%   {reply, {text, <<"events ", JSON/binary>>}, Req, State};
-
 websocket_info({delta, Delta}, Req, State) ->
   JSON = jsx:encode(Delta),
   {reply, {text, <<"delta ", JSON/binary>>}, Req, State};
@@ -70,6 +66,12 @@ websocket_info({delta, Delta}, Req, State) ->
 websocket_info({store_module, Name, Body}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   ScenarioPid ! {store_module, Name, Body},
   {ok, Req, State};
+
+websocket_info({shell_input_ready, Prompt}, Req, #ws_state{} = State) ->
+  {reply, {text, iolist_to_binary(["shell_input_ready ", Prompt])}, Req, State};
+
+websocket_info(shell_input_stopped, Req, #ws_state{} = State) ->
+  {reply, {text, <<"shell_input_stopped">>}, Req, State};
 
 websocket_info(Msg, Req, State) ->
   lager:error("Unknown message: ~p", [Msg]),

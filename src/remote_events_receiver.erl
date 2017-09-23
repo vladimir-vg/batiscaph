@@ -12,7 +12,8 @@
 
 -record(remote_control, {
   id,
-  graph_producer_pid
+  graph_producer_pid,
+  websocket_pid
 }).
 
 
@@ -25,13 +26,21 @@ start_link(Id, WebsocketPid) ->
 
 init([Id, WebsocketPid]) ->
   {ok, ProducerPid} = graph_producer:start_link(Id, WebsocketPid),
-  {ok, #remote_control{id = Id, graph_producer_pid = ProducerPid}}.
+  {ok, #remote_control{id = Id, graph_producer_pid = ProducerPid, websocket_pid = WebsocketPid}}.
 
 
 
 handle_info({events, Events}, #remote_control{id = Id, graph_producer_pid = ProducerPid} = State) ->
   ok = clk_events:store(Id, Events),
   ProducerPid ! new_events_stored,
+  {noreply, State};
+
+handle_info({shell_input_ready, Prompt}, #remote_control{websocket_pid = Pid} = State) ->
+  Pid ! {shell_input_ready, Prompt},
+  {noreply, State};
+
+handle_info(shell_input_stopped, #remote_control{websocket_pid = Pid} = State) ->
+  Pid ! shell_input_stopped,
   {noreply, State};
 
 handle_info(Msg, State) ->

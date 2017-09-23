@@ -5,7 +5,7 @@ const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
 const CELL_HGUTTER = 5;
 const MENTION_PADDING = 2;
-const SHELL_WIDTH = 400;
+const SHELL_WIDTH = 460;
 
 
 
@@ -192,8 +192,8 @@ class ScenarioView extends React.Component {
     }
 
     let shellNode = null;
-    if (this.props.shellInfo) {
-      shellNode = <ShellPanel width={SHELL_WIDTH} events={this.props.shellInfo.events} prompt={this.props.shellInfo.prompt} />
+    if (this.props.shellEvents.length != 0) {
+      shellNode = <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} />
     }
 
     return <div>

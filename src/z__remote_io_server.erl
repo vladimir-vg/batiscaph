@@ -5,7 +5,8 @@
 
 -record(shell_io, {
   pending_get_until, % {From, ReplyAs, Prompt, Continuation, ExtraArgs}
-  input_string = "" % just plain string that will be scanned
+  input_string = "", % just plain string that will be scanned
+  receiver_pid
 }).
 
 -record(pending_read, {
@@ -27,9 +28,14 @@ start_link() ->
 
 init([]) ->
   State = #shell_io{},
+  self() ! init,
   {ok, State}.
 
 
+
+handle_info(init, #shell_io{receiver_pid = undefined} = State) ->
+  {ok, ReceiverPid} = gen_server:call(z__remote_scenario, get_remote_receiver_pid),
+  {noreply, State#shell_io{receiver_pid = ReceiverPid}};
 
 handle_info({input, Statement}, #shell_io{input_string = Input} = State) ->
   Input1 = Input ++ Statement, % just append and try to proceed input if pending
@@ -48,6 +54,8 @@ handle_info(stale_alert, #shell_io{} = State) ->
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
+
+
 handle_call(pending_input, _From, State) ->
   {reply, pending_input(State), State};
 
@@ -60,6 +68,8 @@ handle_call(clear_pending, _From, #shell_io{pending_get_until = #pending_read{ha
 
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
+
+
 
 handle_cast(Cast, State) ->
   {stop, {unknown_cast, Cast}, State}.
@@ -78,9 +88,9 @@ handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
-handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined} = State) ->
-  Event = shell_input_expected_event_now(From, Prompt),
-  z__remote_collector ! Event,
+handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined, receiver_pid = ReceiverPid} = State) ->
+  % Event = shell_input_expected_event_now(From, Prompt),
+  ReceiverPid ! {shell_input_ready, Prompt},
   Pending = #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt, extra_args = ExtraArgs},
   {ok, State1} = continue_pending_input(State#shell_io{pending_get_until = Pending}),
   {ok, State1};
@@ -106,7 +116,7 @@ handle_io_request(_From, _ReplyAs, Request, State) ->
 
 
 continue_pending_input(#shell_io{pending_get_until = undefined} = State) -> {ok, State};
-continue_pending_input(#shell_io{pending_get_until = Pending} = State) ->
+continue_pending_input(#shell_io{pending_get_until = Pending, receiver_pid = ReceiverPid} = State) ->
   #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt} = Pending,
   case attempt_scan(State#shell_io{pending_get_until = Pending}) of
     {ok, Scanned, Result, State1} ->
@@ -114,6 +124,7 @@ continue_pending_input(#shell_io{pending_get_until = Pending} = State) ->
 
       % make sure that input logged first, and only then execution starts
       ok = gen_server:call(z__remote_collector, {event, Event}),
+      ReceiverPid ! shell_input_stopped,
       From ! {io_reply, ReplyAs, Result},
       {ok, State1#shell_io{pending_get_until = undefined}};
     {need_more_input, State1} ->
@@ -165,16 +176,6 @@ shell_output_event_now0([{put_chars,unicode,io_lib,format,[Format,Args]} | Reque
   shell_output_event_now0(Requests, [Output | Acc]).
 
 
-
-shell_input_expected_event_now(Pid, Prompt) ->
-  Now = erlang:system_time(micro_seconds),
-  #{
-    <<"at_s">> => (Now div (1000*1000)),
-    <<"at_mcs">> => (Now rem (1000*1000)),
-    <<"pid">> => list_to_binary(pid_to_list(Pid)),
-    <<"type">> => <<"shell_input_expected">>,
-    <<"prompt">> => iolist_to_binary(Prompt)
-  }.
 
 shell_input_event_now(Pid, Prompt, Result) ->
   Now = erlang:system_time(micro_seconds),

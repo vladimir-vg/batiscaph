@@ -52,7 +52,8 @@ class App extends React.Component {
     super();
     this.state = {
       tree: undefined,
-      shellInfo: {prompt: undefined, events: []},
+      shellPrompt: undefined,
+      shellEvents: [],
       ongoingScenario: false // if active, then shell input/output is possible
     };
     this._layout = {};
@@ -66,7 +67,7 @@ class App extends React.Component {
 
   onInstanceIdChange(id) {
     this._layout = {};
-    this.setState({tree: undefined, shellInfo: {prompt: undefined, events: []}});
+    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: []});
     this.fetchInitialDelta(id);
   }
 
@@ -86,33 +87,40 @@ class App extends React.Component {
     } else if (event.data.slice(0,6) == 'delta ') {
       let delta = JSON.parse(event.data.slice(6));
       this.applyDeltaSetState(delta);
+    } else if (event.data.indexOf('shell_input_ready ') == 0) {
+      let prompt = event.data.split(' ')[1];
+      this.updateShellReady(prompt);
+    } else if (event.data == 'shell_input_stopped') {
+      this.updateShellReady(null);
     }
   }
 
-  produceShellInfo(delta) {
-    let shellInfo = Object.assign({}, this.state.shellInfo);
+  updateShellReady(prompt) {
+    this.setState({shellPrompt: prompt});
+  }
+
+  produceShellEvents(delta) {
+    let events = this.state.shellEvents.slice();
     for (let i in delta.table_events) {
       let e = delta.table_events[i];
       if (e.type == 'shell_input_expected') {
-        shellInfo.prompt = e.prompt;
       } else if (e.type == 'shell_input') {
-        shellInfo.prompt = undefined;
-        shellInfo.events.push(e);
+        events.push(e);
       } else if (e.type == 'shell_output') {
-        shellInfo.events.push(e);
+        events.push(e);
       }
     }
-    return shellInfo;
+    return events;
   }
 
   applyDeltaSetState(delta) {
     V.updateLayout(delta, this._layout);
     let tree = V.produceTree(this._layout);
-    let shellInfo = this.produceShellInfo(delta);
+    let shellEvents = this.produceShellEvents(delta);
     console.log("layout", this._layout);
     console.log("tree", tree);
-    console.log("shellInfo", shellInfo);
-    this.setState({tree: tree, shellInfo: shellInfo});
+    console.log("shellEvents", shellEvents);
+    this.setState({tree: tree, shellEvents: shellEvents});
   }
 
   startNewShell() {
@@ -133,7 +141,7 @@ class App extends React.Component {
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellInfo={this.state.shellInfo} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
+      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
       {scenarioRedirect}
     </div>;
   }

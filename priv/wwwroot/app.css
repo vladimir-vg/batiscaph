@@ -18,10 +18,11 @@ code { font-family: 'Ubuntu Mono', monospace; }
   position: fixed;
   left: 20px;
   bottom: 20px;
+  padding: 20px 0;
   background-color: rgba(255,255,255,0.7);
   overflow-y: auto;
   box-sizing: border-box;
-  box-shadow: 2px 2px 6px 0px rgba(0,0,0,0.16);
+  box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.16);
 }
 
 .ShellPanel .muted-text {
@@ -31,7 +32,7 @@ code { font-family: 'Ubuntu Mono', monospace; }
 }
 
 .ShellPanel .item {
-  margin: 5px 10px;
+  margin: 5px 20px;
   display: flex;
 }
 .ShellPanel .item.input,
