@@ -113,7 +113,7 @@ fetch_events(#graph_producer{last_checked_at = LastAt, id = Id} = State) ->
 
 send_delta_to_websocket(#graph_producer{last_delta_at = LastAt, id = Id, websocket_pid = Pid} = State) ->
   {ok, Delta} = delta_json(Id, LastAt),
-  {ok, LastAt1} = lastest_timestamp_in_delta(LastAt, Delta),
+  LastAt1 = lastest_timestamp_in_delta(LastAt, Delta),
 
   Pid ! {delta, Delta},
   {ok, State#graph_producer{last_delta_at = LastAt1}}.

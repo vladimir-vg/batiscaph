@@ -27,7 +27,10 @@ handle_info(setup, #shell_runner{} = State) ->
 
 handle_info(start_tracing, #shell_runner{} = State) ->
   % trace all shell processes that spawned by runner
-  erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, whereis(z__remote_collector)}]),
+  Event = z__remote_collector:trace_started_event(erlang:system_time(micro_seconds), self()),
+  CollectorPid = whereis(z__remote_collector),
+  erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, CollectorPid}]),
+  CollectorPid ! Event,
   {noreply, State};
 
 handle_info(restart_shell, #shell_runner{shell_pid = Pid} = State) when Pid =/= undefined ->

@@ -1,5 +1,6 @@
 -module(z__remote_collector).
 -behaviour(gen_server).
+-export([trace_started_event/2]).
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -116,14 +117,17 @@ handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when i
 % This is temporary solution. It will not work with set_on_first_spawn flag.
 % It will also fail if tracing was cleared on parent process before collector consumed 'spawn' event.
 handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}) ->
-  {flags, Flags} = erlang:trace_info(ParentPid, flags),
-  case lists:member(set_on_spawn, Flags) of
-    true -> {ok, []}; % everything will be processed in spawned event
-    false ->
-      MFA1 = mfa_str(MFA),
-      E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
-      E1 = event_with_timestamp(Timestamp, E),
-      {ok, [E1]}
+  case erlang:trace_info(ParentPid, flags) of
+    undefined -> {ok, []};
+    {flags, Flags} ->
+      case lists:member(set_on_spawn, Flags) of
+        true -> {ok, []}; % everything will be processed in spawned event
+        false ->
+          MFA1 = mfa_str(MFA),
+          E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
+          E1 = event_with_timestamp(Timestamp, E),
+          {ok, [E1]}
+      end
   end;
 
 % spawned is received only if ChildPid is already traced (unlike spawn)
@@ -131,9 +135,10 @@ handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) 
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
-  F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
-  F1 = event_with_timestamp(Timestamp, F),
-  {ok, [E1, F1]};
+  F = trace_started_event(Timestamp, ChildPid),
+  % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
+  % F1 = event_with_timestamp(Timestamp, F),
+  {ok, [E1, F]};
 
 
 
@@ -179,7 +184,15 @@ handle_trace_message0(Message) ->
 
 event_with_timestamp({MegaSec, Sec, MicroSec}, E) ->
   Sec1 = MegaSec*1000*1000 + Sec,
-  E1 = E#{<<"at_s">> => Sec1, <<"at_mcs">> => MicroSec},
+  event_with_timestamp({Sec1, MicroSec}, E);
+
+event_with_timestamp(MicroSec, E) when is_integer(MicroSec) ->
+  Sec1 = MicroSec div (1000*1000),
+  MicroSec1 = MicroSec rem (1000*1000),
+  event_with_timestamp({Sec1, MicroSec1}, E);
+
+event_with_timestamp({Sec, MicroSec}, E) ->
+  E1 = E#{<<"at_s">> => Sec, <<"at_mcs">> => MicroSec},
   maps:fold(fun
     (<<"pid">>, V, Acc) when is_list(V) -> Acc#{<<"pid">> => list_to_binary(V)};
     (<<"pid1">>, V, Acc) when is_list(V) -> Acc#{<<"pid1">> => list_to_binary(V)};
@@ -206,3 +219,35 @@ flush_acc_events(#collector{events_flush_timer = Timer, acc_events = Events, rec
   erlang:cancel_timer(Timer),
   ReceiverPid ! {events, lists:reverse(Events)},
   {ok, State#collector{events_flush_timer = undefined, acc_events = []}}.
+
+
+
+trace_started_event(Timestamp, Pid) ->
+  App = case application:get_application(Pid) of
+    {ok, Atom} -> atom_to_binary(Atom, latin1);
+    undefined -> <<>>
+  end,
+  case process_info(Pid, [dictionary]) of
+    undefined ->
+      event_with_timestamp(Timestamp, #{
+        <<"application">> => App,
+        <<"type">> => <<"trace_started">>,
+        <<"pid">> => erlang:pid_to_list(Pid)
+      });
+
+    Props when is_list(Props) ->
+      Ancestors = ancestors_to_binary(proplists:get_value('$ancestors', proplists:get_value(dictionary, Props, []), [])),
+      event_with_timestamp(Timestamp, #{
+        <<"application">> => App,
+        <<"ancestors">> => Ancestors,
+        <<"type">> => <<"trace_started">>,
+        <<"pid">> => erlang:pid_to_list(Pid)
+      })
+  end.
+
+ancestors_to_binary(Ancestors) ->
+  AncestorsBin = lists:map(fun
+    (Atom) when is_atom(Atom) -> atom_to_binary(Atom,latin1);
+    (Pid) when is_pid(Pid) -> pid_to_list(Pid)
+  end, Ancestors),
+  iolist_to_binary(lists:join(" ", AncestorsBin)).
