@@ -89,7 +89,6 @@ handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}
   {ok, State};
 
 handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined, receiver_pid = ReceiverPid} = State) ->
-  % Event = shell_input_expected_event_now(From, Prompt),
   ReceiverPid ! {shell_input_ready, Prompt},
   Pending = #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt, extra_args = ExtraArgs},
   {ok, State1} = continue_pending_input(State#shell_io{pending_get_until = Pending}),

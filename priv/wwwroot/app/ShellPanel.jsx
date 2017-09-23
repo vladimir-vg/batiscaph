@@ -8,9 +8,34 @@ class ShellPanel extends React.Component {
   constructor() {
     super();
     this.state = {
-      viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+      viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
+      text: ""
     }
-  }q
+
+    // because new EcmaScript standard is poorly designed
+    // we have to do bindings like that
+    this.onKeyPress = this.onKeyPress.bind(this);
+    this.onTextChange = this.onTextChange.bind(this);
+  }
+
+  onTextChange(e) {
+    let text = e.target.value;
+    this.setState({text: text});
+  }
+
+  onKeyPress(e) {
+    // plain Enter makes new line
+    // Shift + Enter sends input to remote shell
+    if (e.key === 'Enter' && e.shiftKey && this.state.text) {
+      console.log("---\nshell input: ", this.state.text);
+      this.submitInput()
+    }
+  }
+
+  submitInput() {
+    this.props.submitInput(this.state.text);
+    this.setState({text: ""});
+  }
 
   renderInputItem(e) {
     return <div key={e.at} className="item input">
@@ -44,7 +69,7 @@ class ShellPanel extends React.Component {
       return <div>
         <div className="item active underline">
           <code className="prompt unselectable">{shortPrompt(this.props.prompt)}</code>
-          <textarea>please type here</textarea>
+          <textarea value={this.state.text} rows={3} onChange={this.onTextChange.bind(this)} onKeyPress={this.onKeyPress.bind(this)} />
         </div>
       </div>;
     }

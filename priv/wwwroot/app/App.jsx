@@ -63,6 +63,7 @@ class App extends React.Component {
     this.startNewShell = this.startNewShell.bind(this);
     this.onInstanceIdChange = this.onInstanceIdChange.bind(this);
     this.onWSMessage = this.onWSMessage.bind(this);
+    this.submitShellInput = this.submitShellInput.bind(this);
   }
 
   onInstanceIdChange(id) {
@@ -133,6 +134,10 @@ class App extends React.Component {
     });
   }
 
+  submitShellInput(text) {
+    V.socket.send('shell_input ' + text + "\n");
+  }
+
   render() {
     let scenarioRedirect = null;
     if (this.state.instanceId) {
@@ -141,7 +146,7 @@ class App extends React.Component {
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
+      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents} submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
       {scenarioRedirect}
     </div>;
   }

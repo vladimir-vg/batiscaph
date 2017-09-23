@@ -26,13 +26,13 @@ code { font-family: 'Ubuntu Mono', monospace; }
 }
 
 .ShellPanel .muted-text {
-  font-family: 'Fira Sans', sans-serif;;
+  font-family: 'Fira Sans', sans-serif;
   font-size: 14px;
   color: #828282;
 }
 
 .ShellPanel .item {
-  margin: 5px 20px;
+  margin: 0 20px;
   display: flex;
 }
 .ShellPanel .item.input,

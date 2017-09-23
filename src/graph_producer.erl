@@ -130,7 +130,7 @@ delta_json(Id, LastAt) ->
 
 
 table_events_types() ->
-  [<<"shell_input">>,<<"shell_input_expected">>,<<"shell_output">>].
+  [<<"shell_input">>,<<"shell_output">>].
 
 clickhouse_opts(Id, LastAt) ->
   #{instance_id => Id, 'after' => LastAt, type_in => table_events_types()}.

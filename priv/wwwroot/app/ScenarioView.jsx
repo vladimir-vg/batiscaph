@@ -193,7 +193,7 @@ class ScenarioView extends React.Component {
 
     let shellNode = null;
     if (this.props.shellEvents.length != 0) {
-      shellNode = <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} />
+      shellNode = <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
     }
 
     return <div>
