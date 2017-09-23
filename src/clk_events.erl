@@ -26,7 +26,8 @@ columns() ->
     {<<"size">>, <<"Int32">>},
     {<<"hash">>, <<"String">>},
     {<<"application">>, <<"String">>},
-    {<<"ancestors">>, <<"String">>}
+    {<<"ancestors">>, <<"String">>},
+    {<<"trap_exit">>, <<"UInt8">>}
   ].
 
 create_table() ->

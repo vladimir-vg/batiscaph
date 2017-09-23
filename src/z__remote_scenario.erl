@@ -1,5 +1,6 @@
 -module(z__remote_scenario).
 -behaviour(gen_server).
+-export([trace_started_event/2, trace_pid/1]).
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -167,10 +168,8 @@ trace_pid(Pid) ->
   CollectorPid = whereis(z__remote_collector),
   try erlang:trace(Pid, true, [procs, timestamp, {tracer, CollectorPid}]) of
     1 ->
-      E = event_now(),
-      E1 = E#{<<"type">> => <<"trace_started">>, <<"pid">> => list_to_binary(pid_to_list(Pid))},
-      % TODO: check links, ancestors, trap_exit
-      CollectorPid ! E1,
+      E = trace_started_event(erlang:system_time(micro_seconds), Pid),
+      CollectorPid ! E,
       ok
   catch
     error:badarg ->
@@ -186,3 +185,45 @@ trace_pid(Pid) ->
           ok
       end
   end.
+
+
+
+trace_started_event(Timestamp, Pid) ->
+  App = case application:get_application(Pid) of
+    {ok, Atom} -> atom_to_binary(Atom, latin1);
+    undefined -> <<>>
+  end,
+  case process_info(Pid, [dictionary, registered_name, trap_exit]) of
+    undefined ->
+      z__remote_collector:event_with_timestamp(Timestamp, #{
+        <<"application">> => App,
+        <<"type">> => <<"trace_started">>,
+        <<"pid">> => erlang:pid_to_list(Pid)
+      });
+
+    Props when is_list(Props) ->
+      Ancestors = ancestors_to_binary(proplists:get_value('$ancestors', proplists:get_value(dictionary, Props, []), [])),
+      RegName = case proplists:get_value(registered_name, Props) of
+        [] -> <<>>;
+        Atom1 when is_atom(Atom1) -> atom_to_binary(Atom1, latin1)
+      end,
+      TrapExit = case proplists:get_value(trap_exit, Props) of
+        true -> 1;
+        false -> 0
+      end,
+      z__remote_collector:event_with_timestamp(Timestamp, #{
+        <<"application">> => App,
+        <<"ancestors">> => Ancestors,
+        <<"trap_exit">> => TrapExit,
+        <<"atom">> => RegName,
+        <<"type">> => <<"trace_started">>,
+        <<"pid">> => erlang:pid_to_list(Pid)
+      })
+  end.
+
+ancestors_to_binary(Ancestors) ->
+  AncestorsBin = lists:map(fun
+    (Atom) when is_atom(Atom) -> atom_to_binary(Atom,latin1);
+    (Pid) when is_pid(Pid) -> pid_to_list(Pid)
+  end, Ancestors),
+  iolist_to_binary(lists:join(" ", AncestorsBin)).

@@ -1,6 +1,6 @@
 -module(z__remote_collector).
 -behaviour(gen_server).
--export([trace_started_event/2]).
+-export([event_with_timestamp/2]).
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -135,7 +135,7 @@ handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) 
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
-  F = trace_started_event(Timestamp, ChildPid),
+  F = z__remote_scenario:trace_started_event(Timestamp, ChildPid),
   % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
   % F1 = event_with_timestamp(Timestamp, F),
   {ok, [E1, F]};
@@ -220,34 +220,3 @@ flush_acc_events(#collector{events_flush_timer = Timer, acc_events = Events, rec
   ReceiverPid ! {events, lists:reverse(Events)},
   {ok, State#collector{events_flush_timer = undefined, acc_events = []}}.
 
-
-
-trace_started_event(Timestamp, Pid) ->
-  App = case application:get_application(Pid) of
-    {ok, Atom} -> atom_to_binary(Atom, latin1);
-    undefined -> <<>>
-  end,
-  case process_info(Pid, [dictionary]) of
-    undefined ->
-      event_with_timestamp(Timestamp, #{
-        <<"application">> => App,
-        <<"type">> => <<"trace_started">>,
-        <<"pid">> => erlang:pid_to_list(Pid)
-      });
-
-    Props when is_list(Props) ->
-      Ancestors = ancestors_to_binary(proplists:get_value('$ancestors', proplists:get_value(dictionary, Props, []), [])),
-      event_with_timestamp(Timestamp, #{
-        <<"application">> => App,
-        <<"ancestors">> => Ancestors,
-        <<"type">> => <<"trace_started">>,
-        <<"pid">> => erlang:pid_to_list(Pid)
-      })
-  end.
-
-ancestors_to_binary(Ancestors) ->
-  AncestorsBin = lists:map(fun
-    (Atom) when is_atom(Atom) -> atom_to_binary(Atom,latin1);
-    (Pid) when is_pid(Pid) -> pid_to_list(Pid)
-  end, Ancestors),
-  iolist_to_binary(lists:join(" ", AncestorsBin)).

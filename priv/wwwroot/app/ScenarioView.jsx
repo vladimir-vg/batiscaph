@@ -191,11 +191,6 @@ class ScenarioView extends React.Component {
       processes.push(<LinkElement key={key} data={this.props.tree.links[key]} />);
     }
 
-    let shellNode = null;
-    if (this.props.shellEvents.length != 0) {
-      shellNode = <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
-    }
-
     return <div>
       <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={1000} paddedHeight={1000}>
         <g>{this.renderGrid()}</g>
@@ -203,7 +198,7 @@ class ScenarioView extends React.Component {
         <g>{spawns}</g>
         <g>{links}</g>
       </SvgView>
-      {shellNode}
+      <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
     </div>;
   }
 }
