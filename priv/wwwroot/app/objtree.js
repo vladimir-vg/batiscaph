@@ -199,7 +199,7 @@ V.produceTree = (layout) => {
   // only then processes
   // TODO: implemented collapsing
 
-  let tree = {processes: {}, links: {}, spawns: {}, messages: {}, points: {}};
+  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}};
 
   let xFromPid = function (pid) {
     let columnId = layout.processes[pid].columnId;
@@ -239,6 +239,13 @@ V.produceTree = (layout) => {
       saveMention(event.at, event.pid2);
       key = 'link-' + event.at + '-' + event.pid1 + '-' + event.pid2;
       tree.links[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
+      break;
+
+    case 'EXPLICIT_MENTION':
+      saveMention(event.at, event.pid1);
+      saveMention(event.at, event.pid2);
+      key = 'mention-' + event.at + '-' + event.pid1 + '-' + event.pid2;
+      tree.mentions[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
       break;
 
     case 'shell_input':

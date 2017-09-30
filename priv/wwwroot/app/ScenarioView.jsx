@@ -70,6 +70,18 @@ class ProcessElement extends React.Component {
     </g>;
   }
 
+  renderConnectingLine() {
+    if (this.props.data.parts.length < 2) return null;
+    let fromY = this.props.data.parts[0].y;
+    let toY = this.props.data.parts[this.props.data.parts.length-1].y;
+
+    let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH/2;
+    let y1 = CELL_HEIGHT*fromY - CELL_HEIGHT/2;
+    let y2 = CELL_HEIGHT*toY - CELL_HEIGHT/2;
+
+    return <line x1={x} y1={y1} x2={x} y2={y2} style={{stroke: '#EDEDED', strokeWidth: 2}} />;
+  }
+
   render() {
     let nodes = [];
     for (const i in this.props.data.parts) {
@@ -83,6 +95,7 @@ class ProcessElement extends React.Component {
       }
     }
     return <g>
+      {this.renderConnectingLine()}
       {nodes}
     </g>;
   }
@@ -127,6 +140,21 @@ class LinkElement extends React.Component {
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
     return <g>
       <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+    </g>;
+  }
+}
+
+
+
+class MentionElement extends React.Component {
+  render() {
+    let xs = [this.props.data.fromX, this.props.data.toX];
+    xs.sort();
+    let x1 = (CELL_WIDTH+CELL_HGUTTER)*xs[0];
+    let y = CELL_HEIGHT*this.props.data.y;
+    let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
+    return <g>
+      <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#EDEDED', strokeWidth: 2}} />
     </g>;
   }
 }
@@ -193,7 +221,7 @@ class ScenarioView extends React.Component {
   render() {
     if (!this.props.tree) { return <div />; }
 
-    let processes = [], spawns = [], links = [], points = [];
+    let processes = [], spawns = [], links = [], mentions = [], points = [];
     for (let pid in this.props.tree.processes) {
       processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} />);
     }
@@ -206,6 +234,9 @@ class ScenarioView extends React.Component {
     for (let key in this.props.tree.points) {
       points.push(<PointElement key={key} data={this.props.tree.points[key]} />);
     }
+    for (let key in this.props.tree.mentions) {
+      mentions.push(<MentionElement key={key} data={this.props.tree.mentions[key]} />);
+    }
 
     return <div>
       <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={1000} paddedHeight={1000}>
@@ -213,6 +244,7 @@ class ScenarioView extends React.Component {
         <g>{processes}</g>
         <g>{spawns}</g>
         <g>{links}</g>
+        <g>{mentions}</g>
         <g>{points}</g>
       </SvgView>
       <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />

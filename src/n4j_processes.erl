@@ -50,7 +50,7 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
     { "MATCH (p1:Process {instanceId: {id}})\n"
       "WHERE ((p1.disappearedAt IS NULL) OR p1.disappearedAt > {at})\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
-      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND (rel.at > {at})\n"
+      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\", \"EXPLICIT_MENTION\"] AND (rel.at > {at})\n"
       "WITH p1, rel\n"
       "ORDER BY rel.at\n"
       "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
@@ -215,7 +215,7 @@ process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"ancestors">> := Ancestors} = E,
   At = AtS*1000*1000 + Mcs,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
@@ -225,7 +225,9 @@ process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
       "CREATE (proc)-[:TRACE_STARTED { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
-  process_events(Id, Events, [Statements] ++ Acc);
+  Ancestors1 = binary:split(Ancestors, <<" ">>, [global]),
+  Statements1 = Statements ++ ancestors_mentions(Id, At, Pid, Ancestors1),
+  process_events(Id, Events, [Statements1] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
@@ -251,3 +253,22 @@ process_events(Id, [#{<<"type">> := <<"found_dead">>} = E | Events], Acc) ->
     , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
+
+
+ancestors_mentions(Id, At, Pid, Ancestors) ->
+  lists:flatmap(fun
+    (<<"<", _/binary>> = MentionPid) ->
+      Key = <<Id/binary,"/",MentionPid/binary>>,
+      [
+        { "MATCH (proc:Process { pid: {pid1}, instanceId: {id} })\n"
+          "MERGE (mproc:Process { pid: {pid2}, instanceId: {id} })\n"
+          "ON CREATE SET mproc.appearedAt = {at}, mproc.key = {key}\n"
+          "CREATE (proc)-[:EXPLICIT_MENTION { at: {at}, context: 'ancestors' }]->(mproc)\n"
+        , #{id => Id, pid1 => Pid, pid2 => MentionPid, at => At, key => Key}}
+      ];
+    (_RegName) -> []
+  end, Ancestors).
+  % lists:foldl(fun
+  %   (<<"<", _/binary>> = MentionPid, Acc) ->
+  %     <<Acc/binary, "CREATE (proc)-[:EXPLICIT_MENTION]->(mproc)\n">>
+  % end, <<>>, Ancestors),
