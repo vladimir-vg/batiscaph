@@ -69,32 +69,8 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
   Events1 = convert_rows_to_objects(Events),
   {ok, #{processes => Processes1, events => Events1}};
 
-delta_json(#{instance_id := Id}) ->
-  Statements = [
-    % for some weird reason OPTIONAL MATCH (p1)-[rel]-(p1)
-    % returned null relationship that was impossible to filter out by WHERE
-    % but got rid of this null value by using COLLECT, and then map it by EXTRACT
-
-    { "MATCH (p1:Process {instanceId: {id}})\n"
-      "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
-      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"]\n"
-      "WITH p1, rel\n"
-      "ORDER BY rel.at\n"
-      "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
-      "ORDER BY p1.appearedAt\n"
-      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, events\n"
-    , #{id => Id} },
-
-    { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
-      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"]\n"
-      "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
-      "ORDER BY rel.at\n"
-    , #{id => Id} }
-  ],
-  {ok, [Processes, Events]} = neo4j:commit(Statements),
-  Processes1 = convert_rows_to_objects(Processes),
-  Events1 = convert_rows_to_objects(Events),
-  {ok, #{processes => Processes1, events => Events1}}.
+delta_json(Opts) ->
+  delta_json(Opts#{'after' => 0}).
 
 
 
@@ -124,30 +100,37 @@ process_events(_Id, [], Acc) -> lists:flatten(lists:reverse(Acc));
 process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
   At = AtS*1000*1000 + Mcs,
+  ParentKey = <<Id/binary,"/",Parent/binary>>,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create parent process if not existed before
     { "MERGE (parent:Process { pid: {parent}, instanceId: {id} })\n"
-      "ON CREATE SET parent.appearedAt = {at}\n"
-    , #{id => Id, parent => Parent, at => At} },
+      "ON CREATE SET parent.appearedAt = {at}, parent.key = {parent_key}\n"
+    , #{id => Id, parent => Parent, at => At, parent_key => ParentKey} },
 
     % create new process
-    { "MATCH (parent:Process)\n"
-      "WHERE parent.instanceId = {id} AND parent.pid = {parent}\n"
-      "CREATE\t(proc:Process { instanceId: {id}, pid: {pid}, spawnedAt: {at}, appearedAt: {at} }),\n"
-      "\t(parent)-[:SPAWN { at: {at} }]->(proc)\n"
-    , #{id => Id, parent => Parent, at => At, pid => Pid} }
+    { "MATCH (parent:Process {pid: {parent}, instanceId: {id}})\n"
+      % "WHERE parent.instanceId = {id} AND parent.pid = {parent}\n"
+      "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.spawnedAt = {at}, proc.appearedAt = {at}, proc.key = {key}\n"
+      "ON MATCH SET proc.spawnedAt = {at}\n"
+      "CREATE (parent)-[:SPAWN { at: {at} }]->(proc)\n"
+      % "CREATE\t(proc:Process { instanceId: {id}, pid: {pid}, spawnedAt: {at}, appearedAt: {at} }),\n"
+      % "\t\n"
+    , #{id => Id, parent => Parent, at => At, pid => Pid, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"term">> := Reason} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create parent process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.appearedAt = {at}, proc.disappearedAt = {at}\n"
+      "ON CREATE SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.appearedAt = {at}, proc.disappearedAt = {at}, proc.key = {key}\n"
       "ON MATCH SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.disappearedAt = {at}\n"
-    , #{id => Id, pid => Pid, at => At, reason => Reason} }
+    , #{id => Id, pid => Pid, at => At, reason => Reason, key => Key} }
 
     % % unlink all links with this process if existed
     % { "MATCH (proc:Process)-[link:LINK]-(:Process)\n"
@@ -160,15 +143,16 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
 process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create both process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
-    , #{id => Id, pid => Pid, at => At} },
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+    , #{id => Id, pid => Pid, at => At, key => Key} },
 
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
-    , #{id => Id, pid => Pid1, at => At} },
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+    , #{id => Id, pid => Pid1, at => At, key => Key} },
 
     { "MATCH (proc1:Process { pid: {pid1}, instanceId: {id} }), (proc2:Process { pid: {pid2}, instanceId: {id} })\n"
       "CREATE (proc1)-[:LINK { at: {at} }]->(proc2)\n"
@@ -179,14 +163,15 @@ process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
 process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create both process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
-    , #{id => Id, pid => Pid, at => At} },
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+    , #{id => Id, pid => Pid, at => At, key => Key} },
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
-    , #{id => Id, pid => Pid1, at => At} },
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+    , #{id => Id, pid => Pid1, at => At, key => Key} },
 
     { "MATCH (proc1:Process { pid: {pid1}, instanceId: {id} }), (proc2:Process { pid: {pid2}, instanceId: {id} })\n"
       "CREATE (proc1)-[:UNLINK { at: {at} }]->(proc2)\n"
@@ -204,60 +189,65 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
 process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create process and atom node, connect them
     { "MERGE (reg:RegisteredName { atom: {atom}, instanceId: {id} })\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (reg)-[:REGISTER { at: {at} }]->(proc)\n"
-    , #{id => Id, pid => Pid, atom => Atom, at => At} }
+    , #{id => Id, pid => Pid, atom => Atom, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create process and atom node, connect them
     { "MERGE (reg:RegisteredName { atom: {atom}, instanceId: {id} })\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (reg)-[:UNREGISTER { at: {at} }]->(proc)\n"
-    , #{id => Id, pid => Pid, atom => Atom, at => At} }
+    , #{id => Id, pid => Pid, atom => Atom, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
-    % create parent process if not existed before
+    % create process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (proc)-[:TRACE_STARTED { at: {at} }]->(proc)\n"
-    , #{id => Id, pid => Pid, at => At} }
+    , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create parent process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (proc)-[:TRACE_STOPPED { at: {at} }]->(proc)\n"
-    , #{id => Id, pid => Pid, at => At} }
+    , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"found_dead">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
   At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (proc)-[:FOUND_DEAD { at: {at} }]->(proc)\n"
-    , #{id => Id, pid => Pid, at => At} }
+    , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).

@@ -1,5 +1,5 @@
 -module(espace).
--export([get_prop/1, create_tables/0, drop_tables/0]).
+-export([get_prop/1, create_tables/0, drop_tables/0, prepare_graph_schema/0]).
 
 
 
@@ -9,6 +9,14 @@ create_tables() ->
 
 drop_tables() ->
   ok = clk_events:drop_table(),
+  ok.
+
+prepare_graph_schema() ->
+  {ok, _} = neo4j:commit([
+    % NODE KEY constraints are available only in neo4j enterprise edition
+    % use concatenated .key property for uniqueness check
+    {"CREATE CONSTRAINT ON (p:Process) ASSERT p.key IS UNIQUE", #{}}
+  ]),
   ok.
 
 
