@@ -27,7 +27,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 
 
 websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefined} = State) ->
-  Id = bin_to_hex:bin_to_hex(crypto:strong_rand_bytes(10)),
+  Id = espace:binary_to_hex(crypto:strong_rand_bytes(10)),
   % {ok, State1} = connect_to_remote_node(State#ws_state{scenario_id = Id, remote_node = 'tbplay@vg-desktop'}),
   {ok, State1} = start_local_node(State#ws_state{scenario_id = Id}),
   {ok, State2} = start_remote_shell(State1),
@@ -121,7 +121,6 @@ wait_for_remote_node(RemoteNode, Timeout) ->
 
 start_remote_shell(#ws_state{remote_node = RemoteNode, scenario_id = Id} = State) ->
   {ok, ReceiverPid} = remote_events_receiver:start_link(Id, self()),
-  ok = remote_node:load_local_module(RemoteNode, bin_to_hex),
   ok = remote_node:load_local_module(RemoteNode, z__remote_collector),
   ok = remote_node:load_local_module(RemoteNode, z__remote_io_server),
   ok = remote_node:load_local_module(RemoteNode, z__remote_scenario),

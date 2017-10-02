@@ -1,5 +1,6 @@
 -module(espace).
 -export([get_prop/1, create_tables/0, drop_tables/0, prepare_graph_schema/0]).
+-export([binary_to_hex/1]).
 
 
 
@@ -29,3 +30,11 @@ get_prop(Name) ->
       Value;
     Value -> Value
   end.
+
+
+
+binary_to_hex(Bin) when is_binary(Bin) ->
+  << <<(hex(H)),(hex(L))>> || <<H:4,L:4>> <= Bin >>.
+
+hex(C) when C < 10 -> $0 + C;
+hex(C) -> $a + C - 10.

@@ -56,9 +56,9 @@ handle_info(shell_restart, State) ->
   ok = gen_server:call(z__remote_shell, restart_shell),
   {noreply, State};
 
-handle_info({store_module, Name, Body}, State) ->
-  {ok, State1} = store_module(Name, Body, State),
-  {noreply, State1};
+% handle_info({store_module, Name, Body}, State) ->
+%   {ok, State1} = store_module(Name, Body, State),
+%   {noreply, State1};
 
 handle_info({shell_input, Input}, State) ->
   z__remote_io_server ! {input, binary_to_list(Input)},
@@ -136,24 +136,24 @@ setup(#scenario{opts = Opts} = State) ->
 
 
 
-store_module(Name, Body, #scenario{} = State) ->
-  Event = module_stored_event_now(Name, Body),
-  Event1 = case file:write_file(<<Name/binary, ".erl">>, Body) of
-    ok -> Event;
-    {error, Reason} ->
-      Event#{type => <<"module_storage_failed">>, term => iolist_to_binary(io_lib:format("~p", [Reason]))}
-  end,
-  z__remote_collector ! Event1,
-  {ok, State}.
-
-module_stored_event_now(Name, Body) ->
-  E = event_now(),
-  E#{
-    <<"type">> => <<"module_stored">>,
-    <<"atom">> => Name,
-    <<"size">> => byte_size(Body),
-    <<"hash">> => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
-  }.
+% store_module(Name, Body, #scenario{} = State) ->
+%   Event = module_stored_event_now(Name, Body),
+%   Event1 = case file:write_file(<<Name/binary, ".erl">>, Body) of
+%     ok -> Event;
+%     {error, Reason} ->
+%       Event#{type => <<"module_storage_failed">>, term => iolist_to_binary(io_lib:format("~p", [Reason]))}
+%   end,
+%   z__remote_collector ! Event1,
+%   {ok, State}.
+% 
+% module_stored_event_now(Name, Body) ->
+%   E = event_now(),
+%   E#{
+%     <<"type">> => <<"module_stored">>,
+%     <<"atom">> => Name,
+%     <<"size">> => byte_size(Body),
+%     <<"hash">> => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
+%   }.
 
 event_now() ->
   Now = erlang:system_time(micro_seconds),
