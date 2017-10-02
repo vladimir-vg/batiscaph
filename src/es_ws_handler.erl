@@ -28,9 +28,10 @@ websocket_init(_TransportName, Req, _Opts) ->
 
 websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefined} = State) ->
   Id = bin_to_hex:bin_to_hex(crypto:strong_rand_bytes(10)),
+  % {ok, State1} = connect_to_remote_node(State#ws_state{scenario_id = Id, remote_node = 'tbplay@vg-desktop'}),
   {ok, State1} = start_local_node(State#ws_state{scenario_id = Id}),
   {ok, State2} = start_remote_shell(State1),
-  true = gproc:reg({n, l, {websocket, Id}}),
+  % true = gproc:reg({n, l, {websocket, Id}}),
   {reply, {text, <<"shell_started ", Id/binary>>}, Req, State2};
 
 websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
@@ -81,6 +82,12 @@ websocket_info(Msg, Req, State) ->
 
 websocket_terminate(_Reason, _Req, _State) ->
   ok.
+
+
+
+connect_to_remote_node(#ws_state{remote_node = RemoteNode} = State) ->
+  ok = wait_for_remote_node(RemoteNode, 5000),
+  {ok, State}.
 
 
 
