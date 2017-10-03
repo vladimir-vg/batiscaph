@@ -25,19 +25,14 @@ websocket_init(_TransportName, Req, _Opts) ->
 
 
 websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefined} = State) ->
-  Id = espace:binary_to_hex(crypto:strong_rand_bytes(10)),
-  {ok, Pid} = remote_ctl:ensure_started(Id),
-  ok = gen_server:call(Pid, {subscribe_websocket, self()}),
-  {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
-  State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
-  {reply, {text, <<"shell_connected ", Id/binary>>}, Req, State1};
+  {ok, Reply, State1} = start_shell(State),
+  {reply, Reply, Req, State1};
 
 websocket_handle({text, <<"connect_to_shell ", Id/binary>>}, Req, #ws_state{scenario_id = undefined} = State) ->
-  {ok, Pid} = remote_ctl:ensure_started(Id),
-  ok = gen_server:call(Pid, {subscribe_websocket, self()}),
-  {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
-  State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
-  {reply, {text, <<"shell_connected ", Id/binary>>}, Req, State1};
+  {ok, Reply, State1} = connect_to_shell(Id, State),
+  {reply, Reply, Req, State1};
+
+
 
 websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   ScenarioPid ! {shell_input, Input},
@@ -88,6 +83,32 @@ websocket_info(Msg, Req, State) ->
 websocket_terminate(_Reason, _Req, _State) ->
   ok.
 
+
+
+start_shell(State) ->
+  Id = espace:binary_to_hex(crypto:strong_rand_bytes(10)),
+  {ok, Pid} = remote_ctl:ensure_started(Id),
+  ok = gen_server:call(Pid, {subscribe_websocket, self()}),
+  {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
+  State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
+  {ok, {text, <<"shell_connected ", Id/binary>>}, State1}.
+
+
+
+connect_to_shell(Id, State) ->
+  case remote_ctl:currently_running(Id) of
+    none ->
+      {ok, Delta} = remote_ctl:delta_json(Id, 0),
+      self() ! {delta, Delta},
+      State1 = State#ws_state{scenario_id = Id},
+      {ok, {text, <<"shell_lost ", Id/binary>>}, State1};
+
+    {ok, Pid} ->
+      ok = gen_server:call(Pid, {subscribe_websocket, self()}),
+      {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
+      State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
+      {ok, {text, <<"shell_connected ", Id/binary>>}, State1}
+  end.
 
 
 % connect_to_remote_node(#ws_state{remote_node = RemoteNode} = State) ->

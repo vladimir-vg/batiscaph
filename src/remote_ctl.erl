@@ -1,6 +1,7 @@
 -module(remote_ctl).
 -behaviour(gen_server).
--export([ensure_started/1, ensure_started/2]).
+-export([ensure_started/1, ensure_started/2, currently_running/1, delta_json/2]).
+
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -define(MAX_EVENTS_PER_FETCH, 1000).
@@ -22,6 +23,14 @@ ensure_started(Id, Node) ->
     {ok, Pid} -> {ok, Pid};
     {error, {already_started, Pid}} -> {ok, Pid};
     {error, already_present} -> {error, no_pid}
+  end.
+
+
+
+currently_running(Id) ->
+  case [Pid || {{remote_ctl,Id1}, Pid, _,_} <- supervisor:which_children(remote_sup), Id1 =:= Id] of
+    [] -> none;
+    [Pid] -> {ok, Pid}
   end.
 
 
