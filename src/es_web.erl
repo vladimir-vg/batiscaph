@@ -15,7 +15,7 @@ restart_cowboy() ->
       {"/scenarios.json", scenarios_list_handler, []},
       % {"/scenarios/[:id]/erlmodules", erlmodules_handler, []},
       {"/scenarios/[...]", scenarios_csv_handler, []},
-      {"/api/scenarios2/[:id]", scenario_tree_handler, []},
+      % {"/api/scenarios2/[:id]", scenario_tree_handler, []},
       {"/style/app.css", cowboy_static, {priv_file, espace, "wwwroot/app.css"}},
       {"/", cowboy_static, {priv_file, espace, "wwwroot/index.html"}},
       {"/scenarios2/[:id]", cowboy_static, {priv_file, espace, "wwwroot/index.html"}}

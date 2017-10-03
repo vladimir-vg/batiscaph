@@ -19,6 +19,10 @@ start(_StartType, _StartArgs) ->
       es_web:restart_cowboy(),
       ok
   end,
+
+  % useful to cache babel output
+  web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
+
   espace_sup:start_link().
 
 

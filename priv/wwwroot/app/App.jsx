@@ -38,6 +38,7 @@ class MainPage extends React.Component {
       <div className="head-block">
         <button className="btn" onClick={this.props.startNewShell}>Start new shell</button>
       </div>
+      <br />
       <div className="scenarios-list-block">
         {links}
       </div>
@@ -53,8 +54,7 @@ class App extends React.Component {
     this.state = {
       tree: undefined,
       shellPrompt: undefined,
-      shellEvents: [],
-      ongoingScenario: false // if active, then shell input/output is possible
+      shellEvents: []
     };
     this._layout = {};
 
@@ -69,24 +69,15 @@ class App extends React.Component {
   onInstanceIdChange(id) {
     this._layout = {};
     this.setState({tree: undefined, shellPrompt: undefined, shellEvents: []});
-    this.fetchInitialDelta(id);
-  }
-
-  fetchInitialDelta(id) {
-    let url = '/api/scenarios2/' + id;
-    fetch(url).then((response) => {
-      response.json().then((delta) => {
-        this.applyDeltaSetState(delta);
-      });
-    });
+    // this.fetchInitialDelta(id);
   }
 
   onWSMessage(event) {
-    if (event.data.slice(0,14) == "shell_started ") {
-      let id = event.data.slice(14);
+    if (event.data.indexOf("shell_connected ") == 0) {
+      let id = event.data.slice("shell_connected ".length);
       this.setState({instanceId: id});
-    } else if (event.data.slice(0,6) == 'delta ') {
-      let delta = JSON.parse(event.data.slice(6));
+    } else if (event.data.indexOf("delta ") == 0) {
+      let delta = JSON.parse(event.data.slice("delta ".length));
       this.applyDeltaSetState(delta);
     } else if (event.data.indexOf('shell_input_ready ') == 0) {
       let prompt = event.data.split(' ')[1];
@@ -125,8 +116,6 @@ class App extends React.Component {
   }
 
   startNewShell() {
-    this.setState({ongoingScenario: true});
-
     V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
     V.socket.addEventListener('message', this.onWSMessage);
     V.socket.addEventListener('open', function () {

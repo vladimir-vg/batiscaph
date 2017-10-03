@@ -255,6 +255,9 @@ V.produceTree = (layout) => {
       break;
 
     case 'shell_output':
+      // ignore event, if we received it before info about process itself
+      if (!(event.pid in layout.processes)) break;
+
       saveMention(event.at, event.pid);
       key = 'shell-output-' + event.at + '-' + event.pid;
       tree.points[key] = {y: y, x: xFromPid(event.pid)};

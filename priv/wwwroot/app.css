@@ -12,7 +12,15 @@ code { font-family: 'Ubuntu Mono', monospace; }
           user-select: none;
 }
 
-/* / utilities */
+/* Main Page */
+
+.content-page {
+  margin: 0 auto;
+  padding: 100px 0;
+  width: 800px;
+}
+
+/* Scenario View */
 
 .ShellPanel {
   position: fixed;
