@@ -238,8 +238,11 @@ class ScenarioView extends React.Component {
       mentions.push(<MentionElement key={key} data={this.props.tree.mentions[key]} />);
     }
 
+    let height = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
+    let width = this.props.tree.height*CELL_HEIGHT;
+
     return <div>
-      <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={1000} paddedHeight={1000}>
+      <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
         <g>{this.renderGrid()}</g>
         <g>{processes}</g>
         <g>{spawns}</g>

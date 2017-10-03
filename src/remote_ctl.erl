@@ -31,7 +31,9 @@ ensure_started(Id, Node) ->
   node,
   last_fetched_at,
   remote_scenario_pid,
-  websockets = #{} :: #{pid() => LastDeltaAt :: non_neg_integer()}
+  websockets = #{} :: #{pid() => LastDeltaAt :: non_neg_integer()},
+
+  shell_input = stopped :: {ready, binary()} | stopped
 }).
 
 
@@ -58,13 +60,9 @@ handle_info({events, Events}, #remote_ctl{id = Id} = State) ->
   {ok, State2} = send_delta_to_websockets(State1),
   {noreply, State2};
 
-handle_info({shell_input_ready, Prompt}, #remote_ctl{} = State) ->
-  {ok, State1} = send_to_websockets({shell_input_ready, Prompt}, State),
-  {noreply, State1};
-
-handle_info(shell_input_stopped, #remote_ctl{} = State) ->
-  {ok, State1} = send_to_websockets(shell_input_stopped, State),
-  {noreply, State1};
+handle_info({shell_input, ShellInput}, #remote_ctl{} = State) ->
+  {ok, State1} = send_to_websockets({shell_input, ShellInput}, State),
+  {noreply, State1#remote_ctl{shell_input = ShellInput}};
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
@@ -141,9 +139,10 @@ start_remote_shell(#remote_ctl{node = RemoteNode} = State) ->
 
 
 
-subscribe_websocket(Pid, #remote_ctl{id = Id, websockets = Websockets} = State) ->
+subscribe_websocket(Pid, #remote_ctl{id = Id, websockets = Websockets, shell_input = ShellInput} = State) ->
   {ok, LastAt1, Delta} = produce_delta(Id, 0),
   Pid ! {delta, Delta},
+  Pid ! {shell_input, ShellInput},
   Websockets1 = Websockets#{Pid => LastAt1},
   State1 = State#remote_ctl{websockets = Websockets1},
   {ok, State1}.
@@ -218,10 +217,8 @@ produce_delta(Id, LastAt) ->
 
 delta_json(Id, LastAt) ->
   ClkOpts = clickhouse_opts(Id, LastAt),
-  lager:info("---------------------------: ~p", [ClkOpts]),
   {ok, TableEvents} = clk_events:select(ClkOpts),
   Neo4jOpts = neo4j_opts(Id, LastAt, TableEvents),
-  lager:info("---------------------------: ~p", [Neo4jOpts]),
   {ok, #{processes := Processes, events := GraphEvents}} = n4j_processes:delta_json(Neo4jOpts),
   Delta = #{processes => Processes, graph_events => GraphEvents, table_events => TableEvents},
   {ok, Delta}.

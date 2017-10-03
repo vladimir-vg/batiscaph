@@ -89,7 +89,7 @@ handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}
   {ok, State};
 
 handle_io_request(From, ReplyAs, {get_until, unicode, Prompt, erl_scan, tokens, ExtraArgs}, #shell_io{pending_get_until = undefined, receiver_pid = ReceiverPid} = State) ->
-  ReceiverPid ! {shell_input_ready, Prompt},
+  ReceiverPid ! {shell_input, {ready, Prompt}},
   Pending = #pending_read{from = From, reply_as = ReplyAs, prompt = Prompt, extra_args = ExtraArgs},
   {ok, State1} = continue_pending_input(State#shell_io{pending_get_until = Pending}),
   {ok, State1};
@@ -123,7 +123,7 @@ continue_pending_input(#shell_io{pending_get_until = Pending, receiver_pid = Rec
 
       % make sure that input logged first, and only then execution starts
       ok = gen_server:call(z__remote_collector, {event, Event}),
-      ReceiverPid ! shell_input_stopped,
+      ReceiverPid ! {shell_input, stopped},
       From ! {io_reply, ReplyAs, Result},
       {ok, State1#shell_io{pending_get_until = undefined}};
     {need_more_input, State1} ->

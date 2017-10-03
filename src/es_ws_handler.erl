@@ -35,7 +35,8 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefin
 websocket_handle({text, <<"connect_to_shell ", Id/binary>>}, Req, #ws_state{scenario_id = undefined} = State) ->
   {ok, Pid} = remote_ctl:ensure_started(Id),
   ok = gen_server:call(Pid, {subscribe_websocket, self()}),
-  State1 = State#ws_state{scenario_id = Id},
+  {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
+  State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
   {reply, {text, <<"shell_connected ", Id/binary>>}, Req, State1};
 
 websocket_handle({text, <<"shell_input ", Input/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
@@ -72,10 +73,10 @@ websocket_info({delta, Delta}, Req, State) ->
 %   ScenarioPid ! {store_module, Name, Body},
 %   {ok, Req, State};
 
-websocket_info({shell_input_ready, Prompt}, Req, #ws_state{} = State) ->
+websocket_info({shell_input, {ready, Prompt}}, Req, #ws_state{} = State) ->
   {reply, {text, iolist_to_binary(["shell_input_ready ", Prompt])}, Req, State};
 
-websocket_info(shell_input_stopped, Req, #ws_state{} = State) ->
+websocket_info({shell_input, stopped}, Req, #ws_state{} = State) ->
   {reply, {text, <<"shell_input_stopped">>}, Req, State};
 
 websocket_info(Msg, Req, State) ->

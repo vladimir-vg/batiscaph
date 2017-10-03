@@ -358,6 +358,9 @@ V.produceTree = (layout) => {
     tree.processes[pid].parts = produceVisibleParts(p.events, tree.processes[pid].mentions, tree.processes[pid].stopY);
   }
 
+  tree.width = layout.columnsOrder.length;
+  tree.height = layout.timestamps.length;
+
   return tree;
 };
 
