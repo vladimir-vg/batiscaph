@@ -43,7 +43,6 @@ start_link(Id, Node) ->
   gen_server:start_link(?MODULE, [Id, Node], []).
 
 init([Id, Node]) ->
-  % {ok, ProducerPid} = delta_producer:start_link(Id),
   self() ! connect_to_node,
   {ok, #remote_ctl{id = Id, node = Node}}.
 
