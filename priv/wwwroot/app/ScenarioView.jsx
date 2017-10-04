@@ -70,17 +70,24 @@ class ProcessElement extends React.Component {
 
   renderMentionPart(part, i) {
     let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x;
-    let y = CELL_HEIGHT*part.y - Math.floor(CELL_HEIGHT/2);
+    let y = CELL_HEIGHT*part.y;
+    let y1 = y - Math.floor(CELL_HEIGHT/2);
     let width = CELL_WIDTH;
     let height = CELL_HEIGHT;
 
     let mX = x + MENTION_PADDING;
     let mWidth = width - 2*MENTION_PADDING;
 
-    return <g key={i}>
-      <rect x={x} y={y} width={width} height={height} style={{fill: '#D9D9D9'}} />
-      <rect x={mX} y={y} width={mWidth} height={height} style={{fill: '#EDEDED'}} />
-    </g>;
+    // render only first and last mention in process
+    // all others supposed to be marked with small grey dots
+    if (i == 0 || i == this.props.data.parts.length-1) {
+      return <g key={i}>
+        <rect x={x} y={y1} width={width} height={height} style={{fill: '#D9D9D9'}} />
+        <rect x={mX} y={y1} width={mWidth} height={height} style={{fill: '#EDEDED'}} />
+      </g>
+    }
+
+    return <circle key={i} cx={x+CELL_WIDTH/2} cy={y} r={2} style={{fill: '#D9D9D9'}} />;
   }
 
   renderDeadPart(part, i) {
@@ -174,7 +181,7 @@ class SpawnElement extends React.Component {
 class LinkElement extends React.Component {
   render() {
     let xs = [this.props.data.fromX, this.props.data.toX];
-    xs.sort();
+    xs.sort((a,b) => a-b);
     let x1 = (CELL_WIDTH+CELL_HGUTTER)*xs[0];
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
@@ -195,12 +202,13 @@ class LinkElement extends React.Component {
 class MentionElement extends React.Component {
   render() {
     let xs = [this.props.data.fromX, this.props.data.toX];
-    xs.sort();
+    xs.sort((a,b) => a-b);
     let x1 = (CELL_WIDTH+CELL_HGUTTER)*xs[0];
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
+
     return <Layer name="beforeProcesses">
-      <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#EDEDED', strokeWidth: 2}} />
+      <line x1={x1+CELL_WIDTH/2} y1={y} x2={x2} y2={y} style={{stroke: '#EDEDED', strokeWidth: 2}} />
     </Layer>;
   }
 }
@@ -255,12 +263,8 @@ class ScenarioView extends React.Component {
     return null;
   }
 
-
-  // gridPositionFunc(x, y) {
-  //   return {x: x % (CELL_WIDTH + CELL_HGUTTER), y: y % CELL_HEIGHT};
-  // }
-
   renderGrid() {
+    // return null;
     let maxX = 1 + this.state.viewportWidth/(CELL_WIDTH+CELL_HGUTTER);
     let maxY = 1 + this.state.viewportHeight/CELL_HEIGHT;
     let lines = [];
