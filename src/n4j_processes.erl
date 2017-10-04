@@ -19,6 +19,7 @@
 %  * exitedAt -- same
 %  * exitReason -- same
 %  * disappearedAt -- equals to exitedAt or timestamp of discovering that process is dead
+%  * application -- application atom to which process belongs to. Might be empty.
 %
 % Process may have following relationships to other processes:
 %  * SPAWN { at }
@@ -55,7 +56,7 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
       "ORDER BY rel.at\n"
       "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
       "ORDER BY p1.appearedAt\n"
-      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, events\n"
+      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, events\n"
     , #{id => Id, at => At} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
@@ -218,12 +219,16 @@ process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"ancestors">> := Ancestors} = E,
   At = AtS*1000*1000 + Mcs,
   Key = <<Id/binary,"/",Pid/binary>>,
+  App = case maps:get(<<"application">>, E, <<>>) of
+    <<>> -> null;
+    App1 when is_binary(App1) -> App1
+  end,
   Statements = [
     % create process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}, proc.application = {application}\n"
       "CREATE (proc)-[:TRACE_STARTED { at: {at} }]->(proc)\n"
-    , #{id => Id, pid => Pid, at => At, key => Key} }
+    , #{id => Id, pid => Pid, at => At, key => Key, application => App} }
   ],
   Ancestors1 = binary:split(Ancestors, <<" ">>, [global]),
   Statements1 = Statements ++ ancestors_mentions(Id, At, Pid, Ancestors1),

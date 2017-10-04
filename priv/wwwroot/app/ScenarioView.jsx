@@ -9,6 +9,36 @@ const SHELL_WIDTH = 460;
 
 
 
+class Layer extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      node: null
+    }
+  }
+
+  componentDidMount() {
+    this.setState({node: this.context.getLayerNode(this.props.name)});
+  }
+
+  render() {
+    if (!this.state.node) {
+      return null;
+    }
+
+    // let node = this.context.getLayerNode(this.props.name);
+    return ReactDOM.createPortal(this.props.children, this.state.node);
+  }
+}
+Layer.contextTypes = {
+  getLayerNode: PropTypes.func
+}
+Layer.propTypes = {
+  name: PropTypes.string
+};
+
+
+
 class ProcessElement extends React.Component {
   renderTracedPart(part, i) {
     let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x;
@@ -94,10 +124,10 @@ class ProcessElement extends React.Component {
         nodes.push(this.renderDeadPart(part, i));
       }
     }
-    return <g>
+    return <Layer name="processes">
       {this.renderConnectingLine()}
       {nodes}
-    </g>;
+    </Layer>;
   }
 }
 
@@ -111,20 +141,30 @@ class SpawnElement extends React.Component {
       let x1 = (CELL_WIDTH+CELL_HGUTTER)*fromX + CELL_WIDTH;
       let y = CELL_HEIGHT*this.props.data.y;
       let x2 = (CELL_WIDTH+CELL_HGUTTER)*toX + CELL_WIDTH;
-      return <g>
-        <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x1-width/2} y1={y+width/2} x2={x1-width/2} y2={y-CELL_HEIGHT/2} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x2-width/2} y1={y} x2={x2-width/2} y2={y+CELL_HEIGHT/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
-      </g>;
+      return [
+        <Layer key="beforeProcesses" name="beforeProcesses">
+          <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        </Layer>,
+        <Layer key="afterProcesses" name="afterProcesses">
+          <line x1={x1-width/2} y1={y+width/2} x2={x1-width/2} y2={y-CELL_HEIGHT/2} style={{stroke: '#666666', strokeWidth: width}} />
+          <line x1={x2-width/2} y1={y} x2={x2-width/2} y2={y+CELL_HEIGHT/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+          <line x1={x2-CELL_WIDTH} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        </Layer>
+      ];
     } else {
       let x1 = (CELL_WIDTH+CELL_HGUTTER)*toX;
       let y = CELL_HEIGHT*this.props.data.y;
       let x2 = (CELL_WIDTH+CELL_HGUTTER)*fromX;
-      return <g>
-        <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x1+width/2} y1={y} x2={x1+width/2} y2={y+CELL_HEIGHT/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
-        <line x1={x2+width/2} y1={y+width/2} x2={x2+width/2} y2={y-CELL_HEIGHT/2} style={{stroke: '#666666', strokeWidth: width}} />
-      </g>;
+      return [
+        <Layer key="beforeProcesses" name="beforeProcesses">
+          <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        </Layer>,
+        <Layer key="afterProcesses" name="afterProcesses">
+          <line x1={x1+width/2} y1={y} x2={x1+width/2} y2={y+CELL_HEIGHT/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
+          <line x1={x2+width/2} y1={y+width/2} x2={x2+width/2} y2={y-CELL_HEIGHT/2} style={{stroke: '#666666', strokeWidth: width}} />
+          <line x1={x1} y1={y} x2={x1+CELL_WIDTH} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        </Layer>
+      ];
     }
   }
 }
@@ -138,9 +178,15 @@ class LinkElement extends React.Component {
     let x1 = (CELL_WIDTH+CELL_HGUTTER)*xs[0];
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
-    return <g>
-      <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
-    </g>;
+    return [
+      <Layer key="beforeProcesses" name="beforeProcesses">
+        <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+      </Layer>,
+      <Layer key="afterProcesses" name="afterProcesses">
+        <line x1={x1} y1={y} x2={x1+CELL_WIDTH} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+        <line x1={x2} y1={y} x2={x2-CELL_WIDTH} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+      </Layer>
+    ];
   }
 }
 
@@ -153,9 +199,9 @@ class MentionElement extends React.Component {
     let x1 = (CELL_WIDTH+CELL_HGUTTER)*xs[0];
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
-    return <g>
+    return <Layer name="beforeProcesses">
       <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#EDEDED', strokeWidth: 2}} />
-    </g>;
+    </Layer>;
   }
 }
 
@@ -168,7 +214,9 @@ class PointElement extends React.Component {
 
     let x = Math.floor((CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + (CELL_WIDTH - width)/2);
     let y = Math.floor(CELL_HEIGHT*this.props.data.y - height/2);
-    return <rect x={x} y={y} width={width} height={height} style={{fill: '#BDBDBD'}} />
+    return <Layer name="afterProcesses">
+      <rect x={x} y={y} width={width} height={height} style={{fill: '#BDBDBD'}} />
+    </Layer>;
   }
 }
 
@@ -192,6 +240,21 @@ class ScenarioView extends React.Component {
       this.props.onInstanceIdChange(this.props.match.params.id);
     }
   }
+
+  getChildContext() {
+    return {getLayerNode: this.getLayerNode.bind(this)};
+  }
+
+  getLayerNode(key) {
+    switch (key) {
+    case 'beforeProcesses': return this.refs.beforeProcesses;
+    case 'afterProcesses': return this.refs.afterProcesses;
+    case 'processes': return this.refs.processes;
+    }
+    console.error("Unknown layer key: ", key);
+    return null;
+  }
+
 
   // gridPositionFunc(x, y) {
   //   return {x: x % (CELL_WIDTH + CELL_HGUTTER), y: y % CELL_HEIGHT};
@@ -244,15 +307,28 @@ class ScenarioView extends React.Component {
     return <div>
       <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
         <g>{this.renderGrid()}</g>
-        <g>{processes}</g>
-        <g>{spawns}</g>
-        <g>{links}</g>
-        <g>{mentions}</g>
-        <g>{points}</g>
+
+        {/* layers where dom is actually rendered */}
+        <g ref="beforeProcesses"></g>
+        <g ref="processes"></g>
+        <g ref="afterProcesses"></g>
+        
+
+        {/* entities, compose different parts on different layers */}
+        <g>
+          {processes}
+          {spawns}
+          {links}
+          {mentions}
+          {points}
+        </g>
+
       </SvgView>
       <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
     </div>;
   }
 }
-
+ScenarioView.childContextTypes = {
+  getLayerNode: PropTypes.func
+};
 

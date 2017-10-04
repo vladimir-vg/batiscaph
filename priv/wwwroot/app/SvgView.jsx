@@ -83,7 +83,7 @@ class SvgView extends React.Component {
     this._posMoveAnimationRequest = window.requestAnimationFrame((function () {
       // explicitly setting svg figure offset
       this.refs.posBase.transform.baseVal.getItem(0).setTranslate(x,y);
-      this.refs.vposBase.transform.baseVal.getItem(0).setTranslate(0,y);
+      // this.refs.vposBase.transform.baseVal.getItem(0).setTranslate(0,y);
       this._dragX = x;
       this._dragY = y;
 
@@ -102,16 +102,16 @@ class SvgView extends React.Component {
   }
 
   render() {
-    var verticallyMovingChildren = [];
-    var allMovingChildren = [];
-
-    React.Children.forEach(this.props.children, function (child) {
-      if (child.props.moveOnlyVertically) {
-        verticallyMovingChildren.push(child);
-      } else {
-        allMovingChildren.push(child);
-      }
-    });
+    // var verticallyMovingChildren = [];
+    // var allMovingChildren = [];
+    // 
+    // React.Children.forEach(this.props.children, function (child) {
+    //   if (child.props.moveOnlyVertically) {
+    //     verticallyMovingChildren.push(child);
+    //   } else {
+    //     allMovingChildren.push(child);
+    //   }
+    // });
 
     // Commented out code that was handling dragging and scrolling inside <svg>
     return <svg ref="svg" className={this.props.className}
@@ -141,22 +141,21 @@ class SvgView extends React.Component {
       </defs>
 
       {/* transform={"translate("+this.props.padding+","+this.props.padding+")"} */}
-      <g ref="vposBase" transform={"translate(0,"+this.state.posY+")"}>
+      {/*<g ref="vposBase" transform={"translate(0,"+this.state.posY+")"}>
         {verticallyMovingChildren}
-      </g>
+      </g>*/}
 
       {/* transform={"translate("+this.props.padding+","+this.props.padding+")"} */}
       <g ref="posBase" transform={"translate("+this.state.posX+","+this.state.posY+")"}>
-        {allMovingChildren}
+        {this.props.children}
       </g>
     </svg>;
   }
 }
-
 SvgView.propTypes = {
-  className: React.PropTypes.string,
-  padding: React.PropTypes.number.isRequired,
-  paddedWidth: React.PropTypes.number.isRequired,
-  paddedHeight: React.PropTypes.number.isRequired,
+  className:PropTypes.string,
+  padding: PropTypes.number.isRequired,
+  paddedWidth: PropTypes.number.isRequired,
+  paddedHeight: PropTypes.number.isRequired,
 };
    
