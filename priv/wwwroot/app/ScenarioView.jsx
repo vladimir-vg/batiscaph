@@ -50,6 +50,7 @@ class ProcessElement extends React.Component {
     // we have to do bindings like that
     this.onMouseEnter = this.onMouseEnter.bind(this);
     this.onMouseLeave = this.onMouseLeave.bind(this);
+    this.onClick = this.onClick.bind(this);
   }
 
   onMouseEnter() {
@@ -58,6 +59,10 @@ class ProcessElement extends React.Component {
 
   onMouseLeave() {
     this.setState({displayText: false})
+  }
+
+  onClick() {
+    this.props.tracePid(this.props.data.pid);
   }
 
   renderTracedPart(part, i) {
@@ -168,7 +173,7 @@ class ProcessElement extends React.Component {
     }
     return [
       <Layer key="processes" name="processes">
-        <g onMouseEnter={this.onMouseEnter} onMouseLeave={this.onMouseLeave}>
+        <g onMouseEnter={this.onMouseEnter} onMouseLeave={this.onMouseLeave} onClick={this.onClick}>
           {this.renderConnectingLine()}
           {nodes}
         </g>
@@ -333,7 +338,7 @@ class ScenarioView extends React.Component {
 
     let processes = [], spawns = [], links = [], mentions = [], points = [];
     for (let pid in this.props.tree.processes) {
-      processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} />);
+      processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} tracePid={this.props.tracePid} />);
     }
     for (let key in this.props.tree.spawns) {
       spawns.push(<SpawnElement key={key} data={this.props.tree.spawns[key]} />);

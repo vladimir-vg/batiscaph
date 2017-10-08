@@ -65,6 +65,7 @@ class App extends React.Component {
     this.onInstanceIdChange = this.onInstanceIdChange.bind(this);
     this.onWSMessage = this.onWSMessage.bind(this);
     this.submitShellInput = this.submitShellInput.bind(this);
+    this.tracePid = this.tracePid.bind(this);
   }
 
   onInstanceIdChange(id) {
@@ -139,6 +140,11 @@ class App extends React.Component {
     V.socket.send('shell_input ' + text + "\n");
   }
 
+  tracePid(pid) {
+    if (!pid) { console.error("Got request to trace invalid pid:", pid); return; }
+    V.socket.send('trace_pid ' + pid);
+  }
+
   render() {
     let scenarioRedirect = null;
     if (this.state.instanceId) {
@@ -147,7 +153,7 @@ class App extends React.Component {
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents} submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange} {...props} />} />
+      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents} submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange} tracePid={this.tracePid} {...props} />} />
       {scenarioRedirect}
     </div>;
   }
