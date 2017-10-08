@@ -40,6 +40,26 @@ Layer.propTypes = {
 
 
 class ProcessElement extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      displayText: false
+    }
+
+    // because new EcmaScript standard is poorly designed
+    // we have to do bindings like that
+    this.onMouseEnter = this.onMouseEnter.bind(this);
+    this.onMouseLeave = this.onMouseLeave.bind(this);
+  }
+
+  onMouseEnter() {
+    this.setState({displayText: true});
+  }
+
+  onMouseLeave() {
+    this.setState({displayText: false})
+  }
+
   renderTracedPart(part, i) {
     let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x;
     let y = CELL_HEIGHT*part.fromY;
@@ -119,6 +139,21 @@ class ProcessElement extends React.Component {
     return <line x1={x} y1={y1} x2={x} y2={y2} style={{stroke: '#EDEDED', strokeWidth: 2}} />;
   }
 
+  renderTextInfo() {
+    let startY = this.props.data.startY;
+    let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x;
+    let y = CELL_HEIGHT*startY - CELL_HEIGHT;
+    let text = "";
+    // if (this.props.data.registeredName) {
+    //   text = "."; // show that we have something to display
+    // }
+    if (this.state.displayText) {
+      text = this.props.data.registeredName;
+    }
+
+    return <text x={x} y={y} fontSize="12" fontFamily="'Ubuntu Mono', monospaced">{text}</text>;
+  }
+
   render() {
     let nodes = [];
     for (const i in this.props.data.parts) {
@@ -131,10 +166,17 @@ class ProcessElement extends React.Component {
         nodes.push(this.renderDeadPart(part, i));
       }
     }
-    return <Layer name="processes">
-      {this.renderConnectingLine()}
-      {nodes}
-    </Layer>;
+    return [
+      <Layer key="processes" name="processes">
+        <g onMouseEnter={this.onMouseEnter} onMouseLeave={this.onMouseLeave}>
+          {this.renderConnectingLine()}
+          {nodes}
+        </g>
+      </Layer>,
+      <Layer key="text" name="text">
+        {this.renderTextInfo()}
+      </Layer>
+    ];
   }
 }
 
@@ -258,6 +300,7 @@ class ScenarioView extends React.Component {
     case 'beforeProcesses': return this.refs.beforeProcesses;
     case 'afterProcesses': return this.refs.afterProcesses;
     case 'processes': return this.refs.processes;
+    case 'text': return this.refs.text;
     }
     console.error("Unknown layer key: ", key);
     return null;
@@ -316,6 +359,7 @@ class ScenarioView extends React.Component {
         <g ref="beforeProcesses"></g>
         <g ref="processes"></g>
         <g ref="afterProcesses"></g>
+        <g ref="text"></g>
         
 
         {/* entities, compose different parts on different layers */}

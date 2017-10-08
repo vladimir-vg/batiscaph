@@ -20,6 +20,7 @@
 %  * exitReason -- same
 %  * disappearedAt -- equals to exitedAt or timestamp of discovering that process is dead
 %  * application -- application atom to which process belongs to. Might be empty.
+%  * registeredName -- last known registered name for this process
 %
 % Process may have following relationships to other processes:
 %  * SPAWN { at }
@@ -27,6 +28,7 @@
 %  * UNLINK { at }
 %  * REGISTER { at } -- connected to a RegisteredName node
 %  * UNREGISTER { at } -- same
+%  * FOUND_REGISTERED { at } -- same as REGISTER, but whe don't know when it happened, just discovered the fact
 %  * MENTION { at, context } -- context is just a string like: 'ancestors', 'monitor', 'shell'
 %    if you link previously unknown process, you mention it implicitly and it will appear on the map untraced.
 %    In some cases it might be useful to mention explicitly, when no special event occured (e.g. after process_info call)
@@ -51,16 +53,16 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
     { "MATCH (p1:Process {instanceId: {id}})\n"
       "WHERE ((p1.disappearedAt IS NULL) OR p1.disappearedAt > {at})\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
-      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\", \"MENTION\"] AND (rel.at > {at})\n"
+      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND (rel.at > {at})\n"
       "WITH p1, rel\n"
       "ORDER BY rel.at\n"
       "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
       "ORDER BY p1.appearedAt\n"
-      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, events\n"
+      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, p1.registeredName AS registeredName, events\n"
     , #{id => Id, at => At} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
-      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\", \"MENTION\"] AND rel.at > {at}\n"
+      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND rel.at > {at}\n"
       "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
       "ORDER BY rel.at\n"
     , #{id => Id, at => At} }
@@ -195,7 +197,8 @@ process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
     % create process and atom node, connect them
     { "MERGE (reg:RegisteredName { atom: {atom}, instanceId: {id} })\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}, proc.registeredName = {atom}\n"
+      "ON MATCH SET proc.registeredName = {atom}\n"
       "CREATE (reg)-[:REGISTER { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, atom => Atom, at => At, key => Key} }
   ],
@@ -231,8 +234,8 @@ process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
     , #{id => Id, pid => Pid, at => At, key => Key, application => App} }
   ],
   % Ancestors1 = binary:split(Ancestors, <<" ">>, [global]),
-  % Statements1 = Statements ++ ancestors_mentions(Id, At, Pid, Ancestors1),
-  process_events(Id, Events, [Statements] ++ Acc);
+  Statements1 = Statements ++ registered_name_statements(Id, At, Pid, maps:get(<<"atom">>, E, <<>>)),
+  process_events(Id, Events, [Statements1] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
@@ -273,6 +276,22 @@ process_events(Id, [#{<<"type">> := <<"mention">>} = E | Events], Acc) ->
     , #{id => Id, pid => Pid, pid1 => Pid1, at => At, key => Key, key1 => Key1} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
+
+
+
+registered_name_statements(_Id, _At, _Pid, <<>>) -> [];
+registered_name_statements(Id, At, Pid, RegName) when is_binary(RegName) ->
+  Key = <<Id/binary,"/",Pid/binary>>,
+  [
+    % create process and atom node, connect them
+    { "MERGE (reg:RegisteredName { atom: {atom}, instanceId: {id} })\n"
+      "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}, proc.registeredName = {atom}\n"
+      "ON MATCH SET proc.registeredName = {atom}\n"
+      "CREATE (reg)-[:FOUND_REGISTERED { at: {at} }]->(proc)\n"
+    , #{id => Id, pid => Pid, atom => RegName, at => At, key => Key} }
+  ].
+
 
 
 % ancestors_mentions(Id, At, Pid, Ancestors) ->

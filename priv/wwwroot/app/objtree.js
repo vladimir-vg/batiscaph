@@ -112,6 +112,7 @@ let updateProcessInLayout = (data, layout) => {
   proc.exitedAt = data.exitedAt;
   proc.exitReason = data.exitReason;
   proc.disappearedAt = data.disappearedAt;
+  proc.registeredName = data.registeredName;
   if (proc.appearedAt) { insertTimestampIntoOrder(proc.appearedAt, layout); }
   if (proc.spawnedAt) { insertTimestampIntoOrder(proc.spawnedAt, layout); }
   if (proc.exitedAt) { insertTimestampIntoOrder(proc.exitedAt, layout); }
@@ -217,7 +218,7 @@ V.produceTree = (layout) => {
   // these mentions will be used to generate mention parts ready to render
   let saveMention = function (at, pid) {
     if (!pid) { console.error("bad pid for saveMention", pid); return; }
-    if (!tree.processes[pid]) { tree.processes[pid] = {}; }
+    if (!tree.processes[pid]) { tree.processes[pid] = {pid: pid}; }
     if (!tree.processes[pid].mentions) { tree.processes[pid].mentions = []; }
     if (tree.processes[pid].mentions.indexOf(at) != -1) { return; }
     tree.processes[pid].mentions.push(at);
@@ -277,13 +278,14 @@ V.produceTree = (layout) => {
   let nowY = layout.timestamps.length;
 
   for (const pid in layout.processes) {
-    if (!tree.processes[pid]) { tree.processes[pid] = {mentions: []}; }
+    if (!tree.processes[pid]) { tree.processes[pid] = {mentions: [], pid: pid}; }
     tree.processes[pid].mentions.sort();
 
     let p = layout.processes[pid];
     tree.processes[pid].x = xFromPid(p.pid);
     tree.processes[pid].startY = yFromTimestamp(p.appearedAt);
     tree.processes[pid].stopY = p.disappearedAt ? yFromTimestamp(p.disappearedAt) : nowY;
+    if (p.registeredName) { tree.processes[pid].registeredName = p.registeredName; }
 
     // now need to iterate over events and over mentions
     // if mention happened during tracing, then ignore it
