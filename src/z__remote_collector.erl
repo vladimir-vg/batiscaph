@@ -31,6 +31,10 @@ handle_info(flush_acc_events, #collector{} = State) ->
   {ok, State1} = flush_acc_events(State),
   {noreply, State1};
 
+handle_info({events, Events}, #collector{} = State) ->
+  {ok, State1} = save_events_for_sending(Events, State),
+  {noreply, State1};
+
 handle_info(#{<<"at_s">> := _, <<"at_mcs">> := _, <<"type">> := _} = Event, #collector{} = State) ->
   {ok, State1} = save_events_for_sending([Event], State),
   {noreply, State1};
@@ -135,7 +139,7 @@ handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) 
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
-  F = z__remote_scenario:trace_started_event(Timestamp, ChildPid),
+  [F] = z__remote_scenario:trace_started_events(Timestamp, ChildPid),
   % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
   % F1 = event_with_timestamp(Timestamp, F),
   {ok, [E1, F]};

@@ -109,12 +109,12 @@ class ProcessElement extends React.Component {
 
   renderConnectingLine() {
     if (this.props.data.parts.length < 2) return null;
-    let fromY = this.props.data.parts[0].y;
-    let toY = this.props.data.parts[this.props.data.parts.length-1].y;
+    let startY = this.props.data.startY;
+    let stopY = this.props.data.stopY;
 
     let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH/2;
-    let y1 = CELL_HEIGHT*fromY - CELL_HEIGHT/2;
-    let y2 = CELL_HEIGHT*toY - CELL_HEIGHT/2;
+    let y1 = CELL_HEIGHT*startY - CELL_HEIGHT/2;
+    let y2 = CELL_HEIGHT*stopY - CELL_HEIGHT/2;
 
     return <line x1={x} y1={y1} x2={x} y2={y2} style={{stroke: '#EDEDED', strokeWidth: 2}} />;
   }

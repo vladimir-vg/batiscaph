@@ -27,6 +27,7 @@ columns() ->
     {<<"hash">>, <<"String">>},
     {<<"application">>, <<"String">>},
     {<<"ancestors">>, <<"String">>},
+    {<<"links">>, <<"String">>},
     {<<"trap_exit">>, <<"UInt8">>}
   ].
 

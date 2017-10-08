@@ -241,7 +241,14 @@ V.produceTree = (layout) => {
       tree.links[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
       break;
 
-    case 'EXPLICIT_MENTION':
+    // case 'mention':
+    //   saveMention(event.at, event.pid);
+    //   saveMention(event.at, event.pid1);
+    //   key = 'mention-' + event.at + '-' + event.pid + '-' + event.pid1;
+    //   tree.mentions[key] = {y: y, fromX: xFromPid(event.pid), toX: xFromPid(event.pid1)};
+    //   break;
+
+    case 'MENTION':
       saveMention(event.at, event.pid1);
       saveMention(event.at, event.pid2);
       key = 'mention-' + event.at + '-' + event.pid1 + '-' + event.pid2;

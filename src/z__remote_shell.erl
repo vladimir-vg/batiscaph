@@ -27,13 +27,17 @@ handle_info(setup, #shell_runner{} = State) ->
 
 handle_info(start_tracing, #shell_runner{} = State) ->
   [(catch z__remote_scenario:trace_pid(whereis(A))) || A <- erlang:registered()],
-  % timer:sleep(500),
+  timer:sleep(500),
 
   % trace all shell processes that spawned by runner
-  Event = z__remote_scenario:trace_started_event(erlang:system_time(micro_seconds), self()),
+  % TODO: would be better just to remember trace event for root
+  % and use timestamp of the first event for it
+  % this way we wouldn't worry about giving misinformation,
+  % because in current there are few milliseconds when event about tracing is made, but no tracing is enabled
+  [E] = z__remote_scenario:trace_started_events(erlang:system_time(micro_seconds), self()),
   CollectorPid = whereis(z__remote_collector),
   erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, CollectorPid}]),
-  CollectorPid ! Event,
+  CollectorPid ! E,
   {noreply, State};
 
 handle_info(restart_shell, #shell_runner{shell_pid = Pid} = State) when Pid =/= undefined ->

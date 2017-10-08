@@ -1,6 +1,6 @@
 -module(z__remote_scenario).
 -behaviour(gen_server).
--export([trace_started_event/2, trace_pid/1]).
+-export([trace_started_events/2, trace_pid/1]).
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -155,54 +155,76 @@ setup(#scenario{opts = Opts} = State) ->
 %     <<"hash">> => bin_to_hex:bin_to_hex(crypto:hash(md5, Body))
 %   }.
 
-event_now() ->
-  Now = erlang:system_time(micro_seconds),
-  #{
-    <<"at_s">> => (Now div (1000*1000)),
-    <<"at_mcs">> => (Now rem (1000*1000))
-  }.
+% event_now() ->
+%   Now = erlang:system_time(micro_seconds),
+%   #{
+%     <<"at_s">> => (Now div (1000*1000)),
+%     <<"at_mcs">> => (Now rem (1000*1000))
+%   }.
 
 
 
+% this function enabled tracing if not already enabled,
+% generates mention events about links and ancestors
 trace_pid(Pid) ->
   CollectorPid = whereis(z__remote_collector),
-  try erlang:trace(Pid, true, [procs, timestamp, {tracer, CollectorPid}]) of
-    1 ->
-      E = trace_started_event(erlang:system_time(micro_seconds), Pid),
+  case erlang:trace_info(Pid, flags) of
+    undefined -> % dead
+      E = z__remote_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+        <<"type">> => <<"found_dead">>,
+        <<"pid">> => pid_to_list(Pid)
+      }),
       CollectorPid ! E,
-      ok
-  catch
-    error:badarg ->
-      case {erlang:is_process_alive(Pid), erlang:is_process_alive(CollectorPid)} of
-        {_, false} -> {error, try_trace_while_collector_is_dead};
-        {true, true} -> {error, failed_to_trace_alive_process};
-        {false, true} ->
-          % okay, process is dead already, meaningless to trace it
-          % just record event that it was dead at this timestamp already
-          E = event_now(),
-          E1 = E#{<<"type">> => <<"found_dead">>, <<"pid">> => list_to_binary(pid_to_list(Pid))},
-          CollectorPid ! E1,
+      ok;
+
+    {flags, [_|_]} -> ok; % already traced
+    {flags, []} ->
+      try erlang:trace(Pid, true, [procs, timestamp, {tracer, CollectorPid}]) of
+        1 ->
+          Events = trace_started_events(erlang:system_time(micro_seconds), Pid, [with_mentions]),
+          % io:format("got events: ~p\n",[Events]),
+          % E = trace_started_event(erlang:system_time(micro_seconds), Pid),
+          CollectorPid ! {events, Events},
           ok
+      catch
+        error:badarg ->
+          case {erlang:is_process_alive(Pid), erlang:is_process_alive(CollectorPid)} of
+            {_, false} -> error(try_trace_while_collector_is_dead);
+            {true, true} -> error(failed_to_trace_alive_process);
+            {false, true} ->
+              % okay, process is dead already, meaningless to trace it
+              % just record event that it was dead at this timestamp already
+              E = z__remote_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+                <<"type">> => <<"found_dead">>,
+                <<"pid">> => pid_to_list(Pid)
+              }),
+              % E = event_now(),
+              % E1 = E#{<<"type">> => <<"found_dead">>, <<"pid">> => list_to_binary(pid_to_list(Pid))},
+              CollectorPid ! E,
+              ok
+          end
       end
   end.
 
 
 
-trace_started_event(Timestamp, Pid) ->
+trace_started_events(Timestamp, Pid) -> trace_started_events(Timestamp, Pid, []).
+
+trace_started_events(Timestamp, Pid, Opts) ->
   App = case application:get_application(Pid) of
     {ok, Atom} -> atom_to_binary(Atom, latin1);
     undefined -> <<>>
   end,
-  case process_info(Pid, [dictionary, registered_name, trap_exit]) of
+  case process_info(Pid, [dictionary, registered_name, trap_exit, links]) of
     undefined ->
-      z__remote_collector:event_with_timestamp(Timestamp, #{
-        <<"application">> => App,
-        <<"type">> => <<"trace_started">>,
+      [z__remote_collector:event_with_timestamp(Timestamp, #{
+        <<"type">> => <<"found_dead">>,
         <<"pid">> => erlang:pid_to_list(Pid)
-      });
+      })];
 
     Props when is_list(Props) ->
-      Ancestors = ancestors_to_binary(proplists:get_value('$ancestors', proplists:get_value(dictionary, Props, []), [])),
+      Ancestors = proplists:get_value('$ancestors', proplists:get_value(dictionary, Props, []), []),
+      Links = proplists:get_value(links, Props, []),
       RegName = case proplists:get_value(registered_name, Props) of
         [] -> <<>>;
         Atom1 when is_atom(Atom1) -> atom_to_binary(Atom1, latin1)
@@ -211,19 +233,65 @@ trace_started_event(Timestamp, Pid) ->
         true -> 1;
         false -> 0
       end,
-      z__remote_collector:event_with_timestamp(Timestamp, #{
+
+      OtherEvents = case lists:member(with_mentions, Opts) of
+        true -> mention_events(Timestamp, Pid, Ancestors ++ Links);
+        false -> []
+      end,
+      E = z__remote_collector:event_with_timestamp(Timestamp, #{
         <<"application">> => App,
-        <<"ancestors">> => Ancestors,
+        <<"ancestors">> => processes_list_to_binary(Ancestors),
+        <<"links">> => processes_list_to_binary(Links),
         <<"trap_exit">> => TrapExit,
         <<"atom">> => RegName,
         <<"type">> => <<"trace_started">>,
         <<"pid">> => erlang:pid_to_list(Pid)
-      })
+      }),
+      [E | OtherEvents]
   end.
 
-ancestors_to_binary(Ancestors) ->
+processes_list_to_binary(Ancestors) ->
   AncestorsBin = lists:map(fun
     (Atom) when is_atom(Atom) -> atom_to_binary(Atom,latin1);
-    (Pid) when is_pid(Pid) -> pid_to_list(Pid)
+    (Pid) when is_pid(Pid) -> pid_to_list(Pid);
+    (Port) when is_port(Port) -> port_to_list(Port)
   end, Ancestors),
   iolist_to_binary(lists:join(" ", AncestorsBin)).
+
+
+
+mention_events(_Timestamp, _FirstPid, []) -> [];
+mention_events(Timestamp, FirstPid, [Port | Pids]) when is_port(Port) ->
+  mention_events(Timestamp, FirstPid, Pids);
+mention_events(Timestamp, FirstPid, [Atom | Pids]) when is_atom(Atom) ->
+  case whereis(Atom) of
+    undefined -> mention_events(Timestamp, FirstPid, Pids);
+    Pid when is_pid(Pid) ->
+      % maybe would be better to show mention not towards particular process,
+      % but to registered name
+      mention_events(Timestamp, FirstPid, [Pid | Pids])
+  end;
+
+mention_events(Timestamp, FirstPid, [Pid | Pids]) when is_pid(Pid) ->
+  case process_info(Pid, [trap_exit]) of
+    undefined ->
+      E = z__remote_collector:event_with_timestamp(Timestamp, #{
+        <<"type">> => <<"found_dead">>,
+        <<"pid">> => erlang:pid_to_list(Pid),
+        <<"pid1">> => erlang:pid_to_list(FirstPid)
+      }),
+      [E | mention_events(Timestamp, FirstPid, Pids)];
+
+    Props ->
+      TrapExit = case proplists:get_value(trap_exit, Props) of
+        true -> 1;
+        false -> 0
+      end,
+      E = z__remote_collector:event_with_timestamp(Timestamp, #{
+        <<"type">> => <<"mention">>,
+        <<"pid">> => erlang:pid_to_list(Pid),
+        <<"pid1">> => erlang:pid_to_list(FirstPid),
+        <<"trap_exit">> => TrapExit
+      }),
+      [E | mention_events(Timestamp, FirstPid, Pids)]
+  end.

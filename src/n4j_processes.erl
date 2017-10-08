@@ -27,7 +27,7 @@
 %  * UNLINK { at }
 %  * REGISTER { at } -- connected to a RegisteredName node
 %  * UNREGISTER { at } -- same
-%  * EXPLICIT_MENTION { at, context } -- context is just a string like: 'ancestors', 'monitor', 'shell'
+%  * MENTION { at, context } -- context is just a string like: 'ancestors', 'monitor', 'shell'
 %    if you link previously unknown process, you mention it implicitly and it will appear on the map untraced.
 %    In some cases it might be useful to mention explicitly, when no special event occured (e.g. after process_info call)
 %
@@ -51,7 +51,7 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
     { "MATCH (p1:Process {instanceId: {id}})\n"
       "WHERE ((p1.disappearedAt IS NULL) OR p1.disappearedAt > {at})\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
-      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\", \"EXPLICIT_MENTION\"] AND (rel.at > {at})\n"
+      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\", \"MENTION\"] AND (rel.at > {at})\n"
       "WITH p1, rel\n"
       "ORDER BY rel.at\n"
       "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
@@ -60,7 +60,7 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
     , #{id => Id, at => At} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
-      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND rel.at > {at}\n"
+      "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\", \"MENTION\"] AND rel.at > {at}\n"
       "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
       "ORDER BY rel.at\n"
     , #{id => Id, at => At} }
@@ -92,7 +92,7 @@ update(Id, Events) ->
 
 
 desired_event_types() ->
-  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>, <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>].
+  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>, <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>,<<"mention">>].
 
 
 
@@ -216,7 +216,7 @@ process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"ancestors">> := Ancestors} = E,
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
   At = AtS*1000*1000 + Mcs,
   Key = <<Id/binary,"/",Pid/binary>>,
   App = case maps:get(<<"application">>, E, <<>>) of
@@ -230,9 +230,9 @@ process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
       "CREATE (proc)-[:TRACE_STARTED { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, at => At, key => Key, application => App} }
   ],
-  Ancestors1 = binary:split(Ancestors, <<" ">>, [global]),
-  Statements1 = Statements ++ ancestors_mentions(Id, At, Pid, Ancestors1),
-  process_events(Id, Events, [Statements1] ++ Acc);
+  % Ancestors1 = binary:split(Ancestors, <<" ">>, [global]),
+  % Statements1 = Statements ++ ancestors_mentions(Id, At, Pid, Ancestors1),
+  process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
@@ -257,23 +257,34 @@ process_events(Id, [#{<<"type">> := <<"found_dead">>} = E | Events], Acc) ->
       "CREATE (proc)-[:FOUND_DEAD { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"mention">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
+  At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
+  Key1 = <<Id/binary,"/",Pid1/binary>>,
+  Statements = [
+    { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+      "MERGE (proc1:Process { pid: {pid1}, instanceId: {id} })\n"
+      "ON CREATE SET proc1.appearedAt = {at}, proc1.key = {key1}\n"
+      "CREATE (proc)-[:MENTION { at: {at} }]->(proc1)\n"
+    , #{id => Id, pid => Pid, pid1 => Pid1, at => At, key => Key, key1 => Key1} }
+  ],
   process_events(Id, Events, [Statements] ++ Acc).
 
 
-ancestors_mentions(Id, At, Pid, Ancestors) ->
-  lists:flatmap(fun
-    (<<"<", _/binary>> = MentionPid) ->
-      Key = <<Id/binary,"/",MentionPid/binary>>,
-      [
-        { "MATCH (proc:Process { pid: {pid1}, instanceId: {id} })\n"
-          "MERGE (mproc:Process { pid: {pid2}, instanceId: {id} })\n"
-          "ON CREATE SET mproc.appearedAt = {at}, mproc.key = {key}\n"
-          "CREATE (proc)-[:EXPLICIT_MENTION { at: {at}, context: 'ancestors' }]->(mproc)\n"
-        , #{id => Id, pid1 => Pid, pid2 => MentionPid, at => At, key => Key}}
-      ];
-    (_RegName) -> []
-  end, Ancestors).
-  % lists:foldl(fun
-  %   (<<"<", _/binary>> = MentionPid, Acc) ->
-  %     <<Acc/binary, "CREATE (proc)-[:EXPLICIT_MENTION]->(mproc)\n">>
-  % end, <<>>, Ancestors),
+% ancestors_mentions(Id, At, Pid, Ancestors) ->
+%   lists:flatmap(fun
+%     (<<"<", _/binary>> = MentionPid) ->
+%       Key = <<Id/binary,"/",MentionPid/binary>>,
+%       [
+%         { "MATCH (proc:Process { pid: {pid1}, instanceId: {id} })\n"
+%           "MERGE (mproc:Process { pid: {pid2}, instanceId: {id} })\n"
+%           "ON CREATE SET mproc.appearedAt = {at}, mproc.key = {key}\n"
+%           "CREATE (proc)-[:EXPLICIT_MENTION { at: {at}, context: 'ancestors' }]->(mproc)\n"
+%         , #{id => Id, pid1 => Pid, pid2 => MentionPid, at => At, key => Key}}
+%       ];
+%     (_RegName) -> []
+%   end, Ancestors).
