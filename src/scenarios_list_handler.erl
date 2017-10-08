@@ -17,10 +17,10 @@ terminate(_Reason, _Req, _State) ->
 
 handle(Req, State) ->
   case get_items_list(1000) of
-    {error, Reason} ->
-      Body = iolist_to_binary(io_lib:format("~p", [Reason])),
-      {ok, Req1} = cowboy_req:reply(500, [{<<"content-type">>, <<"text/plain">>}], Body, Req),
-      {ok, Req1, State};
+    % {error, Reason} ->
+    %   Body = iolist_to_binary(io_lib:format("~p", [Reason])),
+    %   {ok, Req1} = cowboy_req:reply(500, [{<<"content-type">>, <<"text/plain">>}], Body, Req),
+    %   {ok, Req1, State};
 
     {ok, Items} ->
       Body = jsx:encode(Items),

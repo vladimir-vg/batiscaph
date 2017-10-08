@@ -14,7 +14,7 @@ create_index(Label, Props) ->
 
 
 % transaction interface, executed in one request
--spec commit([{binary(), map()}]) -> ok.
+-spec commit([{binary() | list(), map()}]) -> {ok, any()} | {error, any()}.
 commit(Statements) ->
   Statements1 = lists:map(fun
     ({Stmt, Params}) when is_binary(Stmt) ->
