@@ -2,6 +2,12 @@ If you want to locally setup demo [that was described in my blog](http://vladimi
 
 This branch is for ongoing development.
 
+# Design ideas
+
+ * Make it work on a loaded production system.
+ * Use minimal set of dependencies when possible. Don't expect perfect environment.
+ * Keep UI clean and simple, which everyday working tool should have.
+
 # Development setup
 
 Unlike in demo, espace do not stores events in csv files anymore. Now it uses database for it.
