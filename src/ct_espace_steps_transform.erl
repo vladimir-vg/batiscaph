@@ -18,8 +18,9 @@ parse_transform(Forms, _Options) ->
       % generate secret function that provides access to local functions in suite
       % later append it at the end of file
       % this required for proper step-by-step execution by erl_eval
-      {ok, LocalHandlerName, LocalFunHandler} = generate_local_fun_handler(EofLine, Forms),
-      case wrap_functions(Forms, LocalHandlerName, Testcases) of
+      {ok, LocalFinderName, LocalFunHandler} = generate_local_fun_finder(EofLine, Forms),
+      % io:format("forms:~n~p~n", [Forms]),
+      case wrap_functions(Forms, LocalFinderName, Testcases) of
         Forms -> Forms; % no changes made, no need for local fun handler
         Forms1 when Forms1 =/= Forms ->
           % insert definiton of local fun handler at the end of the file
@@ -36,9 +37,9 @@ get_steps_attr_value([_ | Forms]) -> get_steps_attr_value(Forms).
 
 % this generates definition of local function
 % that gives away any function in this module to anyone calling it
-generate_local_fun_handler(EofLine, Forms) ->
+generate_local_fun_finder(EofLine, Forms) ->
   % generate random name of this function
-  Name = <<"espace_steps_local_fun_handler_", (integer_to_binary(crypto:rand_uniform(1,10000)))/binary>>,
+  Name = <<"espace_steps_local_fun_finder_", (integer_to_binary(rand:uniform(10000)))/binary>>,
   Name1 = binary_to_atom(Name, latin1),
 
   % all functions that presented in module
@@ -58,25 +59,25 @@ generate_local_fun_handler(EofLine, Forms) ->
 
 
 
-wrap_functions([], _LocalHandlerName, _Testcases) -> [];
-wrap_functions([{function,_,Atom,1,_} = F | Forms], LocalHandlerName, Testcases) ->
+wrap_functions([], _LocalFinderName, _Testcases) -> [];
+wrap_functions([{function,_,Atom,1,_} = F | Forms], LocalFinderName, Testcases) ->
   case lists:member(Atom, Testcases) of
-    false -> [F | wrap_functions(Forms, LocalHandlerName, Testcases)];
-    true -> [wrap_one_function(F, LocalHandlerName) | wrap_functions(Forms, LocalHandlerName, Testcases)]
+    false -> [F | wrap_functions(Forms, LocalFinderName, Testcases)];
+    true -> [wrap_one_function(F, LocalFinderName) | wrap_functions(Forms, LocalFinderName, Testcases)]
   end;
-wrap_functions([F | Forms], LocalHandlerName, Testcases) ->
-  [F | wrap_functions(Forms, LocalHandlerName, Testcases)].
+wrap_functions([F | Forms], LocalFinderName, Testcases) ->
+  [F | wrap_functions(Forms, LocalFinderName, Testcases)].
 
 
-wrap_one_function({function, Line, Atom, 1, Clauses}, LocalHandlerName) ->
-  Clauses1 = [wrap_fun_clause(C, LocalHandlerName) || C <- Clauses],
+wrap_one_function({function, Line, Atom, 1, Clauses}, LocalFinderName) ->
+  Clauses1 = [wrap_fun_clause(C, LocalFinderName) || C <- Clauses],
   {function, Line, Atom, 1, Clauses1}.
 
 
 
 % just quote all expressions, and pass them to espace_shell
 % also create new bindings, add Config arg
-wrap_fun_clause({clause,Line,[Var],Guards,Exprs}, LocalHandlerName) ->
+wrap_fun_clause({clause,Line,[Var],Guards,Exprs}, LocalFinderName) ->
   QuotedTree = erl_syntax:revert(erl_syntax:meta(erl_syntax:form_list(Exprs))),
   % erl_eval:new_bindings()
   NewBindings = {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,new_bindings}},[]},
@@ -89,8 +90,8 @@ wrap_fun_clause({clause,Line,[Var],Guards,Exprs}, LocalHandlerName) ->
   % erl_syntax:revert(QuotedTree)
   RevertedQuoted = {call,Line,{remote,Line,{atom,Line,erl_syntax},{atom,Line,revert_forms}},[QuotedTree]},
   % fun local_fun_handler/2
-  LocalHandler = {'fun',Line,{function,LocalHandlerName,2}},
+  LocalFinder = {'fun',Line,{function,LocalFinderName,2}},
   % espace_shell:steps_exec(erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
-  Exprs1 = [{call,Line,{remote,Line,{atom,Line,espace_shell},{atom,Line,steps_exec}}, [Bindings, LocalHandler, RevertedQuoted]}],
+  Exprs1 = [{call,Line,{remote,Line,{atom,Line,espace_shell},{atom,Line,steps_exec}}, [Bindings, LocalFinder, RevertedQuoted]}],
   {clause,Line,[Var],Guards,Exprs1}.
 
