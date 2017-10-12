@@ -1,4 +1,4 @@
--module(espace).
+-module(batiskaph).
 -export([get_prop/1, create_tables/0, drop_tables/0, prepare_graph_schema/0]).
 -export([binary_to_hex/1]).
 
@@ -25,7 +25,7 @@ prepare_graph_schema() ->
 get_prop(Name) ->
   case erlang:get({app_config_prop, Name}) of
     undefined ->
-      {ok, Value} = application:get_env(espace, Name),
+      {ok, Value} = application:get_env(batiskaph, Name),
       put({app_config_prop, Name}, Value),
       Value;
     Value -> Value

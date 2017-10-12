@@ -32,7 +32,7 @@ columns() ->
   ].
 
 create_table() ->
-  DBName = espace:get_prop(clickhouse_dbname),
+  DBName = batiskaph:get_prop(clickhouse_dbname),
   Columns = iolist_to_binary([["\t", Name, " ", Type, ",\n"] || {Name, Type} <- columns()]),
   SQL = iolist_to_binary([
     "CREATE TABLE `", DBName, "`.events (\n",
@@ -44,7 +44,7 @@ create_table() ->
   ok.
 
 drop_table() ->
-  DBName = espace:get_prop(clickhouse_dbname),
+  DBName = batiskaph:get_prop(clickhouse_dbname),
   SQL = iolist_to_binary(["DROP TABLE `", DBName, "`.events\n"]),
   ok = clickhouse:execute(SQL),
   ok.
@@ -52,7 +52,7 @@ drop_table() ->
 
 
 store(InstanceId, Events) ->
-  DBName = espace:get_prop(clickhouse_dbname),
+  DBName = batiskaph:get_prop(clickhouse_dbname),
   ok = clickhouse:insert(DBName, <<"events">>, columns(), Events, fun (Item) ->
     Item#{<<"instance_id">> => InstanceId}
   end),
@@ -61,7 +61,7 @@ store(InstanceId, Events) ->
 
 
 select(Opts) ->
-  DBName = espace:get_prop(clickhouse_dbname),
+  DBName = batiskaph:get_prop(clickhouse_dbname),
 
   WhereClause = case where_cond(Opts) of
     none -> <<>>;

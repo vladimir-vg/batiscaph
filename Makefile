@@ -1,3 +1,3 @@
 
 shell:
-	./rebar3 shell --sname espace
+	./rebar3 shell --sname batiskaph
