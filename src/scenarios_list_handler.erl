@@ -33,7 +33,7 @@ handle(Req, State) ->
 % get sorted list of scenarios
 % scenarios which dir doesn't look like a date go first (like 'learn-you-some-erlang')
 get_items_list(MaxItems) ->
-  DBName = batiskaph:get_prop(clickhouse_dbname),
+  DBName = batiscaph:get_prop(clickhouse_dbname),
   SQL = iolist_to_binary([
     "SELECT instance_id, min(toUInt64(at_s)) AS min_at\n",
     "FROM `", DBName, "`.events\n",

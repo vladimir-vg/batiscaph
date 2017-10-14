@@ -1,4 +1,4 @@
--module(batiskaph_shell).
+-module(batiscaph_shell).
 -export([steps_exec/3]).
 
 
@@ -12,7 +12,7 @@
 steps_exec(Bindings, LocalFunFinder, Exprs) ->
   LocalFunHandler = fun (Name, Args) ->
     case LocalFunFinder(Name, length(Args)) of
-      none -> exit(batiskaph_no_function_found);
+      none -> exit(batiscaph_no_function_found);
       {ok, Func} -> erlang:apply(Func, Args)
     end
   end,

@@ -97,7 +97,7 @@ handle_cast(Cast, State) ->
 
 
 connect_to_node(#remote_ctl{node = undefined, id = Id} = State) when is_binary(Id) ->
-  Dir = filename:join([code:priv_dir(batiskaph), "scenarios", Id]),
+  Dir = filename:join([code:priv_dir(batiscaph), "scenarios", Id]),
   {ok, State1} = start_local_node(Dir, State),
   connect_to_node(State1);
 

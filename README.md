@@ -1,8 +1,8 @@
-# batiskaph
+# batiscaph
 
 ![Submersible MIR-2](https://pp.userapi.com/c639530/v639530374/4fcba/8ykO3N012hA.jpg)
 
-Batiskaph is a research device that submerges in ocean and explores unknown space.
+Batiscaph is a research device that submerges in ocean and explores unknown space.
 
 That's what this tool does -- submerges into Erlang node and observes how it works.
 
@@ -20,11 +20,11 @@ This branch is for ongoing development.
 
 # Development setup
 
-Unlike in demo, batiskaph do not stores events in csv files anymore. Now it uses database for it.
+Unlike in demo, batiscaph do not stores events in csv files anymore. Now it uses database for it.
 You need to install clickhouse (column oriented dbms) and neo4j (graph database).
 
 Specify neo4j url (`NEO4J_HTTP_URL`) with your login:pass if needed.
-You may take look at `batiskaph_app:read_config/0` function for better understanding.
+You may take look at `batiscaph_app:read_config/0` function for better understanding.
 
 Also you need to install babel to use web interface in development mode:
 
@@ -40,13 +40,13 @@ To start server just type `make`.
 
 # How it supposed to work
 
-Target erlang have no prerequisites, or have small client library that allows batiskaph to connect to it.
+Target erlang have no prerequisites, or have small client library that allows batiscaph to connect to it.
 
-After connection batiskaph uploads client modules to remote node, starts tracer and shell.
+After connection batiscaph uploads client modules to remote node, starts tracer and shell.
 
-Batiskaph collects events from remote node (including shell IO), stores it to database, and displays gathered information in browser.
+Batiscaph collects events from remote node (including shell IO), stores it to database, and displays gathered information in browser.
 
-Batiskaph collects not only traced events (`spawn`, `link`, `exit`) but also calls that may tell more info about explored system. For example `erlang:whereis/1` will add info about registered name to pid, even if this process was not traced and we had no information about it. Same for `erlang:process_info/1,2`. Therefore user can explore system using familiar calls and have returned information recorded and displayed on the map.
+Batiscaph collects not only traced events (`spawn`, `link`, `exit`) but also calls that may tell more info about explored system. For example `erlang:whereis/1` will add info about registered name to pid, even if this process was not traced and we had no information about it. Same for `erlang:process_info/1,2`. Therefore user can explore system using familiar calls and have returned information recorded and displayed on the map.
 
 Collected events produce graph (neo4j) that gonna be used for querying.
 

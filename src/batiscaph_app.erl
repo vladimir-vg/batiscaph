@@ -1,4 +1,4 @@
--module(batiskaph_app).
+-module(batiscaph_app).
 -behaviour(application).
 -export([start/2, stop/1]).
 
@@ -16,14 +16,14 @@ start(_StartType, _StartArgs) ->
       ok;
     _ ->
       ok = read_config(),
-      batiskaph_web:restart_cowboy(),
+      batiscaph_web:restart_cowboy(),
       ok
   end,
 
   % useful to cache babel output
   web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
 
-  batiskaph_sup:start_link().
+  batiscaph_sup:start_link().
 
 
 
@@ -31,8 +31,8 @@ read_config() ->
   DBName = list_to_binary(os:getenv("CLICKHOUSE_DB", "espace")),
   DBUrl = list_to_binary(os:getenv("CLICKHOUSE_URL", "http://0.0.0.0:8123/")),
   NeoUrl = list_to_binary(os:getenv("NEO4J_HTTP_URL", "http://neo4j:neo4j@0.0.0.0:7474/")),
-  application:set_env(batiskaph, clickhouse_dbname, DBName),
-  application:set_env(batiskaph, clickhouse_url, DBUrl),
-  application:set_env(batiskaph, neo4j_url, NeoUrl),
+  application:set_env(batiscaph, clickhouse_dbname, DBName),
+  application:set_env(batiscaph, clickhouse_url, DBUrl),
+  application:set_env(batiscaph, neo4j_url, NeoUrl),
   ok.
 

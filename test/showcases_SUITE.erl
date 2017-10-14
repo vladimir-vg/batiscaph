@@ -1,10 +1,10 @@
 -module(showcases_SUITE).
 -export([all/0]).
 -export([file_open_test/1, ets_match_spec_transform/1]).
--batiskaph_steps([file_open_test, ets_match_spec_transform]).
+-batiscaph_steps([file_open_test, ets_match_spec_transform]).
 -include_lib("stdlib/include/ms_transform.hrl").
 -include_lib("records.hrl").
--compile({parse_transform, batiskaph_suite_transform}).
+-compile({parse_transform, batiscaph_suite_transform}).
 
 
 

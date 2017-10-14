@@ -35,7 +35,7 @@ commit(Statements) ->
 
 
 post_json(Path, ReqJSON) ->
-  BaseURL = batiskaph:get_prop(neo4j_url),
+  BaseURL = batiscaph:get_prop(neo4j_url),
   URL = <<BaseURL/binary, Path/binary>>,
   Headers = [{<<"Accept">>, <<"application/json; charset=UTF-8">>}, {<<"Content-Type">>, <<"application/json">>}],
   % lager:info("Neo4j POST ~p\n~s\n\n", [Path, jsx:encode(ReqJSON, [{indent,2}])]),

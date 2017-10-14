@@ -14,8 +14,8 @@
 
 -record(scenario, {
   opts,
-  batiskaph_node,
-  batiskaph_node_timer,
+  batiscaph_node,
+  batiscaph_node_timer,
   receiver_pid,
 
   % supervisor monitor ref
@@ -27,12 +27,12 @@
 code_change(_, State, _) -> {ok, State}.
 terminate(_,_State) -> ok.
 
-start_link(BatiskaphNode, ReceiverPid, Opts) ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, [BatiskaphNode, ReceiverPid, Opts], []).
+start_link(BatiscaphNode, ReceiverPid, Opts) ->
+  gen_server:start_link({local, ?MODULE}, ?MODULE, [BatiscaphNode, ReceiverPid, Opts], []).
 
-init([BatiskaphNode, ReceiverPid, Opts]) ->
+init([BatiscaphNode, ReceiverPid, Opts]) ->
   self() ! setup,
-  {ok, #scenario{batiskaph_node = BatiskaphNode, receiver_pid = ReceiverPid, opts = Opts}}.
+  {ok, #scenario{batiscaph_node = BatiscaphNode, receiver_pid = ReceiverPid, opts = Opts}}.
 
 
 
@@ -40,9 +40,9 @@ handle_info(setup, State) ->
   {ok, State1} = setup(State),
   {noreply, State1};
 
-handle_info(check_batiskaph_node, #scenario{batiskaph_node = BatiskaphNode} = State) ->
-  ok = check_batiskaph_node(BatiskaphNode),
-  {ok, State1} = refresh_batiskaph_node_timer(State),
+handle_info(check_batiscaph_node, #scenario{batiscaph_node = BatiscaphNode} = State) ->
+  ok = check_batiscaph_node(BatiscaphNode),
+  {ok, State1} = refresh_batiscaph_node_timer(State),
   {noreply, State1};
 
 handle_info({'DOWN', MRef, process, _Pid, Reason}, #scenario{sup_mref = MRef} = State) ->
@@ -93,21 +93,21 @@ handle_cast(Cast, State) ->
 
 
 
-refresh_batiskaph_node_timer(#scenario{batiskaph_node_timer = Timer} = State) when Timer =/= undefined ->
+refresh_batiscaph_node_timer(#scenario{batiscaph_node_timer = Timer} = State) when Timer =/= undefined ->
   erlang:cancel_timer(Timer),
-  refresh_batiskaph_node_timer(State#scenario{batiskaph_node_timer = undefined});
+  refresh_batiscaph_node_timer(State#scenario{batiscaph_node_timer = undefined});
 
-refresh_batiskaph_node_timer(#scenario{batiskaph_node_timer = undefined} = State) ->
-  Timer = erlang:send_after(?ESPACE_NODE_TIMEOUT, self(), check_batiskaph_node),
-  {ok, State#scenario{batiskaph_node_timer = Timer}}.
+refresh_batiscaph_node_timer(#scenario{batiscaph_node_timer = undefined} = State) ->
+  Timer = erlang:send_after(?ESPACE_NODE_TIMEOUT, self(), check_batiscaph_node),
+  {ok, State#scenario{batiscaph_node_timer = Timer}}.
 
 
 
-check_batiskaph_node(BatiskaphNode) ->
-  case net_adm:ping(BatiskaphNode) of
+check_batiscaph_node(BatiscaphNode) ->
+  case net_adm:ping(BatiscaphNode) of
     pong -> ok;
     pang ->
-      % remote batiskaph is unavailable, shut down node
+      % remote batiscaph is unavailable, shut down node
       io:format("Espace node is gone, shutting down\n"),
       timer:sleep(1000),
       init:stop()
@@ -130,7 +130,7 @@ setup(#scenario{opts = Opts} = State) ->
   case maps:get(nodestop_on_disconnect, Opts, undefined) of
     undefined -> {ok, State1};
     true ->
-      {ok, State2} = refresh_batiskaph_node_timer(State1),
+      {ok, State2} = refresh_batiscaph_node_timer(State1),
       {ok, State2}
   end.
 

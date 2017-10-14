@@ -1,4 +1,4 @@
--module(batiskaph_ws_handler).
+-module(batiscaph_ws_handler).
 -behaviour(cowboy_websocket_handler).
 
 -export([init/3]).
@@ -86,7 +86,7 @@ websocket_terminate(_Reason, _Req, _State) ->
 
 
 start_shell(State) ->
-  Id = batiskaph:binary_to_hex(crypto:strong_rand_bytes(10)),
+  Id = batiscaph:binary_to_hex(crypto:strong_rand_bytes(10)),
   {ok, Pid} = remote_ctl:ensure_started(Id),
   ok = gen_server:call(Pid, {subscribe_websocket, self()}),
   {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
@@ -118,7 +118,7 @@ connect_to_shell(Id, State) ->
 
 
 % start_local_node(#ws_state{scenario_id = Id} = State) ->
-%   DirPath = filename:join([code:priv_dir(batiskaph), "scenarios", Id]),
+%   DirPath = filename:join([code:priv_dir(batiscaph), "scenarios", Id]),
 %   ok = filelib:ensure_dir(DirPath),
 %   ok = file:make_dir(DirPath),
 %   Opts = [{args, ["-noshell", "-sname", Id]}, {cd, DirPath}],
