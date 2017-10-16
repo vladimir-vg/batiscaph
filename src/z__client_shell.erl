@@ -26,8 +26,8 @@ handle_info(setup, #shell_runner{} = State) ->
   {noreply, State1};
 
 handle_info(start_tracing, #shell_runner{} = State) ->
-  [(catch z__client_scenario:trace_pid(whereis(A))) || A <- erlang:registered()],
-  timer:sleep(500),
+  % [(catch z__client_scenario:trace_pid(whereis(A))) || A <- erlang:registered()],
+  % timer:sleep(500),
 
   % trace all shell processes that spawned by runner
   % TODO: would be better just to remember trace event for root
