@@ -136,13 +136,13 @@ wait_for_remote_node(RemoteNode, Timeout) ->
 
 
 start_remote_shell(#remote_ctl{node = RemoteNode} = State) ->
-  ok = remote_node:load_local_module(RemoteNode, z__remote_collector),
-  ok = remote_node:load_local_module(RemoteNode, z__remote_io_server),
-  ok = remote_node:load_local_module(RemoteNode, z__remote_scenario),
-  ok = remote_node:load_local_module(RemoteNode, z__remote_shell),
-  ok = remote_node:load_local_module(RemoteNode, z__remote_sup),
+  ok = remote_node:load_local_module(RemoteNode, z__client_collector),
+  ok = remote_node:load_local_module(RemoteNode, z__client_io_server),
+  ok = remote_node:load_local_module(RemoteNode, z__client_scenario),
+  ok = remote_node:load_local_module(RemoteNode, z__client_shell),
+  ok = remote_node:load_local_module(RemoteNode, z__client_sup),
   Opts = #{nodestop_on_disconnect => true, nodestop_on_scenario_shutdown => true},
-  {ok, ScenarioPid} = rpc:call(RemoteNode, z__remote_scenario, start_link, [node(), self(), Opts]),
+  {ok, ScenarioPid} = rpc:call(RemoteNode, z__client_scenario, start_link, [node(), self(), Opts]),
   lager:info("Connected to remote shell on ~p", [RemoteNode]),
   {ok, State#remote_ctl{remote_scenario_pid = ScenarioPid}}.
 

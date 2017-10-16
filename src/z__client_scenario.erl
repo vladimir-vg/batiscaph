@@ -1,4 +1,4 @@
--module(z__remote_scenario).
+-module(z__client_scenario).
 -behaviour(gen_server).
 -export([trace_started_events/2, trace_pid/1]).
 -export([start_link/3]).
@@ -53,7 +53,7 @@ handle_info({'DOWN', MRef, process, _Pid, Reason}, #scenario{sup_mref = MRef} = 
   {noreply, State};
 
 handle_info(shell_restart, State) ->
-  ok = gen_server:call(z__remote_shell, restart_shell),
+  ok = gen_server:call(z__client_shell, restart_shell),
   {noreply, State};
 
 % handle_info({store_module, Name, Body}, State) ->
@@ -61,7 +61,7 @@ handle_info(shell_restart, State) ->
 %   {noreply, State1};
 
 handle_info({shell_input, Input}, State) ->
-  z__remote_io_server ! {input, binary_to_list(Input)},
+  z__client_io_server ! {input, binary_to_list(Input)},
   {noreply, State};
 
 handle_info({trace_pid, Pid}, State) when is_binary(Pid) ->
@@ -116,7 +116,7 @@ check_batiscaph_node(BatiscaphNode) ->
 
 
 setup(#scenario{opts = Opts} = State) ->
-  {ok, SupPid} = z__remote_sup:start_link(),
+  {ok, SupPid} = z__client_sup:start_link(),
 
   {ok, State1} = case maps:get(nodestop_on_scenario_shutdown, Opts, undefined) of
     undefined -> {ok, State};
@@ -143,7 +143,7 @@ setup(#scenario{opts = Opts} = State) ->
 %     {error, Reason} ->
 %       Event#{type => <<"module_storage_failed">>, term => iolist_to_binary(io_lib:format("~p", [Reason]))}
 %   end,
-%   z__remote_collector ! Event1,
+%   z__client_collector ! Event1,
 %   {ok, State}.
 % 
 % module_stored_event_now(Name, Body) ->
@@ -167,10 +167,10 @@ setup(#scenario{opts = Opts} = State) ->
 % this function enabled tracing if not already enabled,
 % generates mention events about links and ancestors
 trace_pid(Pid) ->
-  CollectorPid = whereis(z__remote_collector),
+  CollectorPid = whereis(z__client_collector),
   case erlang:trace_info(Pid, flags) of
     undefined -> % dead
-      E = z__remote_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+      E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
         <<"type">> => <<"found_dead">>,
         <<"pid">> => pid_to_list(Pid)
       }),
@@ -194,7 +194,7 @@ trace_pid(Pid) ->
             {false, true} ->
               % okay, process is dead already, meaningless to trace it
               % just record event that it was dead at this timestamp already
-              E = z__remote_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+              E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
                 <<"type">> => <<"found_dead">>,
                 <<"pid">> => pid_to_list(Pid)
               }),
@@ -217,7 +217,7 @@ trace_started_events(Timestamp, Pid, Opts) ->
   end,
   case process_info(Pid, [dictionary, registered_name, trap_exit, links]) of
     undefined ->
-      [z__remote_collector:event_with_timestamp(Timestamp, #{
+      [z__client_collector:event_with_timestamp(Timestamp, #{
         <<"type">> => <<"found_dead">>,
         <<"pid">> => erlang:pid_to_list(Pid)
       })];
@@ -238,7 +238,7 @@ trace_started_events(Timestamp, Pid, Opts) ->
         true -> mention_events(Timestamp, Pid, Ancestors ++ Links);
         false -> []
       end,
-      E = z__remote_collector:event_with_timestamp(Timestamp, #{
+      E = z__client_collector:event_with_timestamp(Timestamp, #{
         <<"application">> => App,
         <<"ancestors">> => processes_list_to_binary(Ancestors),
         <<"links">> => processes_list_to_binary(Links),
@@ -275,7 +275,7 @@ mention_events(Timestamp, FirstPid, [Atom | Pids]) when is_atom(Atom) ->
 mention_events(Timestamp, FirstPid, [Pid | Pids]) when is_pid(Pid) ->
   case process_info(Pid, [trap_exit]) of
     undefined ->
-      E = z__remote_collector:event_with_timestamp(Timestamp, #{
+      E = z__client_collector:event_with_timestamp(Timestamp, #{
         <<"type">> => <<"found_dead">>,
         <<"pid">> => erlang:pid_to_list(Pid),
         <<"pid1">> => erlang:pid_to_list(FirstPid)
@@ -287,7 +287,7 @@ mention_events(Timestamp, FirstPid, [Pid | Pids]) when is_pid(Pid) ->
         true -> 1;
         false -> 0
       end,
-      E = z__remote_collector:event_with_timestamp(Timestamp, #{
+      E = z__client_collector:event_with_timestamp(Timestamp, #{
         <<"type">> => <<"mention">>,
         <<"pid">> => erlang:pid_to_list(Pid),
         <<"pid1">> => erlang:pid_to_list(FirstPid),

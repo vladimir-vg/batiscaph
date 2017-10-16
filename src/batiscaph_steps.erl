@@ -8,7 +8,8 @@
   func_atom,
   bindings,
   exprs,
-  receiver_pid
+  receiver_pid,
+  priv_dir
 }).
 
 

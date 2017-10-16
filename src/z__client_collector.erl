@@ -1,4 +1,4 @@
--module(z__remote_collector).
+-module(z__client_collector).
 -behaviour(gen_server).
 -export([event_with_timestamp/2]).
 -export([start_link/0]).
@@ -139,7 +139,7 @@ handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) 
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
-  [F] = z__remote_scenario:trace_started_events(Timestamp, ChildPid),
+  [F] = z__client_scenario:trace_started_events(Timestamp, ChildPid),
   % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
   % F1 = event_with_timestamp(Timestamp, F),
   {ok, [E1, F]};
@@ -216,7 +216,7 @@ mfa_str({M,F,A}) -> iolist_to_binary([atom_to_binary(M,latin1), ":", atom_to_bin
 
 
 flush_acc_events(#collector{receiver_pid = undefined} = State) ->
-  {ok, ReceiverPid} = gen_server:call(z__remote_scenario, get_remote_receiver_pid),
+  {ok, ReceiverPid} = gen_server:call(z__client_scenario, get_remote_receiver_pid),
   flush_acc_events(State#collector{receiver_pid = ReceiverPid});
 
 flush_acc_events(#collector{events_flush_timer = Timer, acc_events = Events, receiver_pid = ReceiverPid} = State) ->

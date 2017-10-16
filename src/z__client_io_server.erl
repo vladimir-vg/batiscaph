@@ -1,4 +1,4 @@
--module(z__remote_io_server).
+-module(z__client_io_server).
 -behaviour(gen_server).
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -34,7 +34,7 @@ init([]) ->
 
 
 handle_info(init, #shell_io{receiver_pid = undefined} = State) ->
-  {ok, ReceiverPid} = gen_server:call(z__remote_scenario, get_remote_receiver_pid),
+  {ok, ReceiverPid} = gen_server:call(z__client_scenario, get_remote_receiver_pid),
   {noreply, State#shell_io{receiver_pid = ReceiverPid}};
 
 handle_info({input, Statement}, #shell_io{input_string = Input} = State) ->
@@ -78,13 +78,13 @@ handle_cast(Cast, State) ->
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,Binary}, #shell_io{} = State) when is_binary(Binary) ->
   Event = shell_output_event_now(From, [{put_chars,unicode,Binary}]),
-  z__remote_collector ! Event,
+  z__client_collector ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}, #shell_io{} = State) ->
   Event = shell_output_event_now(From, [{put_chars,unicode,io_lib,format,[Format,Args]}]),
-  z__remote_collector ! Event,
+  z__client_collector ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
@@ -104,7 +104,7 @@ handle_io_request(From, ReplyAs, getopts, State) ->
 
 handle_io_request(From, ReplyAs, {requests, Requests}, #shell_io{} = State) ->
   Event = shell_output_event_now(From, Requests),
-  z__remote_collector ! Event,
+  z__client_collector ! Event,
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
@@ -122,7 +122,7 @@ continue_pending_input(#shell_io{pending_get_until = Pending, receiver_pid = Rec
       Event = shell_input_event_now(From, Prompt, Scanned),
 
       % make sure that input logged first, and only then execution starts
-      ok = gen_server:call(z__remote_collector, {event, Event}),
+      ok = gen_server:call(z__client_collector, {event, Event}),
       ReceiverPid ! {shell_input, stopped},
       From ! {io_reply, ReplyAs, Result},
       {ok, State1#shell_io{pending_get_until = undefined}};
