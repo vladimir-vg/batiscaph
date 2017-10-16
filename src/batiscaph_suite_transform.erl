@@ -70,28 +70,29 @@ wrap_functions([F | Forms], LocalFinderName, Testcases) ->
 
 
 wrap_one_function({function, Line, Atom, 1, Clauses}, LocalFinderName) ->
-  Clauses1 = [wrap_fun_clause(C, LocalFinderName) || C <- Clauses],
+  Clauses1 = [wrap_fun_clause(Atom, C, LocalFinderName) || C <- Clauses],
   {function, Line, Atom, 1, Clauses1}.
 
 
 
 % just quote all expressions, and pass them to batiscaph_shell
 % also create new bindings, add Config arg
-wrap_fun_clause({clause,Line,[Var],Guards,Exprs}, LocalFinderName) ->
+wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, LocalFinderName) ->
   QuotedTree = erl_syntax:revert(erl_syntax:meta(erl_syntax:form_list(Exprs))),
   % erl_eval:new_bindings()
   NewBindings = {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,new_bindings}},[]},
+  Var1 = {var,Line,'Config'}, % use this name for config var, pass it to steps
   Bindings = case Var of
     {var,_,'_'} -> NewBindings;
     {var,_,VarName} ->
       % erl_eval:add_binding('VarName',Var,erl_eval:new_bindings())
-      {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,add_binding}},[{atom,Line,VarName},Var,NewBindings]}
+      {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,add_binding}},[{atom,Line,VarName},Var1,NewBindings]}
   end,
   % erl_syntax:revert(QuotedTree)
   RevertedQuoted = {call,Line,{remote,Line,{atom,Line,erl_syntax},{atom,Line,revert_forms}},[QuotedTree]},
   % fun local_fun_handler/2
   LocalFinder = {'fun',Line,{function,LocalFinderName,2}},
-  % batiscaph_shell:steps_exec(erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
-  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_shell},{atom,Line,steps_exec}}, [Bindings, LocalFinder, RevertedQuoted]}],
-  {clause,Line,[Var],Guards,Exprs1}.
+  % batiscaph_shell:steps_exec(testcase_name, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
+  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec}}, [{atom,Line,FuncAtom}, Var1, Bindings, LocalFinder, RevertedQuoted]}],
+  {clause,Line,[Var1],Guards,Exprs1}.
 
