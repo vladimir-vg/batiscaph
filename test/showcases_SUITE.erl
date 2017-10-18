@@ -1,5 +1,5 @@
 -module(showcases_SUITE).
--export([all/0]).
+-export([all/0, groups/0]).
 -export([file_open_test/1, ets_match_spec_transform/1]).
 -batiscaph_steps([file_open_test, ets_match_spec_transform]).
 -include_lib("stdlib/include/ms_transform.hrl").
@@ -17,7 +17,17 @@
 
 
 all() ->
-  [file_open_test, ets_match_spec_transform].
+  [ets_match_spec_transform, {group, group1}, file_open_test, {group, group2}].
+
+groups() ->
+  [
+    {group1, [parallel], [
+      {group, group1_nested},
+      file_open_test
+    ]},
+    {group2, [], [file_open_test]},
+    {group1_nested, [], [file_open_test]}
+  ].
 
 
 

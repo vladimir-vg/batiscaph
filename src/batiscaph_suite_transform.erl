@@ -92,7 +92,7 @@ wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, LocalFinderName) ->
   RevertedQuoted = {call,Line,{remote,Line,{atom,Line,erl_syntax},{atom,Line,revert_forms}},[QuotedTree]},
   % fun local_fun_handler/2
   LocalFinder = {'fun',Line,{function,LocalFinderName,2}},
-  % batiscaph_shell:steps_exec(testcase_name, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
-  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec}}, [{atom,Line,FuncAtom}, Var1, Bindings, LocalFinder, RevertedQuoted]}],
+  % batiscaph_shell:exec_testcase(testcase_name, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
+  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec_testcase}}, [{atom,Line,FuncAtom}, Var1, Bindings, LocalFinder, RevertedQuoted]}],
   {clause,Line,[Var1],Guards,Exprs1}.
 
