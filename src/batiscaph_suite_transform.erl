@@ -10,6 +10,25 @@
 
 
 
+% resulting module maybe be constituted from different files
+% using inlude_lib directives
+% need to keep track of current context files, and lines in those files
+% to provide correct lines for evaluated expressions
+-record(source_file, {
+  path :: binary(),
+  prev_lines = [] :: [binary()], % already extracted lines
+  left_content :: binary() % unparsed content
+}).
+
+-record(suite_trans, {
+  testcases :: [atom()],
+  local_finder_name :: atom(),
+  current_file :: binary(),
+  files = #{} :: #{Path :: binary() => #source_file{}}
+}).
+
+
+
 parse_transform(Forms, _Options) ->
   case get_steps_attr_value(Forms) of
     undefined -> Forms;
@@ -19,8 +38,9 @@ parse_transform(Forms, _Options) ->
       % later append it at the end of file
       % this required for proper step-by-step execution by erl_eval
       {ok, LocalFinderName, LocalFunHandler} = generate_local_fun_finder(EofLine, Forms),
-      % io:format("forms:~n~p~n", [Forms]),
-      case wrap_functions(Forms, LocalFinderName, Testcases) of
+      io:format("forms:~n~p~n", [Forms]),
+      State = #suite_trans{testcases = Testcases, local_finder_name = LocalFinderName},
+      case wrap_functions(Forms, State) of
         Forms -> Forms; % no changes made, no need for local fun handler
         Forms1 when Forms1 =/= Forms ->
           % insert definiton of local fun handler at the end of the file
@@ -59,26 +79,38 @@ generate_local_fun_finder(EofLine, Forms) ->
 
 
 
-wrap_functions([], _LocalFinderName, _Testcases) -> [];
-wrap_functions([{function,_,Atom,1,_} = F | Forms], LocalFinderName, Testcases) ->
+wrap_functions([], _State) -> [];
+wrap_functions([{attribute, _, file, {Path, _}} = F | Forms], #suite_trans{} = State) ->
+  [F | wrap_functions(Forms, State#suite_trans{current_file = list_to_binary(Path)})];
+wrap_functions([{function,_,Atom,1,_} = F | Forms], #suite_trans{testcases = Testcases} = State) ->
   case lists:member(Atom, Testcases) of
-    false -> [F | wrap_functions(Forms, LocalFinderName, Testcases)];
-    true -> [wrap_one_function(F, LocalFinderName) | wrap_functions(Forms, LocalFinderName, Testcases)]
+    false -> [F | wrap_functions(Forms, State)];
+    true ->
+      {ok, F1, State1} = wrap_one_function(F, State),
+      [F1 | wrap_functions(Forms, State1)]
   end;
-wrap_functions([F | Forms], LocalFinderName, Testcases) ->
-  [F | wrap_functions(Forms, LocalFinderName, Testcases)].
+wrap_functions([F | Forms], State) ->
+  [F | wrap_functions(Forms, State)].
 
 
-wrap_one_function({function, Line, Atom, 1, Clauses}, LocalFinderName) ->
-  Clauses1 = [wrap_fun_clause(Atom, C, LocalFinderName) || C <- Clauses],
-  {function, Line, Atom, 1, Clauses1}.
+wrap_one_function({function, Line, Atom, 1, Clauses}, #suite_trans{} = State) ->
+  {Clauses1, State1} = lists:foldl(fun (C, {Acc, State2}) ->
+    {ok, C1, State3} = wrap_fun_clause(Atom, C, State2),
+    {[C1 | Acc], State3}
+  end, {[], State}, Clauses),
+  % Clauses1 = [ || C <- Clauses],
+  F = {function, Line, Atom, 1, lists:reverse(Clauses1)},
+  {ok, F, State1}.
 
 
 
 % just quote all expressions, and pass them to batiscaph_shell
 % also create new bindings, add Config arg
-wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, LocalFinderName) ->
+wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{local_finder_name = LocalFinderName} = State) ->
+  {ok, Lines, State1} = get_source_lines(Line, last_line_in_forms(Exprs, Line), State),
+  io:format("got lines: ~p~n", [Lines]),
   QuotedTree = erl_syntax:revert(erl_syntax:meta(erl_syntax:form_list(Exprs))),
+  Lines1 = erl_syntax:revert(erl_syntax:abstract(Lines)),
   % erl_eval:new_bindings()
   NewBindings = {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,new_bindings}},[]},
   Var1 = {var,Line,'Config'}, % use this name for config var, pass it to steps
@@ -92,7 +124,51 @@ wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, LocalFinderName) ->
   RevertedQuoted = {call,Line,{remote,Line,{atom,Line,erl_syntax},{atom,Line,revert_forms}},[QuotedTree]},
   % fun local_fun_handler/2
   LocalFinder = {'fun',Line,{function,LocalFinderName,2}},
-  % batiscaph_shell:exec_testcase(testcase_name, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
-  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec_testcase}}, [{atom,Line,FuncAtom}, Var1, Bindings, LocalFinder, RevertedQuoted]}],
-  {clause,Line,[Var1],Guards,Exprs1}.
+  % batiscaph_shell:exec_testcase(testcase_name, Lines, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
+  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec_testcase}}, [{atom,Line,FuncAtom}, Lines1, Var1, Bindings, LocalFinder, RevertedQuoted]}],
+
+  C = {clause,Line,[Var1],Guards,Exprs1},
+  {ok, C, State1}.
+
+
+
+last_line_in_forms([], Line) -> Line;
+last_line_in_forms(Forms, _Line) -> element(2, lists:last(Forms)). % second element in tuple is always line number
+
+
+
+ensure_file_added(Path, #suite_trans{files = Files} = State) ->
+  case maps:get(Path, Files, undefined) of
+    #source_file{} -> {ok, State};
+    undefined ->
+      {ok, Binary} = file:read_file(Path),
+      Files1 = maps:put(Path, #source_file{left_content = Binary, path = Path}, Files),
+      {ok, State#suite_trans{files = Files1}}
+  end.
+
+
+
+get_source_lines(FromLine, ToLine, #suite_trans{current_file = Path} = State)
+when FromLine > 0 andalso ToLine > 0 ->
+  {ok, #suite_trans{files = Files} = State1} = ensure_file_added(Path, State),
+  #source_file{} = File = maps:get(Path, Files),
+
+  {ok, Lines, File1} = get_source_lines1(FromLine, ToLine, File),
+  Files1 = maps:put(Path, File1, Files),
+  {ok, Lines, State#suite_trans{files = Files1}}.
+
+get_source_lines1(FromLine, ToLine, #source_file{prev_lines = Lines} = File)
+when length(Lines) >= ToLine ->
+  % actually this total reverse might be slow on big files
+  % better to take sublist first and reverse it
+  % but current code is simplier to understand
+  Lines1 = lists:sublist(lists:reverse(Lines), FromLine, (ToLine - FromLine) + 1),
+  Pairs = lists:zip(lists:seq(FromLine,ToLine), Lines1),
+  {ok, Pairs, File};
+get_source_lines1(FromLine, ToLine, #source_file{prev_lines = Lines, left_content = Content} = File) ->
+  File1 = case binary:split(Content, [<<"\r\n">>,<<"\n">>]) of
+    [Line, Content1] -> File#source_file{prev_lines = [Line | Lines], left_content = Content1};
+    [Line] -> File#source_file{prev_lines = [Line | Lines], left_content = undefined}
+  end,
+  get_source_lines1(FromLine, ToLine, File1).
 

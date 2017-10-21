@@ -1,11 +1,12 @@
 -module(batiscaph_steps).
--export([exec_testcase/5]).
+-export([exec_testcase/6]).
 
 
 
 -record(steps, {
   local_fun_handler,
   testcase,
+  context :: binary(),
   bindings,
   exprs
 }).
@@ -18,7 +19,8 @@
 
 
 % executes expressons step by step
-exec_testcase(Testcase, CtConfig, Bindings, LocalFunFinder, Exprs) ->
+exec_testcase(Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
+  io:format("got lines: ~p~n", [Lines]),
   PrivDir = proplists:get_value(priv_dir, CtConfig),
   [_Priv, _RunDir, _, TopRunDir | _] = lists:reverse(filename:split(PrivDir)), % use RunDir as an Id for this ct run
   BatiscaphNode = list_to_atom("batiscaph@" ++ net_adm:localhost()),
@@ -40,8 +42,9 @@ exec_testcase(Testcase, CtConfig, Bindings, LocalFunFinder, Exprs) ->
 
   State = #steps{
     local_fun_handler = LocalFunHandler, testcase = Testcase,
-    bindings = Bindings, exprs = Exprs
+    bindings = Bindings, exprs = Exprs, context = Context
   },
+  io:format("bindings: ~p~n", [Bindings]),
   exec1(State).
 
 
@@ -71,13 +74,14 @@ wait_for_collector_to_appear(Timeout) ->
 %
 % should return following:
 % [suite, group1, group2, ..., testcase]
--spec get_context_path(atom(), any()) -> [atom()].
+-spec get_context_path(atom(), any()) -> binary().
 get_context_path(Testcase, CtConfig) ->
   Props = proplists:get_value(tc_group_properties, CtConfig),
   Path = proplists:get_value(tc_group_path, CtConfig),
   Suite = proplists:get_value(suite, Props),
   Groups = lists:reverse(lists:flatten(get_group(Props) ++ [get_group(Part) || Part <- Path])),
-  [Suite] ++ Groups ++ [Testcase].
+  ContextAtoms = [Suite] ++ Groups ++ [Testcase],
+  iolist_to_binary(lists:join(<<" ">>, [atom_to_binary(A,latin1) || A <- ContextAtoms])).
 
 get_group(Part) ->
   case proplists:get_value(name, Part, undefined) of
@@ -88,18 +92,27 @@ get_group(Part) ->
 
 
 exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [E]}) ->
-  io:format("bindings: ~p~n", [Bindings]),
   {value, Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
   io:format("bindings: ~p~n", [Bindings1]),
   io:format("final value: ~p~n", [Value]),
   Value;
 
 exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [E | Exprs]} = State) ->
-  io:format("bindings: ~p~n", [Bindings]),
   {value, _Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
+  io:format("bindings: ~p~n", [Bindings1]),
   exec1(State#steps{exprs = Exprs, bindings = Bindings1}).
 
 
 
 non_local_function_handler(Func, Args) when is_function(Func) -> erlang:apply(Func, Args);
 non_local_function_handler({Module, Atom}, Args) -> erlang:apply(Module, Atom, Args).
+
+
+
+% exec_step_event(Expr, Context) ->
+%   z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+%     <<"pid">> => pid_to_list(self()),
+%     <<"type">> => <<"exec_step_start">>,
+%     <<"context">> => Context,
+%     <<"term">> => io_lib:format("~p", [Expr])
+%   }).
