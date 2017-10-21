@@ -28,7 +28,10 @@ columns() ->
     {<<"application">>, <<"String">>},
     {<<"ancestors">>, <<"String">>},
     {<<"links">>, <<"String">>},
-    {<<"trap_exit">>, <<"UInt8">>}
+    {<<"trap_exit">>, <<"UInt8">>},
+
+    {<<"context">>, <<"String">>},
+    {<<"lines">>, <<"String">>}
   ].
 
 create_table() ->

@@ -44,8 +44,12 @@ exec_testcase(Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
     local_fun_handler = LocalFunHandler, testcase = Testcase,
     bindings = Bindings, exprs = Exprs, context = Context
   },
-  io:format("bindings: ~p~n", [Bindings]),
-  exec1(State).
+  z__client_collector ! context_start_event(Context, Lines),
+  ok = log_bindings(Bindings),
+
+  Value = exec1(State),
+  z__client_collector ! context_stop_event(Context),
+  Value.
 
 
 
@@ -93,13 +97,15 @@ get_group(Part) ->
 
 exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [E]}) ->
   {value, Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
-  io:format("bindings: ~p~n", [Bindings1]),
-  io:format("final value: ~p~n", [Value]),
+  NewBindings = changes_bindings(Bindings, Bindings1),
+  ok = log_bindings(NewBindings),
+  % io:format("final value: ~p~n", [Value]),
   Value;
 
 exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [E | Exprs]} = State) ->
   {value, _Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
-  io:format("bindings: ~p~n", [Bindings1]),
+  NewBindings = changes_bindings(Bindings, Bindings1),
+  ok = log_bindings(NewBindings),
   exec1(State#steps{exprs = Exprs, bindings = Bindings1}).
 
 
@@ -109,7 +115,46 @@ non_local_function_handler({Module, Atom}, Args) -> erlang:apply(Module, Atom, A
 
 
 
-% exec_step_event(Expr, Context) ->
+changes_bindings(OldBindings, NewBindings) ->
+  OldVars = lists:map(fun ({K,_}) -> K end, OldBindings),
+  lists:filter(fun ({K,_}) ->
+    not lists:member(K, OldVars)
+  end, NewBindings).
+
+log_bindings([]) -> ok;
+log_bindings(Bindings) ->
+  BindEvents = [var_bind_event_event(Var, Value) || {Var, Value} <- Bindings],
+  z__client_collector ! {events, BindEvents},
+  ok.
+
+
+
+context_start_event(Context, Lines) ->
+  z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+    <<"pid">> => pid_to_list(self()),
+    <<"type">> => <<"context_start">>,
+    <<"context">> => Context,
+    <<"lines">> => jsx:encode([[N, L] || {N, L} <- Lines])
+  }).
+
+context_stop_event(Context) ->
+  z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+    <<"pid">> => pid_to_list(self()),
+    <<"type">> => <<"context_stop">>,
+    <<"context">> => Context
+  }).
+
+var_bind_event_event(Var, Value) ->
+  z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+    <<"pid">> => pid_to_list(self()),
+    <<"type">> => <<"var_bind">>,
+    <<"atom">> => atom_to_binary(Var, latin1),
+    <<"term">> => io_lib:format("~p", [Value])
+  }).
+
+
+
+% exec_step_start_event(Expr, Lines, Context) ->
 %   z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
 %     <<"pid">> => pid_to_list(self()),
 %     <<"type">> => <<"exec_step_start">>,

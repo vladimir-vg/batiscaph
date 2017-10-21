@@ -38,7 +38,7 @@ parse_transform(Forms, _Options) ->
       % later append it at the end of file
       % this required for proper step-by-step execution by erl_eval
       {ok, LocalFinderName, LocalFunHandler} = generate_local_fun_finder(EofLine, Forms),
-      io:format("forms:~n~p~n", [Forms]),
+      % io:format("forms:~n~p~n", [Forms]),
       State = #suite_trans{testcases = Testcases, local_finder_name = LocalFinderName},
       case wrap_functions(Forms, State) of
         Forms -> Forms; % no changes made, no need for local fun handler
@@ -108,7 +108,7 @@ wrap_one_function({function, Line, Atom, 1, Clauses}, #suite_trans{} = State) ->
 % also create new bindings, add Config arg
 wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{local_finder_name = LocalFinderName} = State) ->
   {ok, Lines, State1} = get_source_lines(Line, last_line_in_forms(Exprs, Line), State),
-  io:format("got lines: ~p~n", [Lines]),
+
   QuotedTree = erl_syntax:revert(erl_syntax:meta(erl_syntax:form_list(Exprs))),
   Lines1 = erl_syntax:revert(erl_syntax:abstract(Lines)),
   % erl_eval:new_bindings()
@@ -155,7 +155,7 @@ when FromLine > 0 andalso ToLine > 0 ->
 
   {ok, Lines, File1} = get_source_lines1(FromLine, ToLine, File),
   Files1 = maps:put(Path, File1, Files),
-  {ok, Lines, State#suite_trans{files = Files1}}.
+  {ok, Lines, State1#suite_trans{files = Files1}}.
 
 get_source_lines1(FromLine, ToLine, #source_file{prev_lines = Lines} = File)
 when length(Lines) >= ToLine ->
