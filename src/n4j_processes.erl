@@ -45,10 +45,10 @@
 %  * context -- list of strings, for example: [suite, group1, group2, testcase]
 %
 % may have following relationships to Processes
-%  * BIND { at, name } -- indicates that some process was mentioned in variable in context
-%                         process might be somewhere nested in term, and have long name like elment(4,Value)
-%                         the root process for this context will be bounded as name='self()'
-%                         this relationship don't represent all variables binds, only process binds.
+%  * BIND { at, expr } -- indicates that some process was mentioned in variable in context
+%                         process might be somewhere nested in term, and have long expr like elment(4,Value)
+%                         the root process for this context will be bounded as expr='self()'
+%                         this relationship don't represent all variables values only process binds.
 
 
 
@@ -76,12 +76,20 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
       "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND rel.at > {at}\n"
       "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
       "ORDER BY rel.at\n"
+    , #{id => Id, at => At} },
+
+    { "MATCH (context:Context { instanceId: {id} })\n"
+      "WHERE ((context.stoppedAt IS NULL) OR context.stoppedAt > {at})\n"
+      "MATCH (context)-[bind:BIND]->(proc:Process)\n"
+      "WITH COLLECT({at: bind.at, name: bind.name, pid: proc.pid}) AS binds, context AS context\n"
+      "RETURN context.startedAt AS startedAt, context.stoppedAt AS stoppedAt, context.context AS context, binds\n"
     , #{id => Id, at => At} }
   ],
-  {ok, [Processes, Events]} = neo4j:commit(Statements),
+  {ok, [Processes, Events, Contexts]} = neo4j:commit(Statements),
   Processes1 = convert_rows_to_objects(Processes),
   Events1 = convert_rows_to_objects(Events),
-  {ok, #{processes => Processes1, events => Events1}};
+  Contexts1 = convert_rows_to_objects(Contexts),
+  {ok, #{processes => Processes1, events => Events1, contexts => Contexts1}};
 
 delta_json(Opts) ->
   delta_json(Opts#{'after' => 0}).
@@ -302,7 +310,7 @@ process_events(Id, [#{<<"type">> := <<"context_start">>} = E | Events], Acc) ->
       "ON CREATE SET context.startedAt = {at}\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
-      "CREATE (context)-[:BIND { at: {at}, name: 'self()' }]->(proc)\n"
+      "CREATE (context)-[:BIND { at: {at}, expr: 'self()' }]->(proc)\n"
     , #{id => Id, pid => Pid, context => Context1, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
@@ -330,7 +338,7 @@ process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
     { "MATCH (context:Context { context: {context}, instanceId: {id} })\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
-      "CREATE (context)-[:BIND { at: {at}, name: {expr} }]->(proc)\n"
+      "CREATE (context)-[:BIND { at: {at}, expr: {expr} }]->(proc)\n"
     , #{id => Id, pid => Pid, context => Context1, at => At, key => Key, expr => Expr} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).

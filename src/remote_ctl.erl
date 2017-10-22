@@ -228,8 +228,8 @@ delta_json(Id, LastAt) ->
   ClkOpts = clickhouse_opts(Id, LastAt),
   {ok, TableEvents} = clk_events:select(ClkOpts),
   Neo4jOpts = neo4j_opts(Id, LastAt, TableEvents),
-  {ok, #{processes := Processes, events := GraphEvents}} = n4j_processes:delta_json(Neo4jOpts),
-  Delta = #{processes => Processes, graph_events => GraphEvents, table_events => TableEvents},
+  {ok, #{processes := Processes, events := GraphEvents, contexts := Contexts}} = n4j_processes:delta_json(Neo4jOpts),
+  Delta = #{processes => Processes, contexts => Contexts, graph_events => GraphEvents, table_events => TableEvents},
   {ok, Delta}.
 
 
