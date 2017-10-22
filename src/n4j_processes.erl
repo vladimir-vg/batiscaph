@@ -64,10 +64,14 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
     { "MATCH (p1:Process {instanceId: {id}})\n"
       "WHERE ((p1.disappearedAt IS NULL) OR p1.disappearedAt > {at})\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
-      "WHERE TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND (rel.at > {at})\n"
-      "WITH p1, rel\n"
-      "ORDER BY rel.at\n"
-      "WITH p1, EXTRACT(r in COLLECT(rel) | {at: r.at, type: TYPE(r)}) AS events\n"
+      "WHERE TYPE(rel) IN ['TRACE_STARTED', 'TRACE_STOPPED', 'FOUND_DEAD'] AND (rel.at > {at})\n"
+      "OPTIONAL MATCH (p1:Process)-[bind:BIND]-(:Context)\n"
+      "WHERE bind.at > {at}\n"
+      "WITH p1, COLLECT({at: rel.at, type: TYPE(rel)}) + COLLECT({at: bind.at, type: TYPE(bind)}) AS events\n"
+      "UNWIND events AS event\n"
+      "WITH p1, event\n"
+      "ORDER BY event.at\n"
+      "WITH p1, FILTER(e IN COLLECT(event) WHERE e.at IS NOT NULL) AS events\n"
       "ORDER BY p1.appearedAt\n"
       "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, p1.registeredName AS registeredName, events\n"
     , #{id => Id, at => At} },
@@ -78,11 +82,12 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
       "ORDER BY rel.at\n"
     , #{id => Id, at => At} },
 
+    % BUG: for some reason returns only one BIND per context, should return all
     { "MATCH (context:Context { instanceId: {id} })\n"
       "WHERE ((context.stoppedAt IS NULL) OR context.stoppedAt > {at})\n"
       "MATCH (context)-[bind:BIND]->(proc:Process)\n"
-      "WITH COLLECT({at: bind.at, name: bind.name, pid: proc.pid}) AS binds, context AS context\n"
-      "RETURN context.startedAt AS startedAt, context.stoppedAt AS stoppedAt, context.context AS context, binds\n"
+      "WITH COLLECT({at: bind.at, expr: bind.expr, pid: proc.pid}) AS binds, context, proc\n"
+      "RETURN context.startedAt AS startedAt, context.stoppedAt AS stoppedAt, context.context AS context, context.pid AS pid, binds\n"
     , #{id => Id, at => At} }
   ],
   {ok, [Processes, Events, Contexts]} = neo4j:commit(Statements),
@@ -302,36 +307,33 @@ process_events(Id, [#{<<"type">> := <<"mention">>} = E | Events], Acc) ->
 
 process_events(Id, [#{<<"type">> := <<"context_start">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"context">> := Context} = E,
-  Context1 = binary:split(Context, <<" ">>, [global]),
   At = AtS*1000*1000 + Mcs,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
-    { "MERGE (context:Context { context: {context}, instanceId: {id} })\n"
+    { "MERGE (context:Context { context: {context}, instanceId: {id}, pid: {pid} })\n"
       "ON CREATE SET context.startedAt = {at}\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (context)-[:BIND { at: {at}, expr: 'self()' }]->(proc)\n"
-    , #{id => Id, pid => Pid, context => Context1, at => At, key => Key} }
+    , #{id => Id, pid => Pid, context => Context, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"context_stop">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"context">> := Context} = E,
-  Context1 = binary:split(Context, <<" ">>, [global]),
   At = AtS*1000*1000 + Mcs,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
-    { "MERGE (context:Context { context: {context}, instanceId: {id} })\n"
+    { "MERGE (context:Context { context: {context}, instanceId: {id}, pid: {pid} })\n"
       "ON MATCH SET context.stoppedAt = {at}\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
-    , #{id => Id, pid => Pid, context => Context1, at => At, key => Key} }
+    , #{id => Id, pid => Pid, context => Context, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
   #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid1">> := Pid, <<"context">> := Context, <<"term">> := Expr} = E,
-  Context1 = binary:split(Context, <<" ">>, [global]),
   At = AtS*1000*1000 + Mcs,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
@@ -339,7 +341,7 @@ process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (context)-[:BIND { at: {at}, expr: {expr} }]->(proc)\n"
-    , #{id => Id, pid => Pid, context => Context1, at => At, key => Key, expr => Expr} }
+    , #{id => Id, pid => Pid, context => Context, at => At, key => Key, expr => Expr} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
 

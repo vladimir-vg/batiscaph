@@ -3,7 +3,7 @@
 
 const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
-const CELL_HGUTTER = 5;
+const CELL_HGUTTER = 10;
 const MENTION_PADDING = 2;
 const SHELL_WIDTH = 460;
 
@@ -135,7 +135,8 @@ class ProcessElement extends React.Component {
   renderConnectingLine() {
     if (this.props.data.parts.length < 2) return null;
     let startY = this.props.data.startY;
-    let stopY = this.props.data.stopY;
+    let lastPart = this.props.data.parts[this.props.data.parts.length-1];
+    let stopY = lastPart.y || lastPart.toY;
 
     let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH/2;
     let y1 = CELL_HEIGHT*startY - CELL_HEIGHT/2;
@@ -277,6 +278,27 @@ class PointElement extends React.Component {
 
 
 
+class ContextElement extends React.Component {
+  render() {
+    let ys = [this.props.data.fromY, this.props.data.toY];
+    ys.sort((a,b) => a-b);
+
+    let wpadding = CELL_HGUTTER/2;
+    let hpadding = CELL_HEIGHT/2;
+    let radius = Math.floor(Math.min(wpadding, hpadding));
+    let x = this.props.data.x*(CELL_WIDTH+CELL_HGUTTER) - wpadding;
+    let y = this.props.data.fromY*CELL_HEIGHT - hpadding;
+    let width = CELL_WIDTH + wpadding*2;
+    let height = (this.props.data.toY - this.props.data.fromY)*CELL_HEIGHT + hpadding*2;
+
+    return <Layer name="afterProcesses">
+      <rect x={x} y={y} width={width} height={height} rx={radius} ry={radius} style={{stroke: '#2F80ED', strokeWidth: 2, fill: 'none'}} />
+    </Layer>
+  }
+}
+
+
+
 class ScenarioView extends React.Component {
   constructor() {
     super();
@@ -336,7 +358,7 @@ class ScenarioView extends React.Component {
   render() {
     if (!this.props.tree) { return <div />; }
 
-    let processes = [], spawns = [], links = [], mentions = [], points = [];
+    let processes = [], spawns = [], links = [], mentions = [], points = [], contexts = [];
     for (let pid in this.props.tree.processes) {
       processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} tracePid={this.props.tracePid} />);
     }
@@ -351,6 +373,9 @@ class ScenarioView extends React.Component {
     }
     for (let key in this.props.tree.mentions) {
       mentions.push(<MentionElement key={key} data={this.props.tree.mentions[key]} />);
+    }
+    for (let key in this.props.tree.contexts) {
+      contexts.push(<ContextElement key={key} data={this.props.tree.contexts[key]} />);
     }
 
     let height = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
@@ -374,6 +399,7 @@ class ScenarioView extends React.Component {
           {links}
           {mentions}
           {points}
+          {contexts}
         </g>
 
       </SvgView>

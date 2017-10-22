@@ -6,9 +6,9 @@
 // number type without being rounded (< 2^53).
 // Turns out that Neo4j have same limitations for integers (< 2^53).
 //
-// Rules of layout:
+// Rules of layout (not yet implemented):
 //
-// * (Temporarly dismissed) Spawned children should be always to the right of parent.
+// * Spawned children should be always to the right of parent.
 // * Mentions of the processes should be located in leftmost column.
 //   If process mentioned twice and two mentions create connection,
 //   then process should be moved to new right column
@@ -79,6 +79,7 @@ V.updateLayout = (delta, layout) => {
   layout.timestamps = layout.timestamps || [];
   layout.columnsOrder = layout.columnsOrder || [];
   layout.columns = layout.columns || {};
+  layout.contexts = layout.contexts || {};
 
   for (var i in delta.processes) {
     updateProcessInLayout(delta.processes[i], layout);
@@ -95,8 +96,14 @@ V.updateLayout = (delta, layout) => {
   });
   layout.events.sort(eventCmpFunction);
 
+  delta.contexts.forEach(function (context) {
+    updateContextInLayout(context, layout);
+  });
+
   return undefined; // all changes made in place
 };
+
+
 
 let updateProcessInLayout = (data, layout) => {
   layout.processes[data.pid] = layout.processes[data.pid] || {pid: data.pid, events: []};
@@ -139,6 +146,25 @@ let updateProcessInLayout = (data, layout) => {
   }
 
   return null;
+};
+
+
+
+let updateContextInLayout = (context, layout) => {
+  insertTimestampIntoOrder(context.startedAt, layout);
+  if (context.stoppedAt)  { insertTimestampIntoOrder(context.stoppedAt, layout); }
+
+  // actually all BIND events are expected to be duplicated in process.events
+  // so their timestamps should be already inserted into layout
+
+  // just copy as it is
+  layout.contexts[context.context] = {
+    context: context.context,
+    startedAt: context.startedAt,
+    stoppedAt: context.stoppedAt,
+    pid: context.pid,
+    binds: context.binds
+  };
 };
 
 
@@ -200,7 +226,7 @@ V.produceTree = (layout) => {
   // only then processes
   // TODO: implemented collapsing
 
-  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}};
+  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}, contexts: {}};
 
   let xFromPid = function (pid) {
     let columnId = layout.processes[pid].columnId;
@@ -242,11 +268,10 @@ V.produceTree = (layout) => {
       tree.links[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
       break;
 
-    // case 'mention':
-    //   saveMention(event.at, event.pid);
+    // case 'BIND':
     //   saveMention(event.at, event.pid1);
-    //   key = 'mention-' + event.at + '-' + event.pid + '-' + event.pid1;
-    //   tree.mentions[key] = {y: y, fromX: xFromPid(event.pid), toX: xFromPid(event.pid1)};
+    //   // key = 'mention-' + event.at + '-' + event.pid + '-' + event.pid1;
+    //   // tree.mentions[key] = {y: y, fromX: xFromPid(event.pid), toX: xFromPid(event.pid1)};
     //   break;
 
     case 'MENTION':
@@ -313,6 +338,8 @@ V.produceTree = (layout) => {
           traceStartedAt = null;
         } else if (e.type == 'FOUND_DEAD') {
           parts.push({type: 'DEAD', y: yFromTimestamp(e.at)});
+        } else if (e.type == 'BIND') {
+          parts.push({type: 'MENTION', y: yFromTimestamp(e.at)});
         }
       }
 
@@ -367,40 +394,19 @@ V.produceTree = (layout) => {
     tree.processes[pid].parts = produceVisibleParts(p.events, tree.processes[pid].mentions, tree.processes[pid].stopY);
   }
 
+  for (const key in layout.contexts) {
+    let c = layout.contexts[key];
+    tree.contexts[key] = {
+      x: xFromPid(c.pid),
+      fromY: yFromTimestamp(c.startedAt),
+      toY: yFromTimestamp(c.stoppedAt)
+
+      // ignore binds for now
+    }
+  }
+
   tree.width = layout.columnsOrder.length;
   tree.height = layout.timestamps.length;
 
   return tree;
 };
-
-
-
-// this structure is produced from layout described above for given coord range
-// it contains all objects that should be rendered and all absolute coordinates
-// it does not contain any pixel coordinates, only absolute layout coordinates
-//
-// this structure should be convenient for quick render
-// it not supposed to be manipulated or changed
-// let objtree = {
-//   processes: {
-//     pid: {
-//       x: N,
-//       startY: N, // appearedAt, disappearedAt
-//       stopY: N,  // don't really need for display, only for debug
-//       parts: [
-//         {type: 'MENTION', y: N},
-//         {type: 'TRACED', fromY: N, toY: N},
-//       ]
-//     }
-//   },
-//
-//   messages: {
-//     key: {y: N, fromX: N, toX: N}
-//   },
-//   spawns: {
-//     key: {y: N, fromX: N, toX: N}
-//   }
-//   links: {
-//     key: {y: N, fromX: N, toX: N}
-//   }
-// };
