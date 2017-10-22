@@ -109,7 +109,7 @@ wrap_one_function({function, Line, Atom, 1, Clauses}, #suite_trans{} = State) ->
 wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{local_finder_name = LocalFinderName} = State) ->
   {ok, Lines, State1} = get_source_lines(Line, last_line_in_forms(Exprs, Line), State),
 
-  QuotedTree = erl_syntax:revert(erl_syntax:meta(erl_syntax:form_list(Exprs))),
+  QuotedTree = erl_syntax:revert(erl_syntax:abstract(Exprs)),
   Lines1 = erl_syntax:revert(erl_syntax:abstract(Lines)),
   % erl_eval:new_bindings()
   NewBindings = {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,new_bindings}},[]},

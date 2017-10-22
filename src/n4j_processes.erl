@@ -38,6 +38,17 @@
 %  * TRACE_STOPPED { at }
 %  * FOUND_DEAD { at } -- after failed test is_process_alive while trying to start trace
 %
+% Context node have following properties:
+%  * instanceId
+%  * startedAt
+%  * stoppedAt
+%  * context -- list of strings, for example: [suite, group1, group2, testcase]
+%
+% may have following relationships to Processes
+%  * BIND { at, name } -- indicates that some process was mentioned in variable in context
+%                         process might be somewhere nested in term, and have long name like elment(4,Value)
+%                         the root process for this context will be bounded as name='self()'
+%                         this relationship don't represent all variables binds, only process binds.
 
 
 
@@ -94,7 +105,11 @@ update(Id, Events) ->
 
 
 desired_event_types() ->
-  [<<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>, <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>,<<"mention">>].
+  [
+    <<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>,
+    <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>, <<"mention">>,
+    <<"context_start">>, <<"context_stop">> %, <<"var_mention">>
+  ].
 
 
 
@@ -274,6 +289,35 @@ process_events(Id, [#{<<"type">> := <<"mention">>} = E | Events], Acc) ->
       "ON CREATE SET proc1.appearedAt = {at}, proc1.key = {key1}\n"
       "CREATE (proc)-[:MENTION { at: {at} }]->(proc1)\n"
     , #{id => Id, pid => Pid, pid1 => Pid1, at => At, key => Key, key1 => Key1} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"context_start">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"context">> := Context} = E,
+  Context1 = binary:split(Context, <<" ">>, [global]),
+  At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
+  Statements = [
+    { "MERGE (context:Context { context: {context}, instanceId: {id} })\n"
+      "ON CREATE SET context.startedAt = {at}\n"
+      "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+      "CREATE (context)-[:BIND { at: {at}, name: 'self()' }]->(proc)\n"
+    , #{id => Id, pid => Pid, context => Context1, at => At, key => Key} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"context_stop">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"context">> := Context} = E,
+  Context1 = binary:split(Context, <<" ">>, [global]),
+  At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
+  Statements = [
+    { "MERGE (context:Context { context: {context}, instanceId: {id} })\n"
+      "ON MATCH SET context.stoppedAt = {at}\n"
+      "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+    , #{id => Id, pid => Pid, context => Context1, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
 
