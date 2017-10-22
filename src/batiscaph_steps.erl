@@ -189,10 +189,24 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_tu
 
 var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_list(Value) ->
   Indexes = lists:seq(1, length(Value)),
-  lists:map(fun ({I, Value1}) ->
-    Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
-    Suffix1 = <<Suffix/binary, ")">>,
-    var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
+  lists:map(fun
+    ({I, {Key, Value1}}) ->
+      case proplists:get_value(Key, Value) of
+        undefined ->
+          Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
+          Suffix1 = <<Suffix/binary, ")">>,
+          var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context);
+
+        Value1 ->
+          Prefix1 = <<"proplists:get_value(", (list_to_binary(io_lib:format("~p",[Key])))/binary, ",", Prefix/binary>>,
+          Suffix1 = <<Suffix/binary, ")">>,
+          var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
+      end;
+
+    ({I, Value1}) ->
+      Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
+      Suffix1 = <<Suffix/binary, ")">>,
+      var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
   end, lists:zip(Indexes, Value));
 
 var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_map(Value) ->
