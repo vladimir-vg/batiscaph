@@ -108,7 +108,7 @@ desired_event_types() ->
   [
     <<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>,
     <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>, <<"mention">>,
-    <<"context_start">>, <<"context_stop">> %, <<"var_mention">>
+    <<"context_start">>, <<"context_stop">>, <<"var_mention">>
   ].
 
 
@@ -318,6 +318,20 @@ process_events(Id, [#{<<"type">> := <<"context_stop">>} = E | Events], Acc) ->
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
     , #{id => Id, pid => Pid, context => Context1, at => At, key => Key} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid1">> := Pid, <<"context">> := Context, <<"term">> := Expr} = E,
+  Context1 = binary:split(Context, <<" ">>, [global]),
+  At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Pid/binary>>,
+  Statements = [
+    { "MATCH (context:Context { context: {context}, instanceId: {id} })\n"
+      "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+      "CREATE (context)-[:BIND { at: {at}, name: {expr} }]->(proc)\n"
+    , #{id => Id, pid => Pid, context => Context1, at => At, key => Key, expr => Expr} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
 

@@ -33,6 +33,7 @@ groups() ->
 
 file_open_test(_Config) ->
   {ok, _File} = file:open("/etc/hosts", [read]),
+  Opts = #{some_pid => whereis(file_server_2)},
   ok.
 
 
