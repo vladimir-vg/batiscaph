@@ -1,5 +1,5 @@
 -module(showcases_SUITE).
--export([all/0, groups/0]).
+-export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
 -export([file_open_test/1, ets_match_spec_transform/1]).
 -batiscaph_steps([file_open_test, ets_match_spec_transform]).
 -include_lib("stdlib/include/ms_transform.hrl").
@@ -13,6 +13,19 @@
 %%%
 %%% These tests useful to check that different entities displayed correctly
 %%% in different edge cases.
+
+
+
+init_per_suite(Config) ->
+  BatiscaphNode = list_to_atom("batiscaph@" ++ net_adm:localhost()),
+  application:set_env(batiscaph, batiscaph_node, BatiscaphNode),
+  case net_adm:ping(BatiscaphNode) of
+    pong -> Config;
+    pang -> {skip, {unable_to_connect_to_batiscaph_node, BatiscaphNode}}
+  end.
+
+end_per_suite(Config) ->
+  Config.
 
 
 
@@ -38,6 +51,8 @@ file_open_test(_Config) ->
 
 
 
+% TODO: support expressions with record syntax
+% transform them during parse_transform into tuple matching
 ets_match_spec_transform(_) ->
   Tid = ets:new(test_table1, []),
   true = ets:insert(Tid, [{key1, <<"val1">>}]),

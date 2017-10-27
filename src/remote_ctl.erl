@@ -13,12 +13,12 @@
 
 
 
-ensure_started(Id) -> ensure_started(Id, undefined).
+ensure_started(Id) -> ensure_started(Id, #{}).
 
-ensure_started(Id, Node) ->
+ensure_started(Id, Opts) ->
   % remote_ctl started as temporary
   % it does not restart when failed
-  Spec = #{id => {remote_ctl, Id}, start => {remote_ctl, start_link, [Id, Node]}, restart => temporary},
+  Spec = #{id => {remote_ctl, Id}, start => {remote_ctl, start_link, [Id, Opts]}, restart => temporary},
   case supervisor:start_child(remote_sup, Spec) of
     {ok, Pid} -> {ok, Pid};
     {error, {already_started, Pid}} -> {ok, Pid};
@@ -50,11 +50,15 @@ currently_running(Id) ->
 code_change(_, State, _) -> {ok, State}.
 terminate(_,_State) -> ok.
 
-start_link(Id, Node) ->
-  gen_server:start_link(?MODULE, [Id, Node], []).
+start_link(Id, Opts) ->
+  gen_server:start_link(?MODULE, [Id, Opts], []).
 
-init([Id, Node]) ->
-  self() ! connect_to_node,
+init([Id, Opts]) ->
+  Node = case maps:get(node, Opts, undefined) of
+    false -> undefined;
+    undefined -> self() ! connect_to_node, undefined;
+    Atom when is_atom(Atom) -> self() ! connect_to_node, Atom
+  end,
   {ok, #remote_ctl{id = Id, node = Node}}.
 
 
@@ -77,6 +81,10 @@ handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
 
+
+handle_call({events, Events}, _From, #remote_ctl{} = State) ->
+  {noreply, State1} = handle_info({events, Events}, State),
+  {reply, ok, State1};
 
 % currently allow to subscribe only one websocket
 handle_call({subscribe_websocket, Pid}, _From, #remote_ctl{} = State) ->

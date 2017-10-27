@@ -23,12 +23,11 @@ exec_testcase(Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
   io:format("got lines: ~p~n", [Lines]),
   PrivDir = proplists:get_value(priv_dir, CtConfig),
   [_Priv, _RunDir, _, TopRunDir | _] = lists:reverse(filename:split(PrivDir)), % use RunDir as an Id for this ct run
-  BatiscaphNode = list_to_atom("batiscaph@" ++ net_adm:localhost()),
+  {ok, BatiscaphNode} = application:get_env(batiscaph, batiscaph_node),
 
   Context = get_context_path(Testcase, CtConfig),
-  io:format("got context: ~p~n", [Context]),
 
-  {ok, _} = ct_rpc:call(BatiscaphNode, remote_ctl, ensure_started, [list_to_binary(TopRunDir), node()]),
+  {ok, _} = ct_rpc:call(BatiscaphNode, remote_ctl, ensure_started, [list_to_binary(TopRunDir), #{node => node()}]),
   ok = wait_for_collector_to_appear(300),
 
   z__client_scenario:trace_pid(self()),

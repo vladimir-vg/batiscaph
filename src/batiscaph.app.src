@@ -4,7 +4,7 @@
   {registered, []},
   {mod, {batiscaph_app, []}},
   {applications, [kernel,stdlib,lager,cowboy,hackney]},
-  {env,[{http_port, 8099}]},
+  {env,[]},
   {modules, []},
 
   {maintainers, []},
