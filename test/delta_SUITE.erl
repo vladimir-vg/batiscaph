@@ -1,5 +1,5 @@
 -module(delta_SUITE).
--export([all/0, init_per_suite/1, end_per_suite/1]).
+-export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
 -export([context_events_create_context/1]).
 
 
@@ -10,7 +10,13 @@
 
 
 all() ->
-  [context_events_create_context].
+  [{group, main}].
+
+groups() ->
+  [{main, [parallel], [
+    % events_create_proceses,
+    context_events_create_context
+  ]}].
 
 
 
@@ -22,7 +28,6 @@ init_per_suite(Config) ->
   Config.
 
 end_per_suite(Config) ->
-  
   Config.
 
 
@@ -32,12 +37,30 @@ end_per_suite(Config) ->
 
 
 
+% events_create_proceses(Config) ->
+%   SpawnPid = g(pid),
+%   TracePid = g(pid),
+%   Delta = produce_delta(with_map(#{instance_id => g(instance_id, ?FUNCTION_NAME)}, [
+%     #{at_s => g(at_s), at_mcs => 0, pid => SpawnPid, type => <<"spawn">>},
+%     #{at_s => g(at_s), at_mcs => 0, pid => TracePid, type => <<"trace_started">>}
+%   ])),
+%   #{processes := Processes} = Delta,
+%   2 = length(Processes),
+%   [SpawnProc] = [P || P = #{pid := SpawnPid} <- Processes],
+%   [TraceProc] = [P || P = #{pid := TracePid} <- Processes],
+%   #{events := [#{type := <<"TRACE_STARTED">>}]} = TraceProc,
+%   #{events := [#{type := <<"TRACE_STARTED">>}]} = SpawnProc,
+%   ok.
+
+
+
 context_events_create_context(_Config) ->
   Delta = produce_delta(with_map(#{at_s => g(at_s), pid => g(pid), context => <<"test1">>, instance_id => g(instance_id, ?FUNCTION_NAME)}, [
     #{at_mcs => 1, type => <<"context_start">>},
     #{at_mcs => 2, type => <<"context_stop">>}
   ])),
-  #{contexts := [#{context := <<"test1">>, startedAt := _, stoppedAt := _}]} = Delta,
+  #{contexts := [#{context := <<"test1">>, startedAt := At1, stoppedAt := At2}]} = Delta,
+  true = At1 < At2,
   ok.
 
 
