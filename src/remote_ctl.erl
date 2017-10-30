@@ -237,7 +237,7 @@ delta_json(Id, LastAt) ->
   {ok, TableEvents} = clk_events:select(ClkOpts),
   Neo4jOpts = neo4j_opts(Id, LastAt, TableEvents),
   {ok, #{processes := Processes, events := GraphEvents, contexts := Contexts}} = n4j_processes:delta_json(Neo4jOpts),
-  Delta = #{processes => Processes, contexts => Contexts, graph_events => GraphEvents, table_events => TableEvents},
+  Delta = #{processes => Processes, contexts => Contexts, events => lists:sort(GraphEvents ++ TableEvents)},
   {ok, Delta}.
 
 
@@ -262,15 +262,12 @@ neo4j_opts(Id, LastAt, TableEvents) ->
 
 % FIXME I know it's ugly, but works for now,
 % should be replaced with something more simple and effective
-lastest_timestamp_in_delta(LastAt, #{processes := Processes, table_events := TableEvents, graph_events := GraphEvents}) when is_integer(LastAt) ->
-  LastAt1 = case lists:last([undefined | TableEvents]) of
+lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) when is_integer(LastAt) ->
+  LastAt1 = case lists:last([undefined | Events]) of
     #{<<"at">> := At1} when At1 > LastAt -> At1;
     _ -> LastAt
   end,
-  LastAt2 = case lists:last([undefined | GraphEvents]) of
-    #{<<"at">> := At4} when At4 > LastAt1 -> At4;
-    _ -> LastAt1
-  end,
+
   ProcTimestamps = lists:map(fun (#{<<"events">> := Events1} = P) ->
     EventsTimestamps = [At || #{<<"at">> := At} <- Events1],
     AppearedAt = case maps:get(<<"appearedAt">>, P, null) of
@@ -283,4 +280,4 @@ lastest_timestamp_in_delta(LastAt, #{processes := Processes, table_events := Tab
     end,
     lists:max([AppearedAt, DisappearedAt] ++ EventsTimestamps)
   end, Processes),
-  lists:max([LastAt2] ++ ProcTimestamps).
+  lists:max([LastAt1] ++ ProcTimestamps).

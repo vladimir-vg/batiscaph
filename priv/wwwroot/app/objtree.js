@@ -86,11 +86,7 @@ V.updateLayout = (delta, layout) => {
   }
 
   layout.events = layout.events || [];
-  delta.graph_events.forEach(function (event) {
-    insertTimestampIntoOrder(event.at, layout);
-    layout.events.push(event);
-  });
-  delta.table_events.forEach(function (event) {
+  delta.events.forEach(function (event) {
     insertTimestampIntoOrder(event.at, layout);
     layout.events.push(event);
   });

@@ -20,7 +20,6 @@
 
 % executes expressons step by step
 exec_testcase(Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
-  io:format("got lines: ~p~n", [Lines]),
   PrivDir = proplists:get_value(priv_dir, CtConfig),
   [_Priv, _RunDir, _, TopRunDir | _] = lists:reverse(filename:split(PrivDir)), % use RunDir as an Id for this ct run
   {ok, BatiscaphNode} = application:get_env(batiscaph, batiscaph_node),
@@ -152,9 +151,9 @@ var_bind_event_event(Timestamp, Var, Value, Context) ->
   z__client_collector:event_with_timestamp(Timestamp, #{
     <<"pid">> => pid_to_list(self()),
     <<"type">> => <<"var_bind">>,
+    <<"context">> => Context,
     <<"atom">> => atom_to_binary(Var, latin1),
-    <<"term">> => io_lib:format("~p", [Value]),
-    <<"context">> => Context
+    <<"term">> => io_lib:format("~p", [Value])
   }).
 
 

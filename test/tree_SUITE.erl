@@ -26,7 +26,7 @@ end_per_suite(Config) ->
 
 
 empty_tree(Config) ->
-  Delta = #{graph_events => [], table_events => [], contexts => []},
+  Delta = #{events => [], contexts => []},
   Tree = apply_delta(Delta, Config),
   #{height := 0, width := 0, contexts := #{}, links := #{}, mentions := #{}, points := #{}, processes := #{}, spawns := #{}}
     = Tree,
