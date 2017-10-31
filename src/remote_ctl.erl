@@ -236,14 +236,38 @@ delta_json(Id, LastAt) ->
   ClkOpts = clickhouse_opts(Id, LastAt),
   {ok, TableEvents} = clk_events:select(ClkOpts),
   Neo4jOpts = neo4j_opts(Id, LastAt, TableEvents),
-  {ok, #{processes := Processes, events := GraphEvents, contexts := Contexts}} = n4j_processes:delta_json(Neo4jOpts),
-  Delta = #{processes => Processes, contexts => Contexts, events => lists:sort(GraphEvents ++ TableEvents)},
-  {ok, Delta}.
+  {ok, Delta1} = n4j_processes:delta_json(Neo4jOpts),
+  Delta2 = delta_with_table_events(Delta1, TableEvents),
+  {ok, Delta2}.
+
+% extract context source lines and variable bindings from clickhouse events
+% and insert them into existing delta
+delta_with_table_events(Delta, TableEvents) ->
+  ContextLines = [{C, L} || #{<<"type">> := <<"context_start">>, <<"context">> := C, <<"lines">> := L} <- TableEvents],
+  VarBinds = [{C, K, V} || #{<<"type">> := <<"var_bind">>, <<"context">> := C, <<"atom">> := K, <<"term">> := V} <- TableEvents],
+  RestEvents = [E || #{<<"type">> := T} = E <- TableEvents, T =/= <<"context_start">>, T =/= <<"var_bind">>],
+  #{events := Events, contexts := Contexts} = Delta,
+
+  Contexts1 = lists:foldl(fun ({C, L}, Acc) ->
+    Context = maps:get(C, Acc),
+    Acc#{C => Context#{<<"lines">> => jsx:decode(L)}}
+  end, Contexts, ContextLines),
+
+  Contexts2 = lists:foldl(fun ({C, K, V}, Acc) ->
+    Context = maps:get(C, Acc),
+    Binds = maps:get(<<"variables">>, Context, #{}),
+    Acc#{C => Context#{<<"variables">> => Binds#{K => V}}}
+  end, Contexts1, VarBinds),
+
+  Events1 = lists:sort(fun (#{<<"at">> := A}, #{<<"at">> := B}) ->
+    A < B
+  end, RestEvents ++ Events),
+  Delta#{events => Events1, contexts => Contexts2}.
 
 
 
 table_events_types() ->
-  [<<"shell_input">>,<<"shell_output">>].
+  [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>].
 
 clickhouse_opts(Id, LastAt) ->
   #{instance_id => Id, 'after' => LastAt, type_in => table_events_types()}.

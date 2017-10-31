@@ -55,12 +55,27 @@ end_per_suite(Config) ->
 
 
 context_events_create_context(_Config) ->
+  Lines = [
+    [15, <<"T1 = erlang:system_time(micro_seconds),">>],
+    [16, <<"{ok, SomePid} = some_module:compicated_function(),">>],
+    [17, <<"Duration = T1 - erlang:system_time(micro_seconds),">>],
+    [18, <<"io:format(\"elapsed time: ~p~n\", [Duration]).">>]
+  ],
+  SomePid = g(pid),
   Delta = produce_delta(with_map(#{at_s => g(at_s), pid => g(pid), context => <<"test1">>, instance_id => g(instance_id, ?FUNCTION_NAME)}, [
-    #{at_mcs => 1, type => <<"context_start">>},
-    #{at_mcs => 2, type => <<"context_stop">>}
+    #{at_mcs => 1, type => <<"context_start">>, <<"lines">> => jsx:encode(Lines)},
+    #{at_mcs => 10, type => <<"var_bind">>, atom => <<"T1">>, term => <<"123456789">>},
+    #{at_mcs => 12, type => <<"var_bind">>, atom => <<"SomePid">>, term => SomePid},
+    #{at_mcs => 12, type => <<"var_mention">>, term => <<"SomePid">>, pid1 => SomePid},
+    #{at_mcs => 510, type => <<"var_bind">>, atom => <<"Duration">>, term => <<"500">>},
+    #{at_mcs => 1000, type => <<"context_stop">>}
   ])),
-  #{contexts := [#{context := <<"test1">>, startedAt := At1, stoppedAt := At2}]} = Delta,
+
+  #{contexts := #{test1 := Context}, events := Events} = Delta,
+  #{context := <<"test1">>, pid := _, startedAt := At1, stoppedAt := At2, lines := Lines, variables := Vars} = Context,
   true = At1 < At2,
+  #{'T1' := <<"123456789">>, 'Duration' := <<"500">>, 'SomePid' := SomePid} = Vars,
+  [#{pid1 := _, pid2 := SomePid, expr := <<"SomePid">>}] = [E || #{type := <<"VAR_MENTION">>} = E <- Events],
   ok.
 
 

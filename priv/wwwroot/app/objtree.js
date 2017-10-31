@@ -92,9 +92,9 @@ V.updateLayout = (delta, layout) => {
   });
   layout.events.sort(eventCmpFunction);
 
-  delta.contexts.forEach(function (context) {
-    updateContextInLayout(context, layout);
-  });
+  for (var key in delta.contexts) {
+    updateContextInLayout(delta.contexts[key], layout);
+  }
 
   return undefined; // all changes made in place
 };
@@ -150,7 +150,7 @@ let updateContextInLayout = (context, layout) => {
   insertTimestampIntoOrder(context.startedAt, layout);
   if (context.stoppedAt)  { insertTimestampIntoOrder(context.stoppedAt, layout); }
 
-  // actually all BIND events are expected to be duplicated in process.events
+  // actually all VARBIND events are expected to be duplicated in process.events
   // so their timestamps should be already inserted into layout
 
   // just copy as it is
