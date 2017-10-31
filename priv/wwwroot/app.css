@@ -22,7 +22,7 @@ code { font-family: 'Ubuntu Mono', monospace; }
 
 /* Scenario View */
 
-.ShellPanel {
+.SourcePanel {
   position: fixed;
   left: 20px;
   bottom: 20px;
@@ -34,48 +34,55 @@ code { font-family: 'Ubuntu Mono', monospace; }
   border-radius: 10px;
 }
 
-.ShellPanel .muted-text {
+.SourcePanel .muted-text {
   font-family: 'Fira Sans', sans-serif;
   font-size: 14px;
   color: #828282;
 }
 
-.ShellPanel .item {
+.SourcePanel .item {
   margin: 0 20px;
   display: flex;
 }
-.ShellPanel .item.input,
-.ShellPanel .item.active {
+.SourcePanel .item.input,
+.SourcePanel .item.active {
   margin-top: 20px;
 }
-.ShellPanel .item.output {
+.SourcePanel .item.output {
   color: #828282;
 }
 
-.ShellPanel .item .prompt {
+.SourcePanel .item .prompt {
   flex: 0 0 40px;
 }
-.ShellPanel .item .message {
+.SourcePanel .item .message {
   flex: 1;
 }
-.ShellPanel .item code,
-.ShellPanel .item textarea {
+.SourcePanel .item code,
+.SourcePanel .item textarea {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 16px;
 }
 
-.ShellPanel .item.active.underline {
+.SourcePanel .item.active.underline {
   border-bottom: 2px solid #2F80ED;
   padding-bottom: 10px;
 }
-.ShellPanel .item.active .prompt {
+.SourcePanel .item.active .prompt {
   color: #2F80ED;
 }
 
-.ShellPanel .item.active textarea {
+.SourcePanel .item.active textarea {
   width: 100%;
   border: 0;
   outline: 0;
+}
+
+.SourcePanel .item.source .prompt {
+  color: #828282;
+}
+.SourcePanel .item.source {
+  line-height: 1.3em;
 }
 
 

@@ -1,50 +1,5 @@
-
-
-
 const Route = ReactRouterDOM.Route;
-const Link = ReactRouterDOM.Link;
 const Redirect = ReactRouterDOM.Redirect;
-
-
-
-class MainPage extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      items: []
-    };
-  }
-
-  componentDidMount() {
-    this.requestScenarousList();
-  }
-
-  requestScenarousList() {
-    fetch('/scenarios.json').then((response) => {
-      response.json().then((items) => {
-        this.setState({items: items});
-      });
-    });
-  }
-
-  render() {
-    let links = [];
-    for (const i in this.state.items) {
-      let id = this.state.items[i].instance_id;
-      links.push(<div key={i}><Link to={'/scenarios2/'+id} className="item">{id}</Link></div>);
-    }
-
-    return <div className="content-page">
-      <div className="head-block">
-        <button className="btn" onClick={this.props.startNewShell}>Start new shell</button>
-      </div>
-      <br />
-      <div className="scenarios-list-block">
-        {links}
-      </div>
-    </div>;
-  }
-}
 
 
 
@@ -163,7 +118,7 @@ class App extends React.Component {
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
             submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange}
             tracePid={this.tracePid} selectContext={this.selectContext}
-            selectedContext={this.state.selectedContext}
+            selectedContext={this.state.selectedContext} contexts={this._layout.contexts}
             {...props} />
       } />
       {scenarioRedirect}

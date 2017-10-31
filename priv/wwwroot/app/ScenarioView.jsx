@@ -5,7 +5,7 @@ const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
 const CELL_HGUTTER = 10;
 const MENTION_PADDING = 2;
-const SHELL_WIDTH = 460;
+const SOURCE_PANEL_WIDTH = 560;
 
 
 
@@ -374,7 +374,7 @@ class ScenarioView extends React.Component {
     let maxY = 1 + this.state.viewportHeight/CELL_HEIGHT;
     let lines = [];
 
-    let minX = -Math.floor((SHELL_WIDTH+100)/(CELL_WIDTH+CELL_HGUTTER));
+    let minX = -Math.floor((SOURCE_PANEL_WIDTH+100)/(CELL_WIDTH+CELL_HGUTTER));
     let minY = -10;
 
     for (let i = minX; i < maxX; i++) {
@@ -417,7 +417,7 @@ class ScenarioView extends React.Component {
     let width = this.props.tree.height*CELL_HEIGHT;
 
     return <div>
-      <SvgView className="ScenarioView" padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
+      <SvgView className="ScenarioView" padding={100} paddingLeft={SOURCE_PANEL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
         <g>{this.renderGrid()}</g>
 
         {/* layers where dom is actually rendered */}
@@ -438,7 +438,8 @@ class ScenarioView extends React.Component {
         </g>
 
       </SvgView>
-      <ShellPanel width={SHELL_WIDTH} events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
+      <SourcePanel width={SOURCE_PANEL_WIDTH} contexts={this.props.contexts} selectedContext={this.props.selectedContext}
+        events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
     </div>;
   }
 }

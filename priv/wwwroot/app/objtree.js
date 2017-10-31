@@ -159,7 +159,8 @@ let updateContextInLayout = (context, layout) => {
     startedAt: context.startedAt,
     stoppedAt: context.stoppedAt,
     pid: context.pid,
-    binds: context.binds
+    lines: context.lines,
+    variables: context.variables
   };
 };
 

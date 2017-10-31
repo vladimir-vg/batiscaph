@@ -4,7 +4,7 @@ let shortPrompt = function (prompt) {
 
 
 
-class ShellPanel extends React.Component {
+class SourcePanel extends React.Component {
   constructor() {
     super();
     this.state = {
@@ -75,12 +75,38 @@ class ShellPanel extends React.Component {
     }
   }
 
+  renderLines(lines, variables) {
+    let nodes = [];
+    for (var i in lines) {
+      let line = lines[i];
+      nodes.push(
+        <div key={line[0]} className="item source">
+          <code className="prompt unselectable">{line[0]}</code>
+          <code className="message">{line[1]}</code>
+        </div>
+      );
+    }
+    return nodes;
+  }
+
   render() {
     let maxHeight = this.state.viewportHeight - 40;
 
-    return <div style={{width: this.props.width, maxHeight: maxHeight}} className="ShellPanel">
+    if (this.props.selectedContext) {
+      let context = this.props.contexts[this.props.selectedContext];
+      // debugger
+      return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">
+        {this.renderLines(context.lines, context.variables)}
+      </div>;
+    }
+
+    return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">
       {this.renderEvents()}
       {this.renderPrompt()}
-    </div>
+    </div>;
   }
 }
+SourcePanel.propTypes = {
+  contexts: PropTypes.object.isRequired,
+  selectedContext: PropTypes.string
+};
