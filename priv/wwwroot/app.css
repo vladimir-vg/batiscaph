@@ -80,6 +80,16 @@ code { font-family: 'Ubuntu Mono', monospace; }
 
 
 
+svg.ScenarioView rect.context {
+  stroke: #D9D9D9;
+  stroke-width: 2px;
+  fill: transparent;
+}
+svg.ScenarioView rect.context.active {
+  stroke: #2F80ED;
+}
+
+
 /*svg .unselectable {
   cursor: default;
   -webkit-user-select: none;

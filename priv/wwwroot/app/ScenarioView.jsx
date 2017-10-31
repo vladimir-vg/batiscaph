@@ -279,6 +279,22 @@ class PointElement extends React.Component {
 
 
 class ContextElement extends React.Component {
+  constructor() {
+    super();
+
+    // because new EcmaScript standard is poorly designed
+    // we have to do bindings like that
+    this.onClick = this.onClick.bind(this);
+  }
+
+  onClick() {
+    if (this.props.selectedContext == this.props.data.key) {
+      this.props.selectContext(null);
+    } else {
+      this.props.selectContext(this.props.data.key);
+    }
+  }
+
   render() {
     let ys = [this.props.data.fromY, this.props.data.toY];
     ys.sort((a,b) => a-b);
@@ -291,11 +307,30 @@ class ContextElement extends React.Component {
     let width = CELL_WIDTH + wpadding*2;
     let height = (this.props.data.toY - this.props.data.fromY)*CELL_HEIGHT + hpadding*2;
 
-    return <Layer name="afterProcesses">
-      <rect x={x} y={y} width={width} height={height} rx={radius} ry={radius} style={{stroke: '#2F80ED', strokeWidth: 2, fill: 'none'}} />
-    </Layer>
+    if (this.props.selectedContext == this.props.data.key) {
+      return [
+        <Layer key="beforeProcesses" name="beforeProcesses"></Layer>,
+        <Layer key="afterProcesses" name="afterProcesses">
+          <rect onClick={this.onClick} className="context active"
+            x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
+        </Layer>
+      ];
+    }
+
+    return [
+      <Layer key="beforeProcesses" name="beforeProcesses">
+        <rect onClick={this.onClick} className="context"
+          x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
+      </Layer>,
+      <Layer key="afterProcesses" name="afterProcesses"></Layer>
+    ];
   }
 }
+ContextElement.propTypes = {
+  data: PropTypes.object.isRequired,
+  selectContext: PropTypes.func.isRequired,
+  selectedContext: PropTypes.string
+};
 
 
 
@@ -375,14 +410,14 @@ class ScenarioView extends React.Component {
       mentions.push(<MentionElement key={key} data={this.props.tree.mentions[key]} />);
     }
     for (let key in this.props.tree.contexts) {
-      contexts.push(<ContextElement key={key} data={this.props.tree.contexts[key]} />);
+      contexts.push(<ContextElement key={key} data={this.props.tree.contexts[key]} selectedContext={this.props.selectedContext} selectContext={this.props.selectContext} />);
     }
 
     let height = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
     let width = this.props.tree.height*CELL_HEIGHT;
 
     return <div>
-      <SvgView padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
+      <SvgView className="ScenarioView" padding={100} paddingLeft={SHELL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
         <g>{this.renderGrid()}</g>
 
         {/* layers where dom is actually rendered */}
@@ -409,5 +444,10 @@ class ScenarioView extends React.Component {
 }
 ScenarioView.childContextTypes = {
   getLayerNode: PropTypes.func
+};
+ScenarioView.propTypes = {
+  selectContext: PropTypes.func.isRequired,
+  tracePid: PropTypes.func.isRequired,
+  selectedContext: PropTypes.string
 };
 

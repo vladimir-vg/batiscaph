@@ -393,6 +393,7 @@ V.produceTree = (layout) => {
   for (const key in layout.contexts) {
     let c = layout.contexts[key];
     tree.contexts[key] = {
+      key: key,
       x: xFromPid(c.pid),
       fromY: yFromTimestamp(c.startedAt),
       toY: yFromTimestamp(c.stoppedAt)

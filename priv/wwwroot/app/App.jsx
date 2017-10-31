@@ -55,7 +55,8 @@ class App extends React.Component {
       instanceId: undefined,
       tree: undefined,
       shellPrompt: undefined,
-      shellEvents: []
+      shellEvents: [],
+      selectedContext: null
     };
     this._layout = {};
 
@@ -66,6 +67,7 @@ class App extends React.Component {
     this.onWSMessage = this.onWSMessage.bind(this);
     this.submitShellInput = this.submitShellInput.bind(this);
     this.tracePid = this.tracePid.bind(this);
+    this.selectContext = this.selectContext.bind(this);
   }
 
   onInstanceIdChange(id) {
@@ -145,6 +147,10 @@ class App extends React.Component {
     V.socket.send('trace_pid ' + pid);
   }
 
+  selectContext(key) {
+    this.setState({selectedContext: key});
+  }
+
   render() {
     let scenarioRedirect = null;
     if (this.state.instanceId) {
@@ -153,7 +159,13 @@ class App extends React.Component {
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id" render={(props) => <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents} submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange} tracePid={this.tracePid} {...props} />} />
+      <Route path="/scenarios2/:id" render={(props) =>
+          <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
+            submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange}
+            tracePid={this.tracePid} selectContext={this.selectContext}
+            selectedContext={this.state.selectedContext}
+            {...props} />
+      } />
       {scenarioRedirect}
     </div>;
   }
