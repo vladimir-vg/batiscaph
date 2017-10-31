@@ -5,7 +5,7 @@ const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
 const CELL_HGUTTER = 10;
 const MENTION_PADDING = 2;
-const SOURCE_PANEL_WIDTH = 560;
+const SOURCE_PANEL_WIDTH = 520;
 
 
 
@@ -281,18 +281,43 @@ class PointElement extends React.Component {
 class ContextElement extends React.Component {
   constructor() {
     super();
+    this.state = {
+      // mentionHover: null // key of the mention which is hovered
+    }
 
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
-    this.onClick = this.onClick.bind(this);
+    this.onSelectClick = this.onSelectClick.bind(this);
   }
 
-  onClick() {
+  onSelectClick() {
     if (this.props.selectedContext == this.props.data.key) {
       this.props.selectContext(null);
     } else {
       this.props.selectContext(this.props.data.key);
     }
+  }
+
+  renderMentions(mentions, className) {
+    let wpadding = CELL_HGUTTER/2;
+    let nodes = [];
+    for (var key in mentions) {
+      let m = mentions[key];
+      let y = CELL_HEIGHT*m.y;
+      let x1, x2;
+      if (this.props.data.x < m.toX) {
+        x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH + wpadding;
+        x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX;
+      } else {
+        x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x - wpadding;
+        x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX + CELL_WIDTH;
+      }
+      nodes.push(
+        <line key={key} x1={x1} y1={y} x2={x2} y2={y} className={className}
+          onClick={this.onSelectClick} />
+      );
+    }
+    return nodes;
   }
 
   render() {
@@ -311,16 +336,18 @@ class ContextElement extends React.Component {
       return [
         <Layer key="beforeProcesses" name="beforeProcesses"></Layer>,
         <Layer key="afterProcesses" name="afterProcesses">
-          <rect onClick={this.onClick} className="context active"
+          <rect onClick={this.onSelectClick} className="context active"
             x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
+          <g>{this.renderMentions(this.props.data.mentions, "var-mention active")}</g>
         </Layer>
       ];
     }
 
     return [
       <Layer key="beforeProcesses" name="beforeProcesses">
-        <rect onClick={this.onClick} className="context"
+        <rect onClick={this.onSelectClick} className="context"
           x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
+        <g>{this.renderMentions(this.props.data.mentions, "var-mention")}</g>
       </Layer>,
       <Layer key="afterProcesses" name="afterProcesses"></Layer>
     ];

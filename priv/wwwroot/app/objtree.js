@@ -265,11 +265,14 @@ V.produceTree = (layout) => {
       tree.links[key] = {y: y, fromX: xFromPid(event.pid1), toX: xFromPid(event.pid2)};
       break;
 
-    // case 'BIND':
-    //   saveMention(event.at, event.pid1);
-    //   // key = 'mention-' + event.at + '-' + event.pid + '-' + event.pid1;
-    //   // tree.mentions[key] = {y: y, fromX: xFromPid(event.pid), toX: xFromPid(event.pid1)};
-    //   break;
+    case 'VAR_MENTION':
+      saveMention(event.at, event.pid1);
+      saveMention(event.at, event.pid2);
+      tree.contexts[event.context] = tree.contexts[event.context] || {};
+      tree.contexts[event.context].mentions = tree.contexts[event.context].mentions || {};
+      key = 'var-mention-' + event.at + '-' + event.pid2;
+      tree.contexts[event.context].mentions[key] = {y: y, toX: xFromPid(event.pid2), expr: event.expr};
+      break;
 
     case 'MENTION':
       saveMention(event.at, event.pid1);
@@ -393,14 +396,11 @@ V.produceTree = (layout) => {
 
   for (const key in layout.contexts) {
     let c = layout.contexts[key];
-    tree.contexts[key] = {
-      key: key,
-      x: xFromPid(c.pid),
-      fromY: yFromTimestamp(c.startedAt),
-      toY: yFromTimestamp(c.stoppedAt)
-
-      // ignore binds for now
-    }
+    tree.contexts[key] = tree.contexts[key] || {};
+    tree.contexts[key].key = key;
+    tree.contexts[key].x = xFromPid(c.pid);
+    tree.contexts[key].fromY = yFromTimestamp(c.startedAt);
+    tree.contexts[key].toY = yFromTimestamp(c.stoppedAt);
   }
 
   tree.width = layout.columnsOrder.length;

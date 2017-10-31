@@ -63,6 +63,9 @@ code { font-family: 'Ubuntu Mono', monospace; }
   font-family: 'Ubuntu Mono', monospace;
   font-size: 16px;
 }
+.SourcePanel .item code {
+  white-space: pre;
+}
 
 .SourcePanel .item.active.underline {
   border-bottom: 2px solid #2F80ED;
@@ -96,6 +99,13 @@ svg.ScenarioView rect.context.active {
   stroke: #2F80ED;
 }
 
+svg.ScenarioView line.var-mention {
+  stroke: #D9D9D9;
+  stroke-width: 2px;
+}
+svg.ScenarioView line.var-mention.active {
+  stroke: #2F80ED;
+}
 
 /*svg .unselectable {
   cursor: default;
