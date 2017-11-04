@@ -97,7 +97,7 @@ delta_json(#{instance_id := Id, 'after' := At}) ->
   ],
   {ok, [Processes, Events, ContextMentionEvents, Contexts]} = neo4j:commit(Statements),
 
-  Processes1 = convert_rows_to_objects(Processes),
+  Processes1 = convert_rows_to_map(<<"pid">>, Processes),
   Events1 = convert_rows_to_objects(Events),
   ContextMentionEvents1 = convert_rows_to_objects(ContextMentionEvents),
   Contexts1 = convert_rows_to_map(<<"context">>, Contexts),

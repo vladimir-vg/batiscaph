@@ -81,8 +81,8 @@ V.updateLayout = (delta, layout) => {
   layout.columns = layout.columns || {};
   layout.contexts = layout.contexts || {};
 
-  for (var i in delta.processes) {
-    updateProcessInLayout(delta.processes[i], layout);
+  for (var pid in delta.processes) {
+    updateProcessInLayout(delta.processes[pid], layout);
   }
 
   layout.events = layout.events || [];
@@ -90,7 +90,7 @@ V.updateLayout = (delta, layout) => {
     insertTimestampIntoOrder(event.at, layout);
     layout.events.push(event);
   });
-  layout.events.sort(eventCmpFunction);
+  // layout.events.sort(eventCmpFunction);
 
   for (var key in delta.contexts) {
     updateContextInLayout(delta.contexts[key], layout);
