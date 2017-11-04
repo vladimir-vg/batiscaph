@@ -95,18 +95,26 @@ get_group(Part) ->
 
 
 exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [E], context = Context}) ->
+  StartEvalEvent = expr_eval_start_event(erlang:system_time(micro_seconds), E, Context),
   {value, Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
-  NewBindings = changes_bindings(Bindings, Bindings1),
   Timestamp = erlang:system_time(micro_seconds),
+  StopEvalEvent = expr_eval_stop_event(Timestamp, E, Context, Value),
+  NewBindings = changes_bindings(Bindings, Bindings1),
+
   ok = log_bindings(Timestamp, NewBindings, Context),
+  z__client_collector ! {events, [StartEvalEvent, StopEvalEvent]},
   % io:format("final value: ~p~n", [Value]),
   Value;
 
 exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [E | Exprs], context = Context} = State) ->
-  {value, _Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
-  NewBindings = changes_bindings(Bindings, Bindings1),
+  StartEvalEvent = expr_eval_start_event(erlang:system_time(micro_seconds), E, Context),
+  {value, Value, Bindings1} = erl_eval:expr(E, Bindings, {value, LocalFunHandler}, {value, fun non_local_function_handler/2}),
   Timestamp = erlang:system_time(micro_seconds),
+  StopEvalEvent = expr_eval_stop_event(Timestamp, E, Context, Value),
+  NewBindings = changes_bindings(Bindings, Bindings1),
+
   ok = log_bindings(Timestamp, NewBindings, Context),
+  z__client_collector ! {events, [StartEvalEvent, StopEvalEvent]},
   exec1(State#steps{exprs = Exprs, bindings = Bindings1}).
 
 
@@ -229,6 +237,25 @@ var_mention_event1(Timestamp, Expr, Pid, Context) when is_binary(Expr) ->
   }).
 
 
+
+expr_eval_start_event(Timestamp, Expr, Context) ->
+  z__client_collector:event_with_timestamp(Timestamp, #{
+    <<"pid">> => pid_to_list(self()),
+    <<"type">> => <<"expr_eval_start">>,
+    <<"term">> => io_lib:format("~p", [Expr]),
+    <<"context">> => Context,
+    <<"line">> => element(2, Expr)
+  }).
+
+expr_eval_stop_event(Timestamp, Expr, Context, Result) ->
+  z__client_collector:event_with_timestamp(Timestamp, #{
+    <<"pid">> => pid_to_list(self()),
+    <<"type">> => <<"expr_eval_stop">>,
+    <<"term">> => io_lib:format("~p", [Expr]),
+    <<"context">> => Context,
+    <<"line">> => element(2, Expr),
+    <<"result">> => io_lib:format("~p", [Result])
+  }).
 
 % exec_step_start_event(Expr, Lines, Context) ->
 %   z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{

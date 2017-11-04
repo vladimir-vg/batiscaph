@@ -240,34 +240,64 @@ delta_json(Id, LastAt) ->
   Delta2 = delta_with_table_events(Delta1, TableEvents),
   {ok, Delta2}.
 
+
+
 % extract context source lines and variable bindings from clickhouse events
 % and insert them into existing delta
 delta_with_table_events(Delta, TableEvents) ->
-  ContextLines = [{C, L} || #{<<"type">> := <<"context_start">>, <<"context">> := C, <<"lines">> := L} <- TableEvents],
-  VarBinds = [{C, K, V} || #{<<"type">> := <<"var_bind">>, <<"context">> := C, <<"atom">> := K, <<"term">> := V} <- TableEvents],
-  RestEvents = [E || #{<<"type">> := T} = E <- TableEvents, T =/= <<"context_start">>, T =/= <<"var_bind">>],
-  #{events := Events, contexts := Contexts} = Delta,
+  ContextLines = [E || #{<<"type">> := <<"context_start">>} = E <- TableEvents],
+  VarBinds = [E || #{<<"type">> := <<"var_bind">>} = E <- TableEvents],
+  ExprEvals = [E || #{<<"type">> := T} = E <- TableEvents, T == <<"expr_eval_start">> orelse T == <<"expr_eval_stop">>],
+  RestEvents = [E || #{<<"type">> := T} = E <- TableEvents, T =/= <<"context_start">>, T =/= <<"var_bind">>, T =/= <<"expr_eval_start">>, T =/= <<"expr_eval_stop">>],
+  #{events := Events} = Delta,
 
-  Contexts1 = lists:foldl(fun ({C, L}, Acc) ->
-    Context = maps:get(C, Acc),
-    Acc#{C => Context#{<<"lines">> => jsx:decode(L)}}
-  end, Contexts, ContextLines),
-
-  Contexts2 = lists:foldl(fun ({C, K, V}, Acc) ->
-    Context = maps:get(C, Acc),
-    Binds = maps:get(<<"variables">>, Context, #{}),
-    Acc#{C => Context#{<<"variables">> => Binds#{K => V}}}
-  end, Contexts1, VarBinds),
+  Delta1 = delta_with_context_lines(Delta, ContextLines),
+  Delta2 = delta_with_var_binds(Delta1, VarBinds),
+  Delta3 = delta_with_expr_evals(Delta2, ExprEvals),
 
   Events1 = lists:sort(fun (#{<<"at">> := A}, #{<<"at">> := B}) ->
     A < B
   end, RestEvents ++ Events),
-  Delta#{events => Events1, contexts => Contexts2}.
+  Delta3#{events => Events1}.
+
+
+
+delta_with_context_lines(#{contexts := Contexts} = Delta, ContextLines) ->
+  Contexts1 = lists:foldl(fun (#{<<"context">> := C, <<"lines">> := L}, Acc) ->
+    Context = maps:get(C, Acc),
+    Acc#{C => Context#{<<"lines">> => jsx:decode(L)}}
+  end, Contexts, ContextLines),
+  Delta#{contexts => Contexts1}.
+
+delta_with_var_binds(#{contexts := Contexts} = Delta, VarBinds) ->
+  Contexts1 = lists:foldl(fun (#{<<"context">> := C, <<"atom">> := K, <<"term">> := V}, Acc) ->
+    Context = maps:get(C, Acc),
+    Binds = maps:get(<<"variables">>, Context, #{}),
+    Acc#{C => Context#{<<"variables">> => Binds#{K => V}}}
+  end, Contexts, VarBinds),
+  Delta#{contexts => Contexts1}.
+
+
+
+delta_with_expr_evals(Delta, []) -> Delta;
+delta_with_expr_evals(Delta, [#{<<"type">> := <<"expr_eval_start">>}]) -> Delta; % ignore unfinished expr eval
+delta_with_expr_evals(Delta, [#{<<"type">> := <<"expr_eval_start">>} = Start, #{<<"type">> := <<"expr_eval_stop">>} = Stop | ExprEvals]) ->
+  #{<<"at">> := StartedAt, <<"term">> := AST, <<"line">> := Line, <<"context">> := Key} = Start,
+  #{<<"at">> := StoppedAt, <<"term">> := AST, <<"line">> := Line, <<"context">> := Key} = Stop,
+  Result = maps:get(<<"result">>, Stop),
+
+  #{contexts := #{Key := Context} = Contexts} = Delta,
+  Evals = maps:get(<<"evals">>, Context, #{}),
+  Eval = maps:get(integer_to_binary(Line), Evals, #{<<"line">> => Line, <<"exprs">> => []}),
+  Exprs = maps:get(<<"exprs">>, Eval),
+  Exprs1 = Exprs ++ [#{<<"startedAt">> => StartedAt, <<"stoppedAt">> => StoppedAt, <<"result">> => Result}],
+  Context1 = Context#{<<"evals">> => Evals#{integer_to_binary(Line) => Eval#{<<"exprs">> => Exprs1}}},
+  delta_with_expr_evals(Delta#{contexts => Contexts#{Key => Context1}}, ExprEvals).
 
 
 
 table_events_types() ->
-  [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>].
+  [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>,<<"expr_eval_start">>,<<"expr_eval_stop">>].
 
 clickhouse_opts(Id, LastAt) ->
   #{instance_id => Id, 'after' => LastAt, type_in => table_events_types()}.
@@ -292,7 +322,7 @@ lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) 
     _ -> LastAt
   end,
 
-  ProcTimestamps = lists:map(fun (#{<<"events">> := Events1} = P) ->
+  ProcTimestamps = maps:fold(fun (_, #{<<"events">> := Events1} = P, Acc) ->
     EventsTimestamps = [At || #{<<"at">> := At} <- Events1],
     AppearedAt = case maps:get(<<"appearedAt">>, P, null) of
       At2 when is_integer(At2) -> At2;
@@ -302,6 +332,6 @@ lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) 
       At3 when is_integer(At3) -> At3;
       null -> LastAt
     end,
-    lists:max([AppearedAt, DisappearedAt] ++ EventsTimestamps)
-  end, Processes),
+    [lists:max([AppearedAt, DisappearedAt] ++ EventsTimestamps) | Acc]
+  end, [], Processes),
   lists:max([LastAt1] ++ ProcTimestamps).

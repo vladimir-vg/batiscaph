@@ -21,9 +21,11 @@ columns() ->
 
     {<<"mfa">>, <<"String">>},
     {<<"term">>, <<"String">>},
+    {<<"result">>, <<"String">>},
     {<<"prompt">>, <<"String">>},
     {<<"message">>, <<"String">>},
     {<<"size">>, <<"Int32">>},
+    {<<"line">>, <<"Int32">>},
     {<<"hash">>, <<"String">>},
     {<<"application">>, <<"String">>},
     {<<"ancestors">>, <<"String">>},

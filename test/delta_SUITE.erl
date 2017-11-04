@@ -63,7 +63,11 @@ context_events_create_context(_Config) ->
   ],
   SomePid = g(pid),
   Delta = produce_delta(with_map(#{at_s => g(at_s), pid => g(pid), context => <<"test1">>, instance_id => g(instance_id, ?FUNCTION_NAME)}, [
-    #{at_mcs => 1, type => <<"context_start">>, <<"lines">> => jsx:encode(Lines)},
+    #{at_mcs => 1, type => <<"context_start">>, lines => jsx:encode(Lines)},
+    #{at_mcs => 2, type => <<"expr_eval_start">>, term => <<"AST1">>, line => 15},
+    #{at_mcs => 3, type => <<"expr_eval_stop">>, term => <<"AST1">>, line => 15, result => <<"Term describing result of execution">>},
+    #{at_mcs => 4, type => <<"expr_eval_start">>, term => <<"AST2">>, line => 15},
+    #{at_mcs => 5, type => <<"expr_eval_stop">>, term => <<"AST2">>, line => 15, result => <<"Term describing result of execution">>},
     #{at_mcs => 10, type => <<"var_bind">>, atom => <<"T1">>, term => <<"123456789">>},
     #{at_mcs => 12, type => <<"var_bind">>, atom => <<"SomePid">>, term => SomePid},
     #{at_mcs => 12, type => <<"var_mention">>, term => <<"SomePid">>, pid1 => SomePid},
@@ -72,10 +76,11 @@ context_events_create_context(_Config) ->
   ])),
 
   #{contexts := #{test1 := Context}, events := Events} = Delta,
-  #{context := <<"test1">>, pid := _, startedAt := At1, stoppedAt := At2, lines := Lines, variables := Vars} = Context,
+  #{context := <<"test1">>, pid := _, startedAt := At1, stoppedAt := At2, lines := Lines, variables := Vars, evals := Evals} = Context,
   true = At1 < At2,
   #{'T1' := <<"123456789">>, 'Duration' := <<"500">>, 'SomePid' := SomePid} = Vars,
   [#{pid1 := _, pid2 := SomePid, expr := <<"SomePid">>}] = [E || #{type := <<"VAR_MENTION">>} = E <- Events],
+  #{'15' := #{exprs := [#{startedAt := _, stoppedAt := _, result := _}, #{startedAt := _, stoppedAt := _, result := _}]}} = Evals,
   ok.
 
 

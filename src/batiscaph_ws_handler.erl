@@ -47,6 +47,10 @@ websocket_handle({text, <<"store_module ", Rest/binary>>}, Req, #ws_state{remote
   ScenarioPid ! {store_module, Name, Body},
   {ok, Req, State};
 
+websocket_handle({text, <<"trace_pid ", Pid/binary>>}, Req, #ws_state{remote_scenario_pid = undefined} = State) ->
+  lager:info("remote scenario is dead, ifnore trace_pid(~s) command", [Pid]),
+  {ok, Req, State};
+
 websocket_handle({text, <<"trace_pid ", Pid/binary>>}, Req, #ws_state{remote_scenario_pid = ScenarioPid} = State) ->
   ScenarioPid ! {trace_pid, Pid},
   {ok, Req, State};
