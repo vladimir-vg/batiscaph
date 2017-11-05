@@ -367,7 +367,12 @@ class ScenarioView extends React.Component {
     this.state = {
       viewportWidth: Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
       viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
+      highlightRange: null
     }
+
+    // because new EcmaScript standard is poorly designed
+    // we have to do bindings like that
+    this.highlightRange = this.highlightRange.bind(this);
   }
 
   componentDidMount() {
@@ -386,6 +391,7 @@ class ScenarioView extends React.Component {
 
   getLayerNode(key) {
     switch (key) {
+    case 'highlight': return this.refs.highlight;
     case 'beforeProcesses': return this.refs.beforeProcesses;
     case 'afterProcesses': return this.refs.afterProcesses;
     case 'processes': return this.refs.processes;
@@ -393,6 +399,30 @@ class ScenarioView extends React.Component {
     }
     console.error("Unknown layer key: ", key);
     return null;
+  }
+
+  highlightRange(range) {
+    this.setState({highlightRange: range});
+  }
+
+  renderHighlightRange() {
+    if (!this.state.highlightRange) {
+      return <Layer name="highlight"></Layer>;
+    }
+    if (this.state.highlightRange.fromY == this.state.highlightRange.toY) {
+      let y = this.state.highlightRange.fromY*CELL_HEIGHT - CELL_HEIGHT/2;
+      let height = CELL_HEIGHT;
+      return <Layer name="highlight">
+        <rect x={-1000} y={y} width={2000} height={height} className="highlight-area" />
+        <line x1={-1000} y1={y+CELL_HEIGHT/2} x2={1000} y2={y+CELL_HEIGHT/2} className="highlight-line" />
+      </Layer>;
+    } else {
+      let y = this.state.highlightRange.fromY*CELL_HEIGHT;
+      let height = (this.state.highlightRange.toY - this.state.highlightRange.fromY)*CELL_HEIGHT;
+      return <Layer name="highlight">
+        <rect x={-1000} y={y} width={2000} height={height} className="highlight-area highlight-line" />
+      </Layer>;
+    }
   }
 
   renderGrid() {
@@ -448,11 +478,11 @@ class ScenarioView extends React.Component {
         <g>{this.renderGrid()}</g>
 
         {/* layers where dom is actually rendered */}
+        <g ref="highlight"></g>
         <g ref="beforeProcesses"></g>
         <g ref="processes"></g>
         <g ref="afterProcesses"></g>
         <g ref="text"></g>
-        
 
         {/* entities, compose different parts on different layers */}
         <g>
@@ -462,11 +492,13 @@ class ScenarioView extends React.Component {
           {mentions}
           {points}
           {contexts}
+          {this.renderHighlightRange()}
         </g>
 
       </SvgView>
-      <SourcePanel width={SOURCE_PANEL_WIDTH} contexts={this.props.contexts} selectedContext={this.props.selectedContext}
-        events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput} />
+      <SourcePanel width={SOURCE_PANEL_WIDTH} contexts={this.props.tree.contexts} selectedContext={this.props.selectedContext}
+        events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput}
+        highlightRange={this.highlightRange} />
     </div>;
   }
 }

@@ -161,7 +161,8 @@ let updateContextInLayout = (context, layout) => {
     stoppedAt: context.stoppedAt,
     pid: context.pid,
     lines: context.lines,
-    variables: context.variables
+    variables: context.variables,
+    evals: context.evals
   };
 };
 
@@ -237,6 +238,36 @@ V.produceTree = (layout) => {
     let y = layout.timestamps.indexOf(at);
     if (y == -1) { console.error("got -1 for event.at timestamp search", event); debugger; return; }
     return y;
+  }
+
+  let yBiggestPossible = function (at) {
+    for (let i in layout.timestamps) {
+      i = parseInt(i);
+      let at1 = layout.timestamps[i];
+      let nextAt = layout.timestamps[i+1];
+      if (at > at1 && !nextAt) {
+        return i+1;
+      } else if (at > at1 && at < nextAt) {
+        return i+1;
+      } else if (at <= at1) {
+        return i;
+      }
+    }
+  }
+
+  let ySmallestPossible = function (at) {
+    for (let i in layout.timestamps) {
+      i = parseInt(i);
+      let at1 = layout.timestamps[i];
+      let nextAt = layout.timestamps[i+1];
+      if (at > at1 && !nextAt) {
+        return i;
+      } else if (at > at1 && at < nextAt) {
+        return i;
+      } else if (at == at1) {
+        return i;
+      }
+    }
   }
 
   // these mentions will be used to generate mention parts ready to render
@@ -402,6 +433,17 @@ V.produceTree = (layout) => {
     tree.contexts[key].x = xFromPid(c.pid);
     tree.contexts[key].fromY = yFromTimestamp(c.startedAt);
     tree.contexts[key].toY = yFromTimestamp(c.stoppedAt);
+    tree.contexts[key].lines = c.lines;
+    tree.contexts[key].variables = c.variables;
+    tree.contexts[key].evals = {};
+    for (let line in c.evals) {
+      let firstExpr = c.evals[line].exprs[0];
+      let lastExpr = c.evals[line].exprs[c.evals[line].exprs.length-1];
+      tree.contexts[key].evals[line] = {
+        fromY: yBiggestPossible(firstExpr.startedAt),
+        toY: yBiggestPossible(lastExpr.stoppedAt) // ySmallestPossible
+      };
+    }
   }
 
   tree.width = layout.columnsOrder.length;

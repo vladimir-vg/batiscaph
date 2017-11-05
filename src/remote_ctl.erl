@@ -253,7 +253,10 @@ delta_with_table_events(Delta, TableEvents) ->
 
   Delta1 = delta_with_context_lines(Delta, ContextLines),
   Delta2 = delta_with_var_binds(Delta1, VarBinds),
-  Delta3 = delta_with_expr_evals(Delta2, ExprEvals),
+  ExprEvals1 = lists:sort(fun (#{<<"context">> := Ac, <<"at">> := A}, #{<<"context">> := Bc, <<"at">> := B}) ->
+    {Ac, A} < {Bc, B}
+  end, ExprEvals),
+  Delta3 = delta_with_expr_evals(Delta2, ExprEvals1),
 
   Events1 = lists:sort(fun (#{<<"at">> := A}, #{<<"at">> := B}) ->
     A < B

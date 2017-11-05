@@ -118,7 +118,7 @@ class App extends React.Component {
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
             submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange}
             tracePid={this.tracePid} selectContext={this.selectContext}
-            selectedContext={this.state.selectedContext} contexts={this._layout.contexts}
+            selectedContext={this.state.selectedContext}
             {...props} />
       } />
       {scenarioRedirect}

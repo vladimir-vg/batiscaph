@@ -22,6 +22,14 @@ code { font-family: 'Ubuntu Mono', monospace; }
 
 /* Scenario View */
 
+.ScenarioView .highlight-area {
+  fill: #E9EFF7;
+}
+.ScenarioView .highlight-line {
+  stroke: #BED2ED;
+  stroke-width: 1px;
+}
+
 .SourcePanel {
   position: fixed;
   left: 20px;
@@ -44,6 +52,7 @@ code { font-family: 'Ubuntu Mono', monospace; }
   /*margin: 0 20px;*/
   padding: 0 20px;
   display: flex;
+  border: 1px solid transparent;
 }
 .SourcePanel .item.input,
 .SourcePanel .item.active {
@@ -87,6 +96,11 @@ code { font-family: 'Ubuntu Mono', monospace; }
 }
 .SourcePanel .item.source {
   line-height: 1.3em;
+}
+
+.SourcePanel .item.source.highlighted {
+  background-color: #E9EFF7;
+  border: 1px solid #BED2ED;
 }
 
 

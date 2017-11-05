@@ -9,7 +9,8 @@ class SourcePanel extends React.Component {
     super();
     this.state = {
       viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
-      text: ""
+      text: "",
+      lineHover: null // mouse currently over this line
     }
 
     // because new EcmaScript standard is poorly designed
@@ -35,6 +36,17 @@ class SourcePanel extends React.Component {
   submitInput() {
     this.props.submitInput(this.state.text);
     this.setState({text: ""});
+  }
+
+  setLineHover(line) {
+    let context = this.props.contexts[this.props.selectedContext];
+    if (context.evals[line]) {
+      this.setState({lineHover: line})
+      this.props.highlightRange(context.evals[line]);
+    } else {
+      this.setState({lineHover: null})
+      this.props.highlightRange(null);
+    }
   }
 
   renderInputItem(e) {
@@ -75,12 +87,18 @@ class SourcePanel extends React.Component {
     }
   }
 
-  renderLines(lines, variables) {
+  renderLines(context) {
     let nodes = [];
-    for (var i in lines) {
-      let line = lines[i];
+    for (var i in context.lines) {
+      let line = context.lines[i];
+      let className = "item source";
+      if (line[0] == this.state.lineHover) {
+        className += " highlighted";
+      }
       nodes.push(
-        <div key={line[0]} className="item source">
+        <div onMouseEnter={this.setLineHover.bind(this, line[0])} onMouseLeave={this.setLineHover.bind(this, null)}
+            key={line[0]} className={className}>
+
           <code className="prompt unselectable">{line[0]}</code>
           <code className="message">{line[1]}</code>
         </div>
@@ -94,9 +112,8 @@ class SourcePanel extends React.Component {
 
     if (this.props.selectedContext) {
       let context = this.props.contexts[this.props.selectedContext];
-      // debugger
       return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">
-        {this.renderLines(context.lines, context.variables)}
+        {this.renderLines(context)}
       </div>;
     }
 
@@ -108,5 +125,6 @@ class SourcePanel extends React.Component {
 }
 SourcePanel.propTypes = {
   contexts: PropTypes.object.isRequired,
+  highlightRange: PropTypes.func.isRequired,
   selectedContext: PropTypes.string
 };

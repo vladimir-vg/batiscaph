@@ -36,16 +36,18 @@ groups() ->
   [
     {group1, [parallel], [
       {group, group1_nested},
-      file_open_test
+      file_open_test,
+      ets_match_spec_transform
     ]},
-    {group2, [], [file_open_test]},
-    {group1_nested, [], [file_open_test]}
+    {group2, [parallel], [file_open_test, ets_match_spec_transform]},
+    {group1_nested, [], [file_open_test, ets_match_spec_transform]}
   ].
 
 
 
 file_open_test(_Config) ->
   {ok, _File} = file:open("/etc/hosts", [read]),
+  timer:sleep(300),
   Opts = #{some_pid => whereis(file_server_2)},
   ok.
 
