@@ -1,5 +1,5 @@
 -module(batiscaph_steps).
--export([exec_testcase/6]).
+-export([exec_testcase/7]).
 
 
 
@@ -19,12 +19,12 @@
 
 
 % executes expressons step by step
-exec_testcase(Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
+exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
   PrivDir = proplists:get_value(priv_dir, CtConfig),
   [_Priv, _RunDir, _, TopRunDir | _] = lists:reverse(filename:split(PrivDir)), % use RunDir as an Id for this ct run
   {ok, BatiscaphNode} = application:get_env(batiscaph, batiscaph_node),
 
-  Context = get_context_path(Testcase, CtConfig),
+  Context = get_context_path(Suite, Testcase, CtConfig),
 
   {ok, _} = ct_rpc:call(BatiscaphNode, remote_ctl, ensure_started, [list_to_binary(TopRunDir), #{node => node()}]),
   ok = wait_for_collector_to_appear(300),
@@ -77,11 +77,10 @@ wait_for_collector_to_appear(Timeout) ->
 %
 % should return following:
 % [suite, group1, group2, ..., testcase]
--spec get_context_path(atom(), any()) -> binary().
-get_context_path(Testcase, CtConfig) ->
+-spec get_context_path(atom(), atom(), any()) -> binary().
+get_context_path(Suite, Testcase, CtConfig) ->
   Props = proplists:get_value(tc_group_properties, CtConfig),
   Path = proplists:get_value(tc_group_path, CtConfig),
-  Suite = proplists:get_value(suite, Props),
   Groups = lists:reverse(lists:flatten(get_group(Props) ++ [get_group(Part) || Part <- Path])),
   ContextAtoms = [Suite] ++ Groups ++ [Testcase],
   iolist_to_binary(lists:join(<<" ">>, [atom_to_binary(A,latin1) || A <- ContextAtoms])).

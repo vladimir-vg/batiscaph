@@ -21,6 +21,7 @@
 }).
 
 -record(suite_trans, {
+  suite :: atom(),
   testcases :: [atom()],
   local_finder_name :: atom(),
   current_file :: binary(),
@@ -39,7 +40,8 @@ parse_transform(Forms, _Options) ->
       % this required for proper step-by-step execution by erl_eval
       {ok, LocalFinderName, LocalFunHandler} = generate_local_fun_finder(EofLine, Forms),
       % io:format("forms:~n~p~n", [Forms]),
-      State = #suite_trans{testcases = Testcases, local_finder_name = LocalFinderName},
+      [Suite] = [M || {attribute,_,module,M} <- Forms],
+      State = #suite_trans{suite = Suite, testcases = Testcases, local_finder_name = LocalFinderName},
       case wrap_functions(Forms, State) of
         Forms -> Forms; % no changes made, no need for local fun handler
         Forms1 when Forms1 =/= Forms ->
@@ -98,7 +100,7 @@ wrap_one_function({function, Line, Atom, 1, Clauses}, #suite_trans{} = State) ->
     {ok, C1, State3} = wrap_fun_clause(Atom, C, State2),
     {[C1 | Acc], State3}
   end, {[], State}, Clauses),
-  % Clauses1 = [ || C <- Clauses],
+
   F = {function, Line, Atom, 1, lists:reverse(Clauses1)},
   {ok, F, State1}.
 
@@ -106,7 +108,7 @@ wrap_one_function({function, Line, Atom, 1, Clauses}, #suite_trans{} = State) ->
 
 % just quote all expressions, and pass them to batiscaph_shell
 % also create new bindings, add Config arg
-wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{local_finder_name = LocalFinderName} = State) ->
+wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{suite = Suite, local_finder_name = LocalFinderName} = State) ->
   {ok, Lines, State1} = get_source_lines(Line, last_line_in_forms(Exprs, Line), State),
 
   QuotedTree = erl_syntax:revert(erl_syntax:abstract(Exprs)),
@@ -124,8 +126,8 @@ wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{local_f
   RevertedQuoted = {call,Line,{remote,Line,{atom,Line,erl_syntax},{atom,Line,revert_forms}},[QuotedTree]},
   % fun local_fun_handler/2
   LocalFinder = {'fun',Line,{function,LocalFinderName,2}},
-  % batiscaph_shell:exec_testcase(testcase_name, Lines, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
-  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec_testcase}}, [{atom,Line,FuncAtom}, Lines1, Var1, Bindings, LocalFinder, RevertedQuoted]}],
+  % batiscaph_shell:exec_testcase(suite_name, testcase_name, Lines, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
+  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec_testcase}}, [{atom,Line,Suite}, {atom,Line,FuncAtom}, Lines1, Var1, Bindings, LocalFinder, RevertedQuoted]}],
 
   C = {clause,Line,[Var1],Guards,Exprs1},
   {ok, C, State1}.

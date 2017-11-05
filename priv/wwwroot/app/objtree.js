@@ -76,10 +76,11 @@
 // this function destructively updates layout
 V.updateLayout = (delta, layout) => {
   layout.processes = layout.processes || {};
+  layout.contexts = layout.contexts || {};
+
   layout.timestamps = layout.timestamps || [];
   layout.columnsOrder = layout.columnsOrder || [];
   layout.columns = layout.columns || {};
-  layout.contexts = layout.contexts || {};
 
   for (var pid in delta.processes) {
     updateProcessInLayout(delta.processes[pid], layout);

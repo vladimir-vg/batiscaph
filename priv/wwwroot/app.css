@@ -41,7 +41,8 @@ code { font-family: 'Ubuntu Mono', monospace; }
 }
 
 .SourcePanel .item {
-  margin: 0 20px;
+  /*margin: 0 20px;*/
+  padding: 0 20px;
   display: flex;
 }
 .SourcePanel .item.input,
