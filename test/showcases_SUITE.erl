@@ -8,11 +8,10 @@
 
 
 
-%%% This test suite tries to play out different code examples
-%%% records JSON results of delta, makes it available for display.
-%%%
-%%% These tests useful to check that different entities displayed correctly
-%%% in different edge cases.
+%%% This test suite should be used only for display tests.
+%%% Testing application logic should be done in other suites.
+%%% Need to include all possible edge cases of displayed data.
+%%% Would be great to test display of incorrect deltas (should somehow indicate that in UI).
 
 
 

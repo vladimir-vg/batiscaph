@@ -1,6 +1,6 @@
 -module(z__client_scenario).
 -behaviour(gen_server).
--export([trace_started_events/2, trace_pid/1]).
+-export([trace_started_events/2, trace_pid/1, clear_tracing/1]).
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -205,6 +205,12 @@ trace_pid(Pid) ->
           end
       end
   end.
+
+
+
+clear_tracing(_Pid) ->
+  error(not_implemented),
+  ok.
 
 
 
