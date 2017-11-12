@@ -163,7 +163,6 @@ subscribe_websocket(Pid, #remote_ctl{id = Id, websockets = Websockets, shell_inp
   {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id}),
   Pid ! {delta, Delta},
   Pid ! {shell_input, ShellInput},
-  lager:info("last_at ~p ~p", [Pid, LastAt1]),
   Websockets1 = Websockets#{Pid => LastAt1},
   State1 = State#remote_ctl{websockets = Websockets1},
   {ok, State1}.
@@ -176,7 +175,6 @@ send_to_websockets(Message, #remote_ctl{websockets = Websockets} = State) ->
       false -> Acc;
       true ->
         Pid ! Message,
-        lager:info("last_at ~p ~p", [Pid, LastAt]),
         Acc#{Pid => LastAt}
     end
   end, #{}, Websockets),
@@ -239,7 +237,6 @@ produce_delta(#{} = Opts) ->
 
 
 delta_json(Opts) ->
-  lager:info("-------------------- delta_json ~p", [Opts]),
   ClkOpts = clickhouse_opts(Opts),
   {ok, TableEvents} = clk_events:select(ClkOpts),
   Neo4jOpts = neo4j_opts(Opts, TableEvents),
@@ -316,7 +313,6 @@ clickhouse_opts(#{} = Opts) ->
 
 
 neo4j_opts(#{} = Opts, TableEvents) ->
-  lager:info("got opts: ~p", [Opts]),
   Opts0 = maps:with([instance_id, 'after', before], Opts),
   Pids = unique_pids_from_events(TableEvents),
   case Pids of
