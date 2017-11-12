@@ -31,21 +31,13 @@ init_per_suite(Config) ->
   % starting client scenario on very same node
   Id = iolist_to_binary([atom_to_binary(?MODULE,latin1),"/",integer_to_binary(rand:uniform(1000000))]),
   {ok, Pid} = remote_ctl:start_link(Id, #{node => node()}),
-  ok = wait_for_collector_to_appear(300),
+  unlink(Pid),
+  ok = bt:wait_for_collector_to_appear(),
 
   [{remote_ctl_pid, Pid}, {instance_id, Id} | Config].
 
 end_per_suite(Config) ->
   Config.
-
-
-
-wait_for_collector_to_appear(Timeout) when Timeout =< 0 -> {error, timeout};
-wait_for_collector_to_appear(Timeout) ->
-  case whereis(z__client_collector) of
-    undefined -> timer:sleep(5), wait_for_collector_to_appear(Timeout-5);
-    Pid when is_pid(Pid) -> ok
-  end.
 
 
 
@@ -89,11 +81,43 @@ trace_case(Config, Fun) when is_function(Fun) ->
 
   T1 = erlang:system_time(micro_seconds),
   ok = z__client_scenario:trace_pid(self()),
+
   Fun(),
+
+  Ref = erlang:trace_delivered(self()),
   ok = z__client_scenario:clear_tracing(self()),
   T2 = erlang:system_time(micro_seconds),
 
+  % make sure that up to this point in time:
+  % all trace messages are delivered
+  receive {trace_delivered, _, Ref} -> ok
+  after 1000 -> error(timeout_trace_delivered)
+  end,
+  % collector consumed all trace messages
+  ok = gen_server:call(z__client_collector, flush),
+  % remote_ctl consumed all event messages
+  ok = gen_server:call(Pid, sync),
+
   {ok, Events} = clk_events:select(#{instance_id => InstanceId, 'after' => T1, before => T2}),
   {ok, Delta} = remote_ctl:delta_json(#{instance_id => InstanceId, 'after' => T1, before => T2}),
-  {ok, Events, Delta}.
+  {ok, bt:atomize_events(Events), bt:atomize_delta(Delta)}.
 
+
+
+take_subseq(Filter, EventTypes, Events) ->
+  Filter1 = maps:to_list(Filter),
+  EventTypes1 = [atom_to_binary(T,latin1) || T <- EventTypes],
+  Events1 = lists:filter(fun (#{} = E) ->
+    % check that all key-value pairs presented in E
+    lists:all(fun ({K, V}) ->
+      maps:get(K, E, undefined) == V
+    end, Filter1)
+  end, Events),
+  take_subseq0(EventTypes1, Events1, []).
+
+take_subseq0([], _Events, Acc) -> {ok, lists:reverse(Acc)};
+take_subseq0(Types, [], Acc) -> {error, {unmatched_types_left, Types, lists:reverse(Acc)}};
+take_subseq0([T | Types], [#{type := T} = E | Events], Acc) ->
+  take_subseq0(Types, Events, [E | Acc]);
+take_subseq0(Types, [_ | Events], Acc) ->
+  take_subseq0(Types, Events, Acc).

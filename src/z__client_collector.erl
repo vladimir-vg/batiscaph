@@ -49,6 +49,10 @@ handle_info(Msg, State) ->
 
 
 
+handle_call(flush, _From, State) ->
+  {noreply, State1} = handle_info(flush_acc_events, State),
+  {reply, ok, State1};
+
 % blocking variant of event consumption
 handle_call({event, E}, _From, State) ->
   {noreply, State1} = handle_info(E, State),
@@ -219,8 +223,11 @@ flush_acc_events(#collector{receiver_pid = undefined} = State) ->
   {ok, ReceiverPid} = gen_server:call(z__client_scenario, get_remote_receiver_pid),
   flush_acc_events(State#collector{receiver_pid = ReceiverPid});
 
-flush_acc_events(#collector{events_flush_timer = Timer, acc_events = Events, receiver_pid = ReceiverPid} = State) ->
+flush_acc_events(#collector{events_flush_timer = Timer} = State) when Timer =/= undefined ->
   erlang:cancel_timer(Timer),
+  flush_acc_events(State#collector{events_flush_timer = undefined});
+
+flush_acc_events(#collector{events_flush_timer = undefined, acc_events = Events, receiver_pid = ReceiverPid} = State) ->
   ReceiverPid ! {events, lists:reverse(Events)},
-  {ok, State#collector{events_flush_timer = undefined, acc_events = []}}.
+  {ok, State#collector{acc_events = []}}.
 

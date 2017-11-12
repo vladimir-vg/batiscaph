@@ -208,9 +208,24 @@ trace_pid(Pid) ->
 
 
 
-clear_tracing(_Pid) ->
-  error(not_implemented),
-  ok.
+clear_tracing(Pid) ->
+  try erlang:trace(Pid, false, [procs]) of
+    1 ->
+      E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+        <<"type">> => <<"trace_stopped">>,
+        <<"pid">> => erlang:pid_to_list(Pid)
+      }),
+      z__client_collector ! E,
+      ok
+  catch error:badarg ->
+    false = erlang:is_process_alive(Pid),
+    E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+      <<"type">> => <<"found_dead">>,
+      <<"pid">> => erlang:pid_to_list(Pid)
+    }),
+    z__client_collector ! E,
+    ok
+  end.
 
 
 

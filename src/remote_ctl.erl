@@ -1,6 +1,6 @@
 -module(remote_ctl).
 -behaviour(gen_server).
--export([ensure_started/1, ensure_started/2, currently_running/1, delta_json/2]).
+-export([ensure_started/1, ensure_started/2, currently_running/1, delta_json/1]).
 
 -export([start_link/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -82,6 +82,9 @@ handle_info(Msg, State) ->
 
 
 
+handle_call(sync, _From, #remote_ctl{} = State) ->
+  {reply, ok, State};
+
 handle_call({events, Events}, _From, #remote_ctl{} = State) ->
   {noreply, State1} = handle_info({events, Events}, State),
   {reply, ok, State1};
@@ -157,9 +160,10 @@ start_remote_shell(#remote_ctl{node = RemoteNode} = State) ->
 
 
 subscribe_websocket(Pid, #remote_ctl{id = Id, websockets = Websockets, shell_input = ShellInput} = State) ->
-  {ok, LastAt1, Delta} = produce_delta(Id, 0),
+  {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id}),
   Pid ! {delta, Delta},
   Pid ! {shell_input, ShellInput},
+  lager:info("last_at ~p ~p", [Pid, LastAt1]),
   Websockets1 = Websockets#{Pid => LastAt1},
   State1 = State#remote_ctl{websockets = Websockets1},
   {ok, State1}.
@@ -172,6 +176,7 @@ send_to_websockets(Message, #remote_ctl{websockets = Websockets} = State) ->
       false -> Acc;
       true ->
         Pid ! Message,
+        lager:info("last_at ~p ~p", [Pid, LastAt]),
         Acc#{Pid => LastAt}
     end
   end, #{}, Websockets),
@@ -184,7 +189,7 @@ send_delta_to_websockets(#remote_ctl{id = Id, websockets = Websockets} = State) 
     case erlang:is_process_alive(Pid) of
       false -> Acc;
       true ->
-        {ok, LastAt1, Delta} = produce_delta(Id, LastAt),
+        {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id, 'after' => LastAt}),
         Pid ! {delta, Delta},
         Acc#{Pid => LastAt1}
     end
@@ -225,17 +230,19 @@ fetch_events(#remote_ctl{last_fetched_at = LastAt, id = Id} = State) ->
 
 
 
-produce_delta(Id, LastAt) ->
-  {ok, Delta} = delta_json(Id, LastAt),
+produce_delta(#{} = Opts) ->
+  LastAt = maps:get('after', Opts, 0),
+  {ok, Delta} = delta_json(Opts),
   LastAt1 = lastest_timestamp_in_delta(LastAt, Delta),
   {ok, LastAt1, Delta}.
 
 
 
-delta_json(Id, LastAt) ->
-  ClkOpts = clickhouse_opts(Id, LastAt),
+delta_json(Opts) ->
+  lager:info("-------------------- delta_json ~p", [Opts]),
+  ClkOpts = clickhouse_opts(Opts),
   {ok, TableEvents} = clk_events:select(ClkOpts),
-  Neo4jOpts = neo4j_opts(Id, LastAt, TableEvents),
+  Neo4jOpts = neo4j_opts(Opts, TableEvents),
   {ok, Delta1} = n4j_processes:delta_json(Neo4jOpts),
   Delta2 = delta_with_table_events(Delta1, TableEvents),
   {ok, Delta2}.
@@ -302,18 +309,27 @@ delta_with_expr_evals(Delta, [#{<<"type">> := <<"expr_eval_start">>} = Start, #{
 table_events_types() ->
   [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>,<<"expr_eval_start">>,<<"expr_eval_stop">>].
 
-clickhouse_opts(Id, LastAt) ->
-  #{instance_id => Id, 'after' => LastAt, type_in => table_events_types()}.
+clickhouse_opts(#{} = Opts) ->
+  Opts0 = maps:with([instance_id, 'after', before], Opts),
+  Opts0#{type_in => table_events_types()}.
 
 
 
-neo4j_opts(Id, LastAt, TableEvents) ->
-  Opts0 = #{instance_id => Id, 'after' => LastAt},
-  Pids = [P || #{<<"pid">> := P} <- TableEvents],
+neo4j_opts(#{} = Opts, TableEvents) ->
+  lager:info("got opts: ~p", [Opts]),
+  Opts0 = maps:with([instance_id, 'after', before], Opts),
+  Pids = unique_pids_from_events(TableEvents),
   case Pids of
     [] -> Opts0;
     [_|_] -> Opts0#{include_processes => Pids}
   end.
+
+unique_pids_from_events(Events) ->
+  unique_pids_from_events(Events, sets:new()).
+
+unique_pids_from_events([], Set) -> sets:to_list(Set);
+unique_pids_from_events([#{<<"pid">> := Pid} | Events], Set) ->
+  unique_pids_from_events(Events, sets:add_element(Pid, Set)).
 
 
 

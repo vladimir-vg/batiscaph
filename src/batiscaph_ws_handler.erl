@@ -102,7 +102,7 @@ start_shell(State) ->
 connect_to_shell(Id, State) ->
   case remote_ctl:currently_running(Id) of
     none ->
-      {ok, Delta} = remote_ctl:delta_json(Id, 0),
+      {ok, Delta} = remote_ctl:delta_json(#{instance_id => Id}),
       self() ! {delta, Delta},
       State1 = State#ws_state{scenario_id = Id},
       {ok, {text, <<"shell_lost ", Id/binary>>}, State1};

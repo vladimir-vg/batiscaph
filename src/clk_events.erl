@@ -123,6 +123,12 @@ where_cond(Opts) ->
       Cond = [<<"((toUInt64(at_s), at_mcs) > (">>, integer_to_binary(AtS), <<", ">>, integer_to_binary(AtMcs), <<"))">>],
       [Cond | Acc];
 
+    (before, At, Acc) when is_integer(At) ->
+      AtS = At div (1000*1000),
+      AtMcs = At rem (1000*1000),
+      Cond = [<<"((toUInt64(at_s), at_mcs) < (">>, integer_to_binary(AtS), <<", ">>, integer_to_binary(AtMcs), <<"))">>],
+      [Cond | Acc];
+
     (type_in, Vals, Acc) when is_list(Vals) ->
       Cond = ["(", clickhouse:id_in_values_sql(<<"type">>, Vals), ")"],
       [Cond | Acc];
