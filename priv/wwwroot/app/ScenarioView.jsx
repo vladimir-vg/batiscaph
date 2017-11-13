@@ -470,8 +470,8 @@ class ScenarioView extends React.Component {
       contexts.push(<ContextElement key={key} data={this.props.tree.contexts[key]} selectedContext={this.props.selectedContext} selectContext={this.props.selectContext} />);
     }
 
-    let height = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
-    let width = this.props.tree.height*CELL_HEIGHT;
+    let width = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
+    let height = this.props.tree.height*CELL_HEIGHT;
 
     return <div>
       <SvgView className="ScenarioView" padding={100} paddingLeft={SOURCE_PANEL_WIDTH+100} paddedWidth={width} paddedHeight={height}>

@@ -45,6 +45,7 @@ exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs)
   z__client_collector ! context_start_event(Context, Lines),
   Timestamp = erlang:system_time(micro_seconds),
   ok = log_bindings(Timestamp, Bindings, Context),
+  ok = trace_binded_pids(Bindings),
 
   Value = exec1(State),
   z__client_collector ! context_stop_event(Context),
@@ -101,6 +102,7 @@ exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [
   NewBindings = changes_bindings(Bindings, Bindings1),
 
   ok = log_bindings(Timestamp, NewBindings, Context),
+  ok = trace_binded_pids(NewBindings),
   z__client_collector ! {events, [StartEvalEvent, StopEvalEvent]},
   % io:format("final value: ~p~n", [Value]),
   Value;
@@ -113,6 +115,7 @@ exec1(#steps{bindings = Bindings, local_fun_handler = LocalFunHandler, exprs = [
   NewBindings = changes_bindings(Bindings, Bindings1),
 
   ok = log_bindings(Timestamp, NewBindings, Context),
+  ok = trace_binded_pids(NewBindings),
   z__client_collector ! {events, [StartEvalEvent, StopEvalEvent]},
   exec1(State#steps{exprs = Exprs, bindings = Bindings1}).
 
@@ -162,6 +165,37 @@ var_bind_event_event(Timestamp, Var, Value, Context) ->
     <<"atom">> => atom_to_binary(Var, latin1),
     <<"term">> => io_lib:format("~p", [Value])
   }).
+
+
+
+trace_binded_pids(Value)
+when is_atom(Value) orelse is_number(Value) orelse is_binary(Value)
+orelse is_reference(Value) orelse is_port(Value) orelse is_function(Value) ->
+  ok;
+
+trace_binded_pids(Value) when is_pid(Value) ->
+  ok = z__client_scenario:trace_pid(Value),
+  ok;
+
+trace_binded_pids(Value) when is_list(Value) ->
+  lists:foreach(fun trace_binded_pids/1, Value),
+  ok;
+
+trace_binded_pids(Value) when is_tuple(Value) ->
+  Indexes = lists:seq(1, tuple_size(Value)),
+  lists:foreach(fun (I) ->
+    Value1 = element(I, Value),
+    trace_binded_pids(Value1)
+  end, Indexes),
+  ok;
+
+trace_binded_pids(Value) when is_map(Value) ->
+  no_acc = maps:fold(fun (K, V, no_acc) ->
+    ok = trace_binded_pids(K),
+    ok = trace_binded_pids(V),
+    no_acc
+  end, no_acc, Value),
+  ok.
 
 
 
