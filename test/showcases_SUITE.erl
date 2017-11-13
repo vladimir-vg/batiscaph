@@ -1,7 +1,7 @@
 -module(showcases_SUITE).
 -export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
--export([file_open_test/1, ets_match_spec_transform/1]).
--batiscaph_steps([file_open_test, ets_match_spec_transform]).
+-export([file_open_test/1, ets_match_spec_transform/1, open_port_and_change_owner/1]).
+-batiscaph_steps([file_open_test, ets_match_spec_transform, open_port_and_change_owner]).
 -include_lib("stdlib/include/ms_transform.hrl").
 -include_lib("records.hrl").
 -compile({parse_transform, batiscaph_suite_transform}).
@@ -24,22 +24,23 @@ init_per_suite(Config) ->
   end.
 
 end_per_suite(Config) ->
+  exit(whereis(z__client_sup), kill),
   Config.
 
 
 
 all() ->
-  [ets_match_spec_transform, {group, group1}, file_open_test, {group, group2}].
+  [{group, main}, {group, group2}].
 
 groups() ->
   [
-    {group1, [parallel], [
-      {group, group1_nested},
+    {main, [parallel], [
       file_open_test,
-      ets_match_spec_transform
+      ets_match_spec_transform,
+      open_port_and_change_owner
     ]},
-    {group2, [parallel], [file_open_test, ets_match_spec_transform]},
-    {group1_nested, [], [file_open_test, ets_match_spec_transform]}
+    {group2, [parallel], [file_open_test, ets_match_spec_transform, {group, group2_nested}]},
+    {group2_nested, [], [file_open_test, ets_match_spec_transform]}
   ].
 
 
@@ -63,3 +64,26 @@ ets_match_spec_transform(_) ->
   % MSpec2 = ets:fun2ms(fun (#test_record{field2 = <<"foobar">>, _ = '_'} = E) -> E end),
   % [#test_record{field1 = 1, field2 = <<"foobar">>}] = ets:select(Tid, MSpec2),
   ok.
+
+
+
+open_port_and_change_owner(_) ->
+  Port = erlang:open_port({spawn_executable, "/bin/cat"}, []),
+
+  Pid = erlang:spawn_link(fun () ->
+    receive
+      {Parent, close_port} ->
+        erlang:port_close(Port),
+        Parent ! {self(), done}
+    end
+  end),
+
+  % now Pid is owner of the Port
+  true = erlang:port_connect(Port, Pid),
+  Pid ! {self(), close_port},
+
+  receive
+    {Pid, done} -> ok
+  after 1000 ->
+    error(timeout_port_close)
+  end.

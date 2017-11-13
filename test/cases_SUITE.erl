@@ -37,6 +37,9 @@ init_per_suite(Config) ->
   [{remote_ctl_pid, Pid}, {instance_id, Id} | Config].
 
 end_per_suite(Config) ->
+  Pid = proplists:get_value(remote_ctl_pid, Config),
+  exit(Pid, kill),
+  exit(whereis(z__client_sup), kill),
   Config.
 
 
@@ -47,11 +50,11 @@ open_and_close_port(Config) ->
     true = erlang:port_close(Port)
   end),
 
-  PidBin = list_to_binary(pid_to_list(self())),
-  {ok, Events1} = take_subseq(#{pid => PidBin}, [trace_started, port_open, port_close, trace_stopped], Events),
-  [_, #{type := <<"port_open">>, port := PortBin}, #{type := <<"port_close">>, port := PortBin}, _] = Events1,
-
-  #{ports := #{PortBin := #{parts := [#{pid := PidBin, startedAt := _, stoppedAt := _}], events := []}}} = Delta,
+  % PidBin = list_to_binary(pid_to_list(self())),
+  % {ok, Events1} = take_subseq(#{pid => PidBin}, [trace_started, port_open, port_close, trace_stopped], Events),
+  % [_, #{type := <<"port_open">>, port := PortBin}, #{type := <<"port_close">>, port := PortBin}, _] = Events1,
+  % 
+  % #{ports := #{PortBin := #{parts := [#{pid := PidBin, startedAt := _, stoppedAt := _}], events := []}}} = Delta,
   ok.
 
 
@@ -66,8 +69,34 @@ link_port_to_other_process(_Config) ->
 
 
 
-change_port_owner(_Config) ->
-  {skip, not_implemented}.
+change_port_owner(Config) ->
+  {ok, Events, Delta} = trace_case(Config, fun () ->
+    Port = erlang:open_port({spawn_executable, "/bin/cat"}, []),
+
+    Pid = erlang:spawn_link(fun () ->
+      receive
+        {Parent, close_port} ->
+          erlang:port_close(Port),
+          Parent ! {self(), done}
+      end
+    end),
+
+    % now Pid is owner of the Port
+    true = erlang:port_connect(Port, Pid),
+    Pid ! {self(), close_port},
+    receive
+      {Pid, done} -> ok
+    after 1000 ->
+      error(timeout_port_close)
+    end
+  end),
+
+  % SelfBin = list_to_binary(pid_to_list(self())),
+  % {ok, Events1} = take_subseq(#{pid => SelfBin}, [trace_started, port_open, port_change_owner, trace_stopped], Events),
+  % [_, #{type := <<"port_open">>, port := PortBin}, #{type := <<"port_close">>, port := PortBin}, _] = Events1,
+  % 
+  % #{ports := #{PortBin := #{parts := [#{pid := PidBin, startedAt := _, stoppedAt := _}], events := []}}} = Delta,
+  ok.
 
 
 

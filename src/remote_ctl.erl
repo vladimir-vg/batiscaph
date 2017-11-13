@@ -18,7 +18,7 @@ ensure_started(Id) -> ensure_started(Id, #{}).
 ensure_started(Id, Opts) ->
   % remote_ctl started as temporary
   % it does not restart when failed
-  Spec = #{id => {remote_ctl, Id}, start => {remote_ctl, start_link, [Id, Opts]}, restart => temporary},
+  Spec = #{id => {remote_ctl, Id}, start => {remote_ctl, start_link, [Id, Opts]}, restart => transient},
   case supervisor:start_child(remote_sup, Spec) of
     {ok, Pid} -> {ok, Pid};
     {error, {already_started, Pid}} -> {ok, Pid};
