@@ -35,6 +35,7 @@ handle_info(start_tracing, #shell_runner{} = State) ->
   % this way we wouldn't worry about giving misinformation,
   % because in current there are few milliseconds when event about tracing is made, but no tracing is enabled
   [E] = z__client_scenario:trace_started_events(erlang:system_time(micro_seconds), self()),
+  % z__client_scenario:trace_pid(self(), #{set_on_spawn => true}),
   CollectorPid = whereis(z__client_collector),
   erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, CollectorPid}]),
   CollectorPid ! E,

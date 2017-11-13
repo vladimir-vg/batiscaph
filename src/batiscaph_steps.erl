@@ -29,7 +29,7 @@ exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs)
   {ok, _} = ct_rpc:call(BatiscaphNode, remote_ctl, ensure_started, [list_to_binary(TopRunDir), #{node => node()}]),
   ok = wait_for_collector_to_appear(300),
 
-  z__client_scenario:trace_pid(self()),
+  z__client_scenario:trace_pid(self(), #{set_on_spawn => true}),
 
   LocalFunHandler = fun (Name, Args) ->
     case LocalFunFinder(Name, length(Args)) of

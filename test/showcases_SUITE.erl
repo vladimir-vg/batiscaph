@@ -24,6 +24,10 @@ init_per_suite(Config) ->
   end.
 
 end_per_suite(Config) ->
+  % collector consumed all trace messages
+  ok = gen_server:call(z__client_collector, flush),
+
+  exit(whereis(z__client_sup), kill),
   exit(whereis(z__client_sup), kill),
   Config.
 

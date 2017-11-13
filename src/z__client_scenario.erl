@@ -1,6 +1,6 @@
 -module(z__client_scenario).
 -behaviour(gen_server).
--export([trace_started_events/2, trace_pid/1, clear_tracing/1]).
+-export([trace_started_events/2, trace_pid/1, trace_pid/2, clear_tracing/1]).
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -166,7 +166,10 @@ setup(#scenario{opts = Opts} = State) ->
 
 % this function enabled tracing if not already enabled,
 % generates mention events about links and ancestors
-trace_pid(Pid) ->
+trace_pid(Pid) -> trace_pid(Pid, #{}).
+
+trace_pid(Pid, Opts) ->
+  Flags = trace_flags(Opts),
   CollectorPid = whereis(z__client_collector),
   case erlang:trace_info(Pid, flags) of
     undefined -> % dead
@@ -179,7 +182,7 @@ trace_pid(Pid) ->
 
     {flags, [_|_]} -> ok; % already traced
     {flags, []} ->
-      try erlang:trace(Pid, true, [procs, timestamp, {tracer, CollectorPid}]) of
+      try erlang:trace(Pid, true, [{tracer, CollectorPid} | Flags]) of
         1 ->
           Events = trace_started_events(erlang:system_time(micro_seconds), Pid, [with_mentions]),
           % io:format("got events: ~p\n",[Events]),
@@ -205,6 +208,13 @@ trace_pid(Pid) ->
           end
       end
   end.
+
+
+
+trace_flags(#{set_on_spawn := true}) ->
+  [procs, timestamp, set_on_spawn];
+trace_flags(#{}) ->
+  [procs, timestamp].
 
 
 

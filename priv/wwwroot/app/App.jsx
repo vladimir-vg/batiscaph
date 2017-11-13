@@ -55,8 +55,8 @@ class App extends React.Component {
 
   produceShellEvents(delta) {
     let events = this.state.shellEvents.slice();
-    for (let i in delta.table_events) {
-      let e = delta.table_events[i];
+    for (let i in delta.events) {
+      let e = delta.events[i];
       if (e.type == 'shell_input_expected') {
       } else if (e.type == 'shell_input') {
         events.push(e);

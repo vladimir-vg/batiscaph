@@ -38,6 +38,12 @@ init_per_suite(Config) ->
 
 end_per_suite(Config) ->
   Pid = proplists:get_value(remote_ctl_pid, Config),
+
+  % collector consumed all trace messages
+  ok = gen_server:call(z__client_collector, flush),
+  % remote_ctl consumed all event messages
+  ok = gen_server:call(Pid, sync),
+
   exit(Pid, kill),
   exit(whereis(z__client_sup), kill),
   Config.
