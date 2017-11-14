@@ -1,6 +1,6 @@
 -module(cases_SUITE).
 -export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
--export([open_and_close_port/1, register_port/1, link_port_to_other_process/1, change_port_owner/1]).
+-export([open_and_close_port/1, register_port/1, link_port_to_other_process/1, change_port_owner/1, change_port_owner_by_message/1]).
 
 
 
@@ -17,7 +17,8 @@ groups() ->
     open_and_close_port,
     register_port,
     link_port_to_other_process,
-    change_port_owner
+    change_port_owner,
+    change_port_owner_by_message
   ]}].
 
 
@@ -94,7 +95,10 @@ change_port_owner(Config) ->
       {Pid, done} -> ok
     after 1000 ->
       error(timeout_port_close)
-    end
+    end,
+
+    % check that it closed
+    undefined = erlang:port_info(Port)
   end),
 
   % SelfBin = list_to_binary(pid_to_list(self())),
@@ -102,6 +106,38 @@ change_port_owner(Config) ->
   % [_, #{type := <<"port_open">>, port := PortBin}, #{type := <<"port_close">>, port := PortBin}, _] = Events1,
   % 
   % #{ports := #{PortBin := #{parts := [#{pid := PidBin, startedAt := _, stoppedAt := _}], events := []}}} = Delta,
+  ok.
+
+
+
+change_port_owner_by_message(Config) ->
+  {ok, Events, Delta} = trace_case(Config, fun () ->
+    Port = erlang:open_port({spawn_executable, "/bin/cat"}, []),
+
+    Pid = erlang:spawn_link(fun () ->
+      receive
+        {Parent, close_port} ->
+          erlang:port_close(Port),
+          Parent ! {self(), done}
+      end
+    end),
+
+    % now Pid is owner of the Port
+    Port ! {self(), {connect, Pid}},
+    receive {Port, connected} -> ok
+    after 1000 -> error(expected_to_change_owner)
+    end,
+
+    Pid ! {self(), close_port},
+    receive
+      {Pid, done} -> ok
+    after 1000 ->
+      error(timeout_port_close)
+    end,
+
+    % check that it closed
+    undefined = erlang:port_info(Port)
+  end),
   ok.
 
 
