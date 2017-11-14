@@ -170,7 +170,11 @@ trace_pid(Pid) -> trace_pid(Pid, #{}).
 
 trace_pid(Pid, Opts) ->
   Flags = trace_flags(Opts),
-  CollectorPid = whereis(z__client_collector),
+  CollectorPid = case whereis(z__client_collector) of
+    undefined -> error(try_trace_while_collector_is_dead);
+    Pid1 -> Pid1
+  end,
+
   case erlang:trace_info(Pid, flags) of
     undefined -> % dead
       E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{

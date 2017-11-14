@@ -23,9 +23,14 @@ start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
+  self() ! init,
   {ok, #collector{}}.
 
 
+
+handle_info(init, #collector{} = State) ->
+  ok = setup_global_tracing(),
+  {noreply, State};
 
 handle_info(flush_acc_events, #collector{} = State) ->
   {ok, State1} = flush_acc_events(State),
@@ -72,6 +77,15 @@ handle_cast(Cast, State) ->
 
 
 
+setup_global_tracing() ->
+  erlang:trace(ports, true, [ports, timestamp, {tracer, self()}]),
+  % TODO: trace port owner change
+  % call erlang:port_connect with return
+  % receive of {Owner, {connect, Pid}}
+  ok.
+
+
+
 save_events_for_sending(Events, #collector{events_flush_timer = undefined} = State) ->
   Timer = erlang:send_after(?EVENTS_FLUSH_INTERVAL, self(), flush_acc_events),
   save_events_for_sending(Events, State#collector{events_flush_timer = Timer});
@@ -101,12 +115,12 @@ handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}) when
 handle_trace_message0({trace_ts, _Pid, link, _PidPort, _Timestamp}) -> {ok, []};
 handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}) -> {ok, []};
 
-handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_pid(Pid1) ->
+handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_pid(Pid) andalso is_pid(Pid1) ->
   E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
-handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when is_pid(Pid1) ->
+handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when is_pid(Pid) andalso is_pid(Pid1) ->
   E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
@@ -117,7 +131,7 @@ handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when i
 % But we should send only one 'spawn' event to collector.
 % Also if it was 'spawned' event, then 'trace_started' event should be also generated for child.
 % Better trace_started event to have exactly same timestamp as spawn event.
-% But we don't know it advance when processing 'spawn' event would 'spawned' follow or not.
+% But we don't know in advance when processing 'spawn' event would 'spawned' follow or not.
 %
 % To handle that we just check tracing flags on parent process, is there set_on_spawn or not.
 % if it there, then do not generate events, they would be generated in 'spawned' clause.
