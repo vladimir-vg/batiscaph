@@ -171,8 +171,7 @@ desired_event_types() ->
 process_events(_Id, [], Acc) -> lists:flatten(lists:reverse(Acc));
 
 process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid1">> := Parent, <<"pid">> := Pid} = E,
   ParentKey = <<Id/binary,"/",Parent/binary>>,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
@@ -195,8 +194,7 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"term">> := Reason} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"term">> := Reason} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create parent process if not existed before
@@ -214,8 +212,7 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create both process if not existed before
@@ -234,8 +231,7 @@ process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create both process if not existed before
@@ -260,8 +256,7 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"atom">> := Atom} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create process and atom node, connect them
@@ -275,8 +270,7 @@ process_events(Id, [#{<<"type">> := <<"register">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"atom">> := Atom} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"atom">> := Atom} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create process and atom node, connect them
@@ -289,8 +283,7 @@ process_events(Id, [#{<<"type">> := <<"unregister">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   App = case maps:get(<<"application">>, E, <<>>) of
     <<>> -> null;
@@ -308,8 +301,7 @@ process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements1] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     % create parent process if not existed before
@@ -321,8 +313,7 @@ process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"found_dead">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
@@ -333,8 +324,7 @@ process_events(Id, [#{<<"type">> := <<"found_dead">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"mention">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Key1 = <<Id/binary,"/",Pid1/binary>>,
   Statements = [
@@ -348,8 +338,7 @@ process_events(Id, [#{<<"type">> := <<"mention">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"context_start">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"context">> := Context} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"context">> := Context} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     { "MERGE (context:Context { context: {context}, instanceId: {id}, pid: {pid} })\n"
@@ -362,8 +351,7 @@ process_events(Id, [#{<<"type">> := <<"context_start">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"context_stop">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"context">> := Context} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"context">> := Context} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     { "MERGE (context:Context { context: {context}, instanceId: {id}, pid: {pid} })\n"
@@ -375,8 +363,7 @@ process_events(Id, [#{<<"type">> := <<"context_stop">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid1">> := Pid, <<"context">> := Context, <<"term">> := Expr} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid1">> := Pid, <<"context">> := Context, <<"term">> := Expr} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
   Statements = [
     { "MATCH (context:Context { context: {context}, instanceId: {id} })\n"
@@ -388,8 +375,7 @@ process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"port_open">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"port">> := Port} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"port">> := Port} = E,
   Key = <<Id/binary,"/",Port/binary>>,
   Statements = [
     % create port node only if process that opened port is already in graph
@@ -402,8 +388,7 @@ process_events(Id, [#{<<"type">> := <<"port_open">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"port_close">>} = E | Events], Acc) ->
-  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"port">> := Port} = E,
-  At = AtS*1000*1000 + Mcs,
+  #{<<"at">> := At, <<"port">> := Port} = E,
   Statements = [
     { "MATCH (port:Port { port: {port}, instanceId: {id} }),\n"
       "\t(port)-[rel:OWNERSHIP]-(proc:Process)\n"

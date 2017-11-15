@@ -95,7 +95,7 @@ select(Opts) ->
 
 
 select_columns_sql() ->
-  Columns = columns() -- [<<"at_s">>,<<"at_mcs">>],
+  Columns = proplists:delete(<<"at_mcs">>, proplists:delete(<<"at_s">>, columns())),
   <<", ", ColumnsBin/binary>> = iolist_to_binary(select_columns_sql(Columns)),
   <<"(toUInt64(at_s)*1000*1000 + at_mcs) AS at, ", ColumnsBin/binary>>.
 
@@ -112,10 +112,6 @@ where_cond(Opts) ->
     (limit, _Val, Acc) -> Acc; % ignore
     (instance_id, Val, Acc) ->
       Cond = [<<"(instance_id = '">>, Val, <<"')">>],
-      [Cond | Acc];
-
-    ('after', {AtS, AtMcs}, Acc) when is_integer(AtS) andalso is_integer(AtMcs) ->
-      Cond = [<<"((toUInt64(at_s), at_mcs) > (">>, integer_to_binary(AtS), <<", ">>, integer_to_binary(AtMcs), <<"))">>],
       [Cond | Acc];
 
     ('after', At, Acc) when is_integer(At) ->

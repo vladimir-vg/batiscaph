@@ -218,12 +218,12 @@ fetch_events(#remote_ctl{last_fetched_at = LastAt, id = Id} = State) ->
     {ok, []} -> {ok, [], State};
 
     {ok, Events} when length(Events) == ?MAX_EVENTS_PER_FETCH ->
-      #{<<"at_s">> := At, <<"at_mcs">> := Mcs} = lists:last(Events),
-      {more, Events, State#remote_ctl{last_fetched_at = {At, Mcs}}};
+      #{<<"at">> := At} = lists:last(Events),
+      {more, Events, State#remote_ctl{last_fetched_at = At}};
 
     {ok, Events} ->
-      #{<<"at_s">> := At, <<"at_mcs">> := Mcs} = lists:last(Events),
-      {ok, Events, State#remote_ctl{last_fetched_at = {At, Mcs}}}
+      #{<<"at">> := At} = lists:last(Events),
+      {ok, Events, State#remote_ctl{last_fetched_at = At}}
   end.
 
 
