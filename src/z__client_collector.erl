@@ -95,6 +95,9 @@ save_events_for_sending(Events1, #collector{acc_events = Events} = State) ->
 
 
 
+
+
+
 handle_trace_message({trace_ts, _Pid, send, _Msg, _PidTo, _} = Message, #collector{ignored_pids = _IgnoredPids}) ->
   % case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
   %   true -> {ok, []};
@@ -119,6 +122,10 @@ handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_
   E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
+
+handle_trace_message0({trace_ts, Port, getting_linked, Pid, _Timestamp}) when is_port(Port) andalso is_pid(Pid) ->
+  % ignore for now
+  {ok, []};
 
 handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when is_pid(Pid) andalso is_pid(Pid1) ->
   E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
@@ -169,18 +176,19 @@ handle_trace_message0({trace_ts, Pid, exit, Reason, Timestamp}) ->
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
-handle_trace_message0({trace_ts, Pid, register, Atom, Timestamp}) ->
+handle_trace_message0({trace_ts, Pid, register, Atom, Timestamp}) when is_pid(Pid) ->
   E = #{<<"type">> => <<"register">>, <<"pid">> => erlang:pid_to_list(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
-handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}) ->
+handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}) when is_pid(Pid) ->
   E = #{<<"type">> => <<"unregister">>, <<"pid">> => erlang:pid_to_list(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
 
-handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) ->
+
+handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) when is_pid(Pid) ->
   E = case To of
     _ when is_pid(To) -> #{<<"pid1">> => erlang:pid_to_list(To)};
     _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
@@ -189,7 +197,7 @@ handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) ->
   E2 = event_with_timestamp(Timestamp, E1),
   {ok, [E2]};
 
-handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) ->
+handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) when is_pid(Pid) ->
   To1 = case To of
     _ when is_pid(To) -> erlang:pid_to_list(To);
     _ when is_atom(To) -> atom_to_binary(To, latin1)
@@ -198,9 +206,30 @@ handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Tim
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1]};
 
+
+
+handle_trace_message0({trace_ts, Port, open, Pid, DriverName, Timestamp}) when is_port(Port) ->
+  E = event_with_timestamp(Timestamp, #{
+    <<"type">> => <<"port_open">>, <<"pid">> => io_lib:format("~p", [Pid]), <<"port">> => io_lib:format("~p", [Port]),
+    <<"atom">> => atom_to_binary(DriverName,latin1)
+  }),
+  {ok, [E]};
+
+handle_trace_message0({trace_ts, Port, closed, Reason, Timestamp}) when is_port(Port) ->
+  E = event_with_timestamp(Timestamp, #{
+    <<"type">> => <<"port_close">>, <<"pid">> => <<>>, <<"port">> => io_lib:format("~p", [Port]),
+    <<"term">> => io_lib:format("~p", [Reason])
+  }),
+  {ok, [E]};
+
+
+
 handle_trace_message0(Message) ->
   io:format("skip trace message:~n~p~n", [Message]),
   {ok, []}.
+
+
+
 
 
 
@@ -217,6 +246,7 @@ event_with_timestamp({Sec, MicroSec}, E) ->
   E1 = E#{<<"at_s">> => Sec, <<"at_mcs">> => MicroSec},
   maps:fold(fun
     (<<"pid">>, V, Acc) when is_list(V) -> Acc#{<<"pid">> => list_to_binary(V)};
+    (<<"port">>, V, Acc) when is_list(V) -> Acc#{<<"port">> => list_to_binary(V)};
     (<<"pid1">>, V, Acc) when is_list(V) -> Acc#{<<"pid1">> => list_to_binary(V)};
     (<<"term">>, V, Acc) when is_list(V) -> Acc#{<<"term">> => list_to_binary(V)};
     (K, V, Acc) -> Acc#{K => V}

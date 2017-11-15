@@ -16,6 +16,7 @@ columns() ->
     {<<"instance_id">>, <<"String">>},
     {<<"pid">>, <<"String">>},
     {<<"type">>, <<"String">>},
+    {<<"port">>, <<"String">>},
     {<<"pid1">>, <<"String">>},
     {<<"atom">>, <<"String">>},
 

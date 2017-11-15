@@ -162,7 +162,8 @@ desired_event_types() ->
   [
     <<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>,
     <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>, <<"mention">>,
-    <<"context_start">>, <<"context_stop">>, <<"var_mention">>
+    <<"context_start">>, <<"context_stop">>, <<"var_mention">>,
+    <<"port_open">>, <<"port_close">>
   ].
 
 
@@ -383,6 +384,32 @@ process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
       "CREATE (context)-[:VAR_MENTION { at: {at}, expr: {expr} }]->(proc)\n"
     , #{id => Id, pid => Pid, context => Context, at => At, key => Key, expr => Expr} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"port_open">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"pid">> := Pid, <<"port">> := Port} = E,
+  At = AtS*1000*1000 + Mcs,
+  Key = <<Id/binary,"/",Port/binary>>,
+  Statements = [
+    % create port node only if process that opened port is already in graph
+    % otherwise just ignore it
+    { "MATCH (proc:Process { pid: {pid}, instanceId: {id} })\n"
+      "CREATE (port:Port { port: {port}, instanceId: {id}, key: {key}, openedAt: {at} }),\n"
+      "\t(port)-[:OWNERSHIP { startedAt: {at} }]->(proc)\n"
+    , #{id => Id, pid => Pid, port => Port, at => At, key => Key} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"port_close">>} = E | Events], Acc) ->
+  #{<<"at_s">> := AtS, <<"at_mcs">> := Mcs, <<"port">> := Port} = E,
+  At = AtS*1000*1000 + Mcs,
+  Statements = [
+    { "MATCH (port:Port { port: {port}, instanceId: {id} }),\n"
+      "\t(port)-[rel:OWNERSHIP]-(proc:Process)\n"
+      "WHERE (port.openedAt IS NOT NULL) AND (rel.stoppedAt IS NULL)\n"
+      "SET rel.stoppedAt = {at}, port.closedAt = {at}\n"
+    , #{id => Id, port => Port, at => At} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
 

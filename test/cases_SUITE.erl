@@ -167,7 +167,7 @@ trace_case(Config, Fun) when is_function(Fun) ->
   % collector consumed all trace messages
   ok = gen_server:call(z__client_collector, flush),
   % remote_ctl consumed all event messages
-  ok = gen_server:call(Pid, sync),
+  ok = gen_server:call(Pid, sync, 20000),
 
   {ok, Events} = clk_events:select(#{instance_id => InstanceId, 'after' => T1, before => T2}),
   {ok, Delta} = remote_ctl:delta_json(#{instance_id => InstanceId, 'after' => T1, before => T2}),

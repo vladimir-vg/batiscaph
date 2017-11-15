@@ -25,8 +25,11 @@ commit(Statements) ->
 
   StatementsText = [[Stmt, jsx:encode(Params), "\n\n"] || {Stmt, Params} <- Statements],
 
-  lager:info("Neo4j commit:\n~s", [StatementsText]),
-  case post_json(<<"db/data/transaction/commit">>, #{statements => Statements1}) of
+  {TimeSpent, Result} = timer:tc(fun() ->
+    post_json(<<"db/data/transaction/commit">>, #{statements => Statements1})
+  end),
+  lager:info("Neo4j commit (~pms):\n~s", [TimeSpent div 1000, StatementsText]),
+  case Result of
     {ok, #{<<"errors">> := [], <<"results">> := Results}} -> {ok, Results};
     {ok, #{<<"errors">> := Errors}} -> {error, Errors}
   end.
