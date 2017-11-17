@@ -211,13 +211,14 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.appearedAt = {at}, proc.disappearedAt = {at}, proc.key = {key}\n"
       "ON MATCH SET proc.exitedAt = {at}, proc.exitReason = {reason}, proc.disappearedAt = {at}\n"
-    , #{id => Id, pid => Pid, at => At, reason => Reason, key => Key} }
+    , #{id => Id, pid => Pid, at => At, reason => Reason, key => Key} },
 
-    % % unlink all links with this process if existed
-    % { "MATCH (proc:Process)-[link:LINK]-(:Process)\n"
-    %   "WHERE proc.instanceId = {id} AND proc.pid = {pid}\n"
-    %   "SET link.unlinked_at = {at}, link.unlinked_at_mcs = {at_mcs}\n"
-    % , #{id => Id, pid => Pid, at => AtS, at_mcs => Mcs}}
+    % close all ports that this process owns
+    { "MATCH (proc:Process { pid: {pid}, instanceId: {id} }),\n"
+      "\t(proc)-[rel:OWNERSHIP]-(port:Port)\n"
+      "WHERE (rel.stoppedAt IS NULL)\n"
+      "SET rel.stoppedAt = {at}, port.closedAt = {at}\n"
+    , #{id => Id, pid => Pid, at => At} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 

@@ -331,7 +331,7 @@ unique_pids_from_events([#{<<"pid">> := Pid} | Events], Set) ->
 
 % FIXME I know it's ugly, but works for now,
 % should be replaced with something more simple and effective
-lastest_timestamp_in_delta(LastAt, #{processes := Processes, events := Events}) when is_integer(LastAt) ->
+lastest_timestamp_in_delta(LastAt, #{<<"processes">> := Processes, <<"events">> := Events}) when is_integer(LastAt) ->
   LastAt1 = case lists:last([undefined | Events]) of
     #{<<"at">> := At1} when At1 > LastAt -> At1;
     _ -> LastAt
