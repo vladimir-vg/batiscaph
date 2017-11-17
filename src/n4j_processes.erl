@@ -225,6 +225,7 @@ process_events(Id, [#{<<"type">> := <<"exit">>} = E | Events], Acc) ->
 process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
   #{<<"at">> := At, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
+  Key1 = <<Id/binary,"/",Pid1/binary>>,
   Statements = [
     % create both process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
@@ -233,7 +234,7 @@ process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
 
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
-    , #{id => Id, pid => Pid1, at => At, key => Key} },
+    , #{id => Id, pid => Pid1, at => At, key => Key1} },
 
     { "MATCH (proc1:Process { pid: {pid1}, instanceId: {id} }), (proc2:Process { pid: {pid2}, instanceId: {id} })\n"
       "CREATE (proc1)-[:LINK { at: {at} }]->(proc2)\n"
@@ -244,6 +245,7 @@ process_events(Id, [#{<<"type">> := <<"link">>} = E | Events], Acc) ->
 process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
   #{<<"at">> := At, <<"pid">> := Pid, <<"pid1">> := Pid1} = E,
   Key = <<Id/binary,"/",Pid/binary>>,
+  Key1 = <<Id/binary,"/",Pid1/binary>>,
   Statements = [
     % create both process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
@@ -251,7 +253,7 @@ process_events(Id, [#{<<"type">> := <<"unlink">>} = E | Events], Acc) ->
     , #{id => Id, pid => Pid, at => At, key => Key} },
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
-    , #{id => Id, pid => Pid1, at => At, key => Key} },
+    , #{id => Id, pid => Pid1, at => At, key => Key1} },
 
     { "MATCH (proc1:Process { pid: {pid1}, instanceId: {id} }), (proc2:Process { pid: {pid2}, instanceId: {id} })\n"
       "CREATE (proc1)-[:UNLINK { at: {at} }]->(proc2)\n"

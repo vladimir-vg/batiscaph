@@ -271,10 +271,14 @@ trace_started_events(Timestamp, Pid, Opts) ->
         false -> 0
       end,
 
-      OtherEvents = case lists:member(with_mentions, Opts) of
-        true -> mention_events(Timestamp, Pid, Ancestors ++ Links);
-        false -> []
-      end,
+      OtherEvents = [],
+      % temporary comment out mentioning ancestors and links
+      % currently it only pollutes space, don't make things easier
+      % 
+      % OtherEvents = case lists:member(with_mentions, Opts) of
+      %   true -> mention_events(Timestamp, Pid, Ancestors ++ Links);
+      %   false -> []
+      % end,
       E = z__client_collector:event_with_timestamp(Timestamp, #{
         <<"application">> => App,
         <<"ancestors">> => processes_list_to_binary(Ancestors),
