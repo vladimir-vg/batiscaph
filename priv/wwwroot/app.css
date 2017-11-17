@@ -122,6 +122,15 @@ svg.ScenarioView line.var-mention.active {
   stroke: #2F80ED;
 }
 
+svg.ScenarioView line.spawn-line {
+  stroke: #8C8C8C;
+  stroke-width: 2px;
+}
+svg.ScenarioView line.link-line {
+  stroke: #F2994A;
+  stroke-width: 2px;
+}
+
 svg.ScenarioView rect.port-body {
   fill: #B4C2D4;
 }

@@ -5,6 +5,7 @@ const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
 const CELL_HGUTTER = 10;
 const PORT_WIDTH = 6;
+const PORT_BODY_SHIFT = 2; // how many pixels of port body should be outside process
 const MENTION_PADDING = 2;
 const SOURCE_PANEL_WIDTH = 520;
 
@@ -194,31 +195,36 @@ class SpawnElement extends React.Component {
     let width = 2;
     let fromX = this.props.data.fromX, toX = this.props.data.toX;
     if (fromX < toX) {
-      let x1 = (CELL_WIDTH+CELL_HGUTTER)*fromX + CELL_WIDTH;
+      let x1 = (CELL_WIDTH+CELL_HGUTTER)*fromX + CELL_WIDTH/2;
       let y = CELL_HEIGHT*this.props.data.y;
       let x2 = (CELL_WIDTH+CELL_HGUTTER)*toX + CELL_WIDTH;
       return [
-        <Layer key="beforeProcesses" name="beforeProcesses">
-          <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        <Layer key="spawnsBehindProcesses" name="spawnsBehindProcesses">
+          <line x1={x1} y1={y} x2={x2} y2={y} className="spawn-line" />
         </Layer>,
-        <Layer key="afterProcesses" name="afterProcesses">
-          <line x1={x1-width/2} y1={y+width/2} x2={x1-width/2} y2={y-CELL_HEIGHT/2} style={{stroke: '#666666', strokeWidth: width}} />
-          <line x1={x2-width/2} y1={y} x2={x2-width/2} y2={y+CELL_HEIGHT/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
-          <line x1={x2-CELL_WIDTH} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        <Layer key="spawnsOnProcesses" name="spawnsOnProcesses">
+          {/* |_*/}
+          <line x1={x1} y1={y+width/2} x2={x1} y2={y-CELL_HEIGHT/2} className="spawn-line" />
+          <line x1={x1} y1={y} x2={x1+CELL_WIDTH/2+PORT_BODY_SHIFT} y2={y} className="spawn-line" />
+
+          <line x1={x2-width/2} y1={y} x2={x2-width/2} y2={y+CELL_HEIGHT/2} className="spawn-line" />
+          <line x1={x2-CELL_WIDTH} y1={y} x2={x2} y2={y} className="spawn-line" />
         </Layer>
       ];
     } else {
       let x1 = (CELL_WIDTH+CELL_HGUTTER)*toX;
       let y = CELL_HEIGHT*this.props.data.y;
-      let x2 = (CELL_WIDTH+CELL_HGUTTER)*fromX;
+      let x2 = (CELL_WIDTH+CELL_HGUTTER)*fromX+CELL_WIDTH/2;
       return [
-        <Layer key="beforeProcesses" name="beforeProcesses">
-          <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        <Layer key="spawnsBehindProcesses" name="spawnsBehindProcesses">
+          <line x1={x1} y1={y} x2={x2} y2={y} className="spawn-line" />
         </Layer>,
-        <Layer key="afterProcesses" name="afterProcesses">
-          <line x1={x1+width/2} y1={y} x2={x1+width/2} y2={y+CELL_HEIGHT/2+width/2} style={{stroke: '#666666', strokeWidth: width}} />
-          <line x1={x2+width/2} y1={y+width/2} x2={x2+width/2} y2={y-CELL_HEIGHT/2} style={{stroke: '#666666', strokeWidth: width}} />
-          <line x1={x1} y1={y} x2={x1+CELL_WIDTH} y2={y} style={{stroke: '#666666', strokeWidth: width}} />
+        <Layer key="spawnsOnProcesses" name="spawnsOnProcesses">
+          <line x1={x2} y1={y+width/2} x2={x2} y2={y-CELL_HEIGHT/2} className="spawn-line" />
+          <line x1={x2} y1={y} x2={x2-CELL_WIDTH/2} y2={y} className="spawn-line" />
+
+          <line x1={x1+width/2} y1={y} x2={x1+width/2} y2={y+CELL_HEIGHT/2+width/2} className="spawn-line" />
+          <line x1={x1} y1={y} x2={x1+CELL_WIDTH} y2={y} className="spawn-line" />
         </Layer>
       ];
     }
@@ -235,12 +241,12 @@ class LinkElement extends React.Component {
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
     return [
-      <Layer key="beforeProcesses" name="beforeProcesses">
-        <line x1={x1} y1={y} x2={x2} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+      <Layer key="linksBehindProcesses" name="linksBehindProcesses">
+        <line x1={x1} y1={y} x2={x2} y2={y} className="link-line" />
       </Layer>,
-      <Layer key="afterProcesses" name="afterProcesses">
-        <line x1={x1} y1={y} x2={x1+CELL_WIDTH} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
-        <line x1={x2} y1={y} x2={x2-CELL_WIDTH} y2={y} style={{stroke: '#F2994A', strokeWidth: 2}} />
+      <Layer key="linksOnProcesses" name="linksOnProcesses">
+        <line x1={x1} y1={y} x2={x1+CELL_WIDTH+PORT_BODY_SHIFT} y2={y} className="link-line" />
+        <line x1={x2} y1={y} x2={x2-CELL_WIDTH} y2={y} className="link-line" />
       </Layer>
     ];
   }
@@ -256,7 +262,7 @@ class MentionElement extends React.Component {
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*xs[1] + CELL_WIDTH;
 
-    return <Layer name="beforeProcesses">
+    return <Layer name="mentions">
       <line x1={x1+CELL_WIDTH/2} y1={y} x2={x2} y2={y} style={{stroke: '#EDEDED', strokeWidth: 2}} />
     </Layer>;
   }
@@ -271,7 +277,7 @@ class PointElement extends React.Component {
 
     let x = Math.floor((CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + (CELL_WIDTH - width)/2);
     let y = Math.floor(CELL_HEIGHT*this.props.data.y - height/2);
-    return <Layer name="afterProcesses">
+    return <Layer name="points">
       <rect x={x} y={y} width={width} height={height} style={{fill: '#BDBDBD'}} />
     </Layer>;
   }
@@ -335,8 +341,8 @@ class ContextElement extends React.Component {
 
     if (this.props.selectedContext == this.props.data.key) {
       return [
-        <Layer key="beforeProcesses" name="beforeProcesses"></Layer>,
-        <Layer key="afterProcesses" name="afterProcesses">
+        <Layer key="inactiveContexts" name="inactiveContexts"></Layer>,
+        <Layer key="activeContexts" name="activeContexts">
           <rect onClick={this.onSelectClick} className="context active"
             x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
           <g>{this.renderMentions(this.props.data.mentions, "var-mention active")}</g>
@@ -345,12 +351,12 @@ class ContextElement extends React.Component {
     }
 
     return [
-      <Layer key="beforeProcesses" name="beforeProcesses">
+      <Layer key="inactiveContexts" name="inactiveContexts">
         <rect onClick={this.onSelectClick} className="context"
           x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
         <g>{this.renderMentions(this.props.data.mentions, "var-mention")}</g>
       </Layer>,
-      <Layer key="afterProcesses" name="afterProcesses"></Layer>
+      <Layer key="activeContexts" name="activeContexts"></Layer>
     ];
   }
 }
@@ -365,9 +371,10 @@ ContextElement.propTypes = {
 class PortElement extends React.Component {
   render() {
     let parts = [];
+    let portWidthOffset = (CELL_WIDTH + PORT_BODY_SHIFT) - PORT_WIDTH;
     for (let i in this.props.data.parts) {
       let part = this.props.data.parts[i];
-      let x = part.x*(CELL_WIDTH+CELL_HGUTTER) + CELL_WIDTH/2 + 1;
+      let x = part.x*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset;
       let y = part.fromY*CELL_HEIGHT;
       let width = PORT_WIDTH;
       let height = (part.toY - part.fromY)*CELL_HEIGHT;
@@ -375,7 +382,7 @@ class PortElement extends React.Component {
       if (i != 0) {
         let prevPart = this.props.data.parts[i-1];
         let x1 = Math.min(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + CELL_WIDTH/2 + 1;
-        let x2 = Math.max(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + PORT_WIDTH + CELL_WIDTH/2 + 1;
+        let x2 = Math.max(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset + PORT_WIDTH;
         parts.push(<line key={"l"+i} x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="port-body" />);
       }
     }
@@ -431,19 +438,19 @@ class ScenarioView extends React.Component {
 
   renderHighlightRange() {
     if (!this.state.highlightRange) {
-      return <Layer name="highlight"></Layer>;
+      return <Layer name="highlightArea"></Layer>;
     }
     if (this.state.highlightRange.fromY == this.state.highlightRange.toY) {
       let y = this.state.highlightRange.fromY*CELL_HEIGHT - CELL_HEIGHT/2;
       let height = CELL_HEIGHT;
-      return <Layer name="highlight">
+      return <Layer name="highlightArea">
         <rect x={-1000} y={y} width={2000} height={height} className="highlight-area" />
         <line x1={-1000} y1={y+CELL_HEIGHT/2} x2={1000} y2={y+CELL_HEIGHT/2} className="highlight-line" />
       </Layer>;
     } else {
       let y = this.state.highlightRange.fromY*CELL_HEIGHT;
       let height = (this.state.highlightRange.toY - this.state.highlightRange.fromY)*CELL_HEIGHT;
-      return <Layer name="highlight">
+      return <Layer name="highlightArea">
         <rect x={-1000} y={y} width={2000} height={height} className="highlight-area highlight-line" />
       </Layer>;
     }
@@ -499,17 +506,23 @@ class ScenarioView extends React.Component {
 
     let width = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
     let height = this.props.tree.height*CELL_HEIGHT;
-
+// <g>{this.renderGrid()}</g>
     return <div>
       <SvgView className="ScenarioView" padding={100} paddingLeft={SOURCE_PANEL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
-        <g>{this.renderGrid()}</g>
+        
 
         {/* layers where dom is actually rendered */}
-        <g ref="highlight"></g>
-        <g ref="beforeProcesses"></g>
+        <g ref="highlightArea"></g>
+        <g ref="mentions"></g>
+        <g ref="inactiveContexts"></g>
+        <g ref="linksBehindProcesses"></g>
+        <g ref="spawnsBehindProcesses"></g>
         <g ref="processes"></g>
         <g ref="portBodies"></g>
-        <g ref="afterProcesses"></g>
+        <g ref="linksOnProcesses"></g>
+        <g ref="spawnsOnProcesses"></g>
+        <g ref="points"></g>
+        <g ref="activeContexts"></g>
         <g ref="text"></g>
 
         {/* entities, compose different parts on different layers */}
