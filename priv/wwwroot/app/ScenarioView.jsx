@@ -4,6 +4,7 @@
 const CELL_WIDTH = 10;
 const CELL_HEIGHT = 10;
 const CELL_HGUTTER = 10;
+const PORT_WIDTH = 6;
 const MENTION_PADDING = 2;
 const SOURCE_PANEL_WIDTH = 520;
 
@@ -361,6 +362,32 @@ ContextElement.propTypes = {
 
 
 
+class PortElement extends React.Component {
+  render() {
+    let parts = [];
+    for (let i in this.props.data.parts) {
+      let part = this.props.data.parts[i];
+      let x = part.x*(CELL_WIDTH+CELL_HGUTTER) + CELL_WIDTH/2 + 1;
+      let y = part.fromY*CELL_HEIGHT;
+      let width = PORT_WIDTH;
+      let height = (part.toY - part.fromY)*CELL_HEIGHT;
+      parts.push(<rect key={i} x={x} y={y} width={width} height={height} className="port-body" />);
+      if (i != 0) {
+        let prevPart = this.props.data.parts[i-1];
+        let x1 = Math.min(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + CELL_WIDTH/2 + 1;
+        let x2 = Math.max(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + PORT_WIDTH + CELL_WIDTH/2 + 1;
+        parts.push(<line key={"l"+i} x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="port-body" />);
+      }
+    }
+
+    return <Layer name="portBodies">
+      <g>{parts}</g>
+    </Layer>;
+  }
+}
+
+
+
 class ScenarioView extends React.Component {
   constructor() {
     super();
@@ -390,15 +417,12 @@ class ScenarioView extends React.Component {
   }
 
   getLayerNode(key) {
-    switch (key) {
-    case 'highlight': return this.refs.highlight;
-    case 'beforeProcesses': return this.refs.beforeProcesses;
-    case 'afterProcesses': return this.refs.afterProcesses;
-    case 'processes': return this.refs.processes;
-    case 'text': return this.refs.text;
+    let ref = this.refs[key];
+    if (!ref) {
+      console.error("Unknown layer key: ", key);
+      return null;
     }
-    console.error("Unknown layer key: ", key);
-    return null;
+    return ref;
   }
 
   highlightRange(range) {
@@ -450,7 +474,7 @@ class ScenarioView extends React.Component {
   render() {
     if (!this.props.tree) { return <div />; }
 
-    let processes = [], spawns = [], links = [], mentions = [], points = [], contexts = [];
+    let processes = [], spawns = [], links = [], mentions = [], points = [], contexts = [], ports = [];
     for (let pid in this.props.tree.processes) {
       processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} tracePid={this.props.tracePid} />);
     }
@@ -469,6 +493,9 @@ class ScenarioView extends React.Component {
     for (let key in this.props.tree.contexts) {
       contexts.push(<ContextElement key={key} data={this.props.tree.contexts[key]} selectedContext={this.props.selectedContext} selectContext={this.props.selectContext} />);
     }
+    for (let key in this.props.tree.ports) {
+      ports.push(<PortElement key={key} data={this.props.tree.ports[key]} />);
+    }
 
     let width = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
     let height = this.props.tree.height*CELL_HEIGHT;
@@ -481,6 +508,7 @@ class ScenarioView extends React.Component {
         <g ref="highlight"></g>
         <g ref="beforeProcesses"></g>
         <g ref="processes"></g>
+        <g ref="portBodies"></g>
         <g ref="afterProcesses"></g>
         <g ref="text"></g>
 
@@ -492,6 +520,7 @@ class ScenarioView extends React.Component {
           {mentions}
           {points}
           {contexts}
+          {ports}
           {this.renderHighlightRange()}
         </g>
 

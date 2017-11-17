@@ -77,6 +77,7 @@
 V.updateLayout = (delta, layout) => {
   layout.processes = layout.processes || {};
   layout.contexts = layout.contexts || {};
+  layout.ports = layout.ports || {};
 
   layout.timestamps = layout.timestamps || [];
   layout.columnsOrder = layout.columnsOrder || [];
@@ -95,6 +96,18 @@ V.updateLayout = (delta, layout) => {
 
   for (var key in delta.contexts) {
     updateContextInLayout(delta.contexts[key], layout);
+  }
+
+  for (let key in delta.ports) {
+    let port = delta.ports[key];
+    insertTimestampIntoOrder(port.openedAt, layout);
+    if (port.closedAt) { insertTimestampIntoOrder(port.closedAt, layout); }
+    for (let i in port.parts) {
+      let part = port.parts[i];
+      insertTimestampIntoOrder(part.startedAt, layout);
+      if (part.stoppedAt) { insertTimestampIntoOrder(part.stoppedAt, layout); }
+    }
+    layout.ports[key] = delta.ports[key];
   }
 
   return undefined; // all changes made in place
@@ -225,7 +238,7 @@ V.produceTree = (layout) => {
   // only then processes
   // TODO: implemented collapsing
 
-  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}, contexts: {}};
+  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}, contexts: {}, ports: {}};
 
   let xFromPid = function (pid) {
     let columnId = layout.processes[pid].columnId;
@@ -443,6 +456,25 @@ V.produceTree = (layout) => {
         fromY: yBiggestPossible(firstExpr.startedAt),
         toY: yBiggestPossible(lastExpr.stoppedAt) // ySmallestPossible
       };
+    }
+  }
+
+  for (let key in layout.ports) {
+    let port = layout.ports[key];
+    tree.ports[key] = {port: port.port};
+    tree.ports[key].parts = [];
+    for (let i in port.parts) {
+      let part = port.parts[i];
+      let treePart = {
+        x: xFromPid(part.pid),
+        fromY: yFromTimestamp(part.startedAt)
+      };
+      if (part.stoppedAt) {
+        treePart.toY = yFromTimestamp(part.stoppedAt);
+      } else {
+        treePart.toY = tree.processes[part.pid].stopY;
+      }
+      tree.ports[key].parts.push(treePart);
     }
   }
 

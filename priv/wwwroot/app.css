@@ -122,6 +122,14 @@ svg.ScenarioView line.var-mention.active {
   stroke: #2F80ED;
 }
 
+svg.ScenarioView rect.port-body {
+  fill: #B4C2D4;
+}
+svg.ScenarioView line.port-body {
+  stroke: #B4C2D4;
+  stroke-width: 1px;
+}
+
 /*svg .unselectable {
   cursor: default;
   -webkit-user-select: none;
