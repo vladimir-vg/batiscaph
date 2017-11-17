@@ -215,15 +215,17 @@ trace_pid(Pid, Opts) ->
 
 
 
+% z__client_collector:setup_global_tracing is used to set up trace_pattern
+% for send, receive, call tracing specified here
 trace_flags(#{set_on_spawn := true}) ->
-  [procs, timestamp, set_on_spawn];
+  [procs, timestamp, set_on_spawn, send, 'receive', call];
 trace_flags(#{}) ->
-  [procs, timestamp].
+  [procs, timestamp, send, 'receive', call].
 
 
 
 clear_tracing(Pid) ->
-  try erlang:trace(Pid, false, [procs]) of
+  try erlang:trace(Pid, false, trace_flags(#{})) of
     1 ->
       E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
         <<"type">> => <<"trace_stopped">>,

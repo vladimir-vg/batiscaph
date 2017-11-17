@@ -11,7 +11,11 @@
   ignored_pids = [],
 
   events_flush_timer,
-  acc_events = []
+  acc_events = [],
+
+  % temporary state that needed for producing
+  % one event from several trace events
+  change_port_owner_map = #{} :: #{{message, pid(), port()} => pid(), {call, pid()} => {pid(), port()}}
 }).
 
 
@@ -23,14 +27,14 @@ start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-  self() ! init,
+  ok = setup_global_tracing(),
+  % self() ! init,
   {ok, #collector{}}.
 
 
 
-handle_info(init, #collector{} = State) ->
-  ok = setup_global_tracing(),
-  {noreply, State};
+% handle_info(init, #collector{} = State) ->
+%   {noreply, State};
 
 handle_info(flush_acc_events, #collector{} = State) ->
   {ok, State1} = flush_acc_events(State),
@@ -45,9 +49,9 @@ handle_info(#{<<"at_s">> := _, <<"at_mcs">> := _, <<"type">> := _} = Event, #col
   {noreply, State1};
 
 handle_info(Message, #collector{} = State) when element(1, Message) == trace_ts ->
-  {ok, Events} = handle_trace_message(Message, State),
-  {ok, State1} = save_events_for_sending(Events, State),
-  {noreply, State1};
+  {ok, Events, State1} = handle_trace_message(Message, State),
+  {ok, State2} = save_events_for_sending(Events, State1),
+  {noreply, State2};
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
@@ -78,10 +82,19 @@ handle_cast(Cast, State) ->
 
 
 setup_global_tracing() ->
+  % it's not possible to apply trace_pattern to ports
+  % have to take process to port send
+  % and check successful response afterwards
+  % for port ownership change
+
+  PortConnectSpec = {['$1', {'_', {connect, '_'}}], [{is_port, '$1'}], []},
+  PortConnectedSpec = {['_', '_', {'$1', connected}], [{is_port, '$1'}], []},
+  PortConnectReturnTraceSpec = {['$1', '$2'], [{'andalso', {is_port, '$1'}, {is_pid, '$2'}}], [{return_trace}]},
+  erlang:trace_pattern(send, [PortConnectSpec], []),
+  erlang:trace_pattern('receive', [PortConnectedSpec], []),
+  erlang:trace_pattern({erlang, port_connect, 2}, [PortConnectReturnTraceSpec], [global]),
+
   erlang:trace(ports, true, [ports, timestamp, {tracer, self()}]),
-  % TODO: trace port owner change
-  % call erlang:port_connect with return
-  % receive of {Owner, {connect, Pid}}
   ok.
 
 
@@ -98,39 +111,39 @@ save_events_for_sending(Events1, #collector{acc_events = Events} = State) ->
 
 
 
-handle_trace_message({trace_ts, _Pid, send, _Msg, _PidTo, _} = Message, #collector{ignored_pids = _IgnoredPids}) ->
-  % case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
-  %   true -> {ok, []};
-  %   false ->
-  % end;
-  handle_trace_message0(Message);
+% handle_trace_message({trace_ts, _Pid, send, _Msg, _PidTo, _} = Message, #collector{ignored_pids = _IgnoredPids} = State) ->
+%   % case (lists:member(Pid, IgnoredPids) orelse lists:member(PidTo, IgnoredPids)) of
+%   %   true -> {ok, []};
+%   %   false ->
+%   % end;
+%   handle_trace_message0(Message, State);
 
-handle_trace_message(Message, #collector{ignored_pids = _IgnoredPids}) ->
+handle_trace_message(Message, #collector{ignored_pids = _IgnoredPids} = State) ->
   % Pid = element(2, Message),
   % case lists:member(Pid, IgnoredPids) of
   %   true -> {ok, []};
   %   false ->
   % end.
-  handle_trace_message0(Message).
+  handle_trace_message0(Message, State).
 
-handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}) when is_port(Port) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, link, _PidPort, _Timestamp}) -> {ok, []};
-handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}) -> {ok, []};
+handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}, State) when is_port(Port) -> {ok, [], State};
+handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}, State) when is_port(Port) -> {ok, [], State};
+handle_trace_message0({trace_ts, _Pid, link, _PidPort, _Timestamp}, State) -> {ok, [], State};
+handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}, State) -> {ok, [], State};
 
-handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}) when is_pid(Pid) andalso is_pid(Pid1) ->
+handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}, State) when is_pid(Pid) andalso is_pid(Pid1) ->
   E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+  {ok, [E1], State};
 
-handle_trace_message0({trace_ts, Port, getting_linked, Pid, _Timestamp}) when is_port(Port) andalso is_pid(Pid) ->
+handle_trace_message0({trace_ts, Port, getting_linked, Pid, _Timestamp}, State) when is_port(Port) andalso is_pid(Pid) ->
   % ignore for now
-  {ok, []};
+  {ok, [], State};
 
-handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when is_pid(Pid) andalso is_pid(Pid1) ->
+handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}, State) when is_pid(Pid) andalso is_pid(Pid1) ->
   E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+  {ok, [E1], State};
 
 
 
@@ -145,88 +158,142 @@ handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}) when i
 %
 % This is temporary solution. It will not work with set_on_first_spawn flag.
 % It will also fail if tracing was cleared on parent process before collector consumed 'spawn' event.
-handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}) ->
+handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}, State) ->
   case erlang:trace_info(ParentPid, flags) of
-    undefined -> {ok, []};
+    undefined -> {ok, [], State};
     {flags, Flags} ->
       case lists:member(set_on_spawn, Flags) of
-        true -> {ok, []}; % everything will be processed in spawned event
+        true -> {ok, [], State}; % everything will be processed in spawned event
         false ->
           MFA1 = mfa_str(MFA),
           E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
           E1 = event_with_timestamp(Timestamp, E),
-          {ok, [E1]}
+          {ok, [E1], State}
       end
   end;
 
 % spawned is received only if ChildPid is already traced (unlike spawn)
-handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}) ->
+handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}, State) ->
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
   [F] = z__client_scenario:trace_started_events(Timestamp, ChildPid),
   % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
   % F1 = event_with_timestamp(Timestamp, F),
-  {ok, [E1, F]};
+  {ok, [E1, F], State};
 
 
 
-handle_trace_message0({trace_ts, Pid, exit, Reason, Timestamp}) ->
+handle_trace_message0({trace_ts, Pid, exit, Reason, Timestamp}, State) ->
   E = #{<<"type">> => <<"exit">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Reason])},
   E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+  {ok, [E1], State};
 
-handle_trace_message0({trace_ts, Pid, register, Atom, Timestamp}) when is_pid(Pid) ->
+handle_trace_message0({trace_ts, Pid, register, Atom, Timestamp}, State) when is_pid(Pid) ->
   E = #{<<"type">> => <<"register">>, <<"pid">> => erlang:pid_to_list(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+  {ok, [E1], State};
 
-handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}) when is_pid(Pid) ->
+handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}, State) when is_pid(Pid) ->
   E = #{<<"type">> => <<"unregister">>, <<"pid">> => erlang:pid_to_list(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+  {ok, [E1], State};
 
 
 
-handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) when is_pid(Pid) ->
-  E = case To of
-    _ when is_pid(To) -> #{<<"pid1">> => erlang:pid_to_list(To)};
-    _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
-  end,
-  E1 = E#{<<"type">> => <<"send">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
-  E2 = event_with_timestamp(Timestamp, E1),
-  {ok, [E2]};
+% handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) when is_pid(Pid) ->
+%   E = case To of
+%     _ when is_pid(To) -> #{<<"pid1">> => erlang:pid_to_list(To)};
+%     _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
+%   end,
+%   E1 = E#{<<"type">> => <<"send">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
+%   E2 = event_with_timestamp(Timestamp, E1),
+%   {ok, [E2]};
 
-handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) when is_pid(Pid) ->
-  To1 = case To of
-    _ when is_pid(To) -> erlang:pid_to_list(To);
-    _ when is_atom(To) -> atom_to_binary(To, latin1)
-  end,
-  E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
-  E1 = event_with_timestamp(Timestamp, E),
-  {ok, [E1]};
+% handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) when is_pid(Pid) ->
+%   To1 = case To of
+%     _ when is_pid(To) -> erlang:pid_to_list(To);
+%     _ when is_atom(To) -> atom_to_binary(To, latin1)
+%   end,
+%   E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
+%   E1 = event_with_timestamp(Timestamp, E),
+%   {ok, [E1]};
 
 
 
-handle_trace_message0({trace_ts, Port, open, Pid, DriverName, Timestamp}) when is_port(Port) ->
+handle_trace_message0({trace_ts, Port, open, Pid, DriverName, Timestamp}, State) when is_port(Port) ->
   E = event_with_timestamp(Timestamp, #{
     <<"type">> => <<"port_open">>, <<"pid">> => io_lib:format("~p", [Pid]), <<"port">> => io_lib:format("~p", [Port]),
     <<"atom">> => atom_to_binary(DriverName,latin1)
   }),
-  {ok, [E]};
+  {ok, [E], State};
 
-handle_trace_message0({trace_ts, Port, closed, Reason, Timestamp}) when is_port(Port) ->
+handle_trace_message0({trace_ts, Port, closed, Reason, Timestamp}, State) when is_port(Port) ->
   E = event_with_timestamp(Timestamp, #{
     <<"type">> => <<"port_close">>, <<"pid">> => <<>>, <<"port">> => io_lib:format("~p", [Port]),
     <<"term">> => io_lib:format("~p", [Reason])
   }),
-  {ok, [E]};
+  {ok, [E], State};
 
 
 
-handle_trace_message0(Message) ->
-  io:format("skip trace message:~n~p~n", [Message]),
-  {ok, []}.
+% save message that indicates intent to change port owner
+% we don't know yet is it going to succeed or not
+% need to receive second message confirming change
+handle_trace_message0({trace_ts, Pid, send, {Pid, {connect, NewOwner}}, Port, _Timestamp}, State)
+when is_pid(Pid) andalso is_pid(NewOwner) andalso is_port(Port) ->
+  #collector{change_port_owner_map = Map} = State,
+  Map1 = Map#{{message, Pid, Port} => NewOwner},
+  State1 = State#collector{change_port_owner_map = Map1},
+  {ok, [], State1};
+
+handle_trace_message0({trace_ts, Pid, 'receive', {Port, connected}, Timestamp}, State)
+when is_pid(Pid) andalso is_port(Port) ->
+  #collector{change_port_owner_map = Map} = State,
+  case maps:take({message, Pid, Port}, Map) of
+    error ->
+      io:format("received {~p, connected}, but seems like no {connect, ...} was made\n", [Port]),
+      {ok, [], State};
+
+    {NewOwner, Map1} when is_pid(NewOwner) ->
+      E = event_with_timestamp(Timestamp, #{
+        <<"type">> => <<"port_owner_change">>, <<"pid">> => pid_to_list(Pid), <<"port">> => io_lib:format("~p", [Port]),
+        <<"pid1">> => pid_to_list(NewOwner)
+      }),
+      State1 = State#collector{change_port_owner_map = Map1},
+      {ok, [E], State1}
+  end;
+
+
+
+% trace port owner change by calling erlang:port_connect/2
+handle_trace_message0({trace_ts, Pid, call, {erlang, port_connect, [Port, NewOwner]}, _Timestamp}, State) ->
+  #collector{change_port_owner_map = Map} = State,
+  Map1 = Map#{{call, Pid} => {NewOwner, Port}},
+  State1 = State#collector{change_port_owner_map = Map1},
+  {ok, [], State1};
+
+handle_trace_message0({trace_ts, Pid, return_from, {erlang, port_connect, 2}, true, Timestamp}, State) ->
+  #collector{change_port_owner_map = Map} = State,
+  case maps:take({call, Pid}, Map) of
+    error ->
+      io:format("got return_from erlang:port_connext/2 in ~p, but seems like no call was started\n", [Pid]),
+      {ok, [], State};
+
+    {{NewOwner, Port}, Map1} when is_pid(NewOwner) andalso is_port(Port) ->
+      E = event_with_timestamp(Timestamp, #{
+        <<"type">> => <<"port_owner_change">>, <<"pid">> => pid_to_list(Pid), <<"port">> => io_lib:format("~p", [Port]),
+        <<"pid1">> => pid_to_list(NewOwner)
+      }),
+      State1 = State#collector{change_port_owner_map = Map1},
+      {ok, [E], State1}
+  end;
+
+
+
+handle_trace_message0(Message, State) ->
+  io:format("-----------------:~p~n", [Message]),
+  {ok, [], State}.
 
 
 

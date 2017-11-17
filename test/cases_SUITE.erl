@@ -52,7 +52,7 @@ end_per_suite(Config) ->
 
 
 open_and_close_port(Config) ->
-  {ok, Events, Delta} = trace_case(Config, fun () ->
+  {ok, _, Events, Delta} = trace_case(Config, fun () ->
     Port = erlang:open_port({spawn_executable, "/bin/cat"}, []),
     true = erlang:port_close(Port)
   end),
@@ -77,7 +77,7 @@ link_port_to_other_process(_Config) ->
 
 
 change_port_owner(Config) ->
-  {ok, Events, Delta} = trace_case(Config, fun () ->
+  {ok, {ok, Pid, Port}, Events, Delta} = trace_case(Config, fun () ->
     Port = erlang:open_port({spawn_executable, "/bin/cat"}, []),
 
     Pid = erlang:spawn_link(fun () ->
@@ -88,8 +88,14 @@ change_port_owner(Config) ->
       end
     end),
 
+    Self = self(),
+    {connected, Self} = erlang:port_info(Port, connected),
+
     % now Pid is owner of the Port
     true = erlang:port_connect(Port, Pid),
+
+    {connected, Pid} = erlang:port_info(Port, connected),
+
     Pid ! {self(), close_port},
     receive
       {Pid, done} -> ok
@@ -98,20 +104,25 @@ change_port_owner(Config) ->
     end,
 
     % check that it closed
-    undefined = erlang:port_info(Port)
+    undefined = erlang:port_info(Port),
+
+    {ok, Pid, Port}
   end),
 
-  % SelfBin = list_to_binary(pid_to_list(self())),
-  % {ok, Events1} = take_subseq(#{pid => SelfBin}, [trace_started, port_open, port_change_owner, trace_stopped], Events),
-  % [_, #{type := <<"port_open">>, port := PortBin}, #{type := <<"port_close">>, port := PortBin}, _] = Events1,
-  % 
+  SelfBin = list_to_binary(pid_to_list(self())),
+  OtherPidBin = list_to_binary(pid_to_list(Pid)),
+  PortBin = list_to_binary(port_to_list(Port)),
+  % ct:pal("~p got this: ~p", [self(), [{P, T} || #{pid := P, type := T} <- Events]]),
+  {ok, Events1} = take_subseq(#{pid => SelfBin}, [trace_started, port_open, port_owner_change, trace_stopped], Events),
+  [_, _, #{type := <<"port_owner_change">>, port := PortBin, pid1 := OtherPidBin}, _] = Events1,
+
   % #{ports := #{PortBin := #{parts := [#{pid := PidBin, startedAt := _, stoppedAt := _}], events := []}}} = Delta,
   ok.
 
 
 
 change_port_owner_by_message(Config) ->
-  {ok, Events, Delta} = trace_case(Config, fun () ->
+  {ok, {ok, Pid, Port}, Events, Delta} = trace_case(Config, fun () ->
     Port = erlang:open_port({spawn_executable, "/bin/cat"}, []),
 
     Pid = erlang:spawn_link(fun () ->
@@ -121,6 +132,9 @@ change_port_owner_by_message(Config) ->
           Parent ! {self(), done}
       end
     end),
+
+    Self = self(),
+    {connected, Self} = erlang:port_info(Port, connected),
 
     % now Pid is owner of the Port
     Port ! {self(), {connect, Pid}},
@@ -128,6 +142,8 @@ change_port_owner_by_message(Config) ->
     after 1000 -> error(expected_to_change_owner)
     end,
 
+    {connected, Pid} = erlang:port_info(Port, connected),
+
     Pid ! {self(), close_port},
     receive
       {Pid, done} -> ok
@@ -136,8 +152,18 @@ change_port_owner_by_message(Config) ->
     end,
 
     % check that it closed
-    undefined = erlang:port_info(Port)
+    undefined = erlang:port_info(Port),
+
+    {ok, Pid, Port}
   end),
+
+  SelfBin = list_to_binary(pid_to_list(self())),
+  OtherPidBin = list_to_binary(pid_to_list(Pid)),
+  PortBin = list_to_binary(port_to_list(Port)),
+  % ct:pal("~p got this: ~p", [self(), [{P, T} || #{pid := P, type := T} <- Events]]),
+  {ok, Events1} = take_subseq(#{pid => SelfBin}, [trace_started, port_open, port_owner_change, trace_stopped], Events),
+  [_, _, #{type := <<"port_owner_change">>, port := PortBin, pid1 := OtherPidBin}, _] = Events1,
+
   ok.
 
 
@@ -153,7 +179,7 @@ trace_case(Config, Fun) when is_function(Fun) ->
   T1 = erlang:system_time(micro_seconds),
   ok = z__client_scenario:trace_pid(self()),
 
-  Fun(),
+  Result = Fun(),
 
   Ref = erlang:trace_delivered(self()),
   ok = z__client_scenario:clear_tracing(self()),
@@ -171,7 +197,7 @@ trace_case(Config, Fun) when is_function(Fun) ->
 
   {ok, Events} = clk_events:select(#{instance_id => InstanceId, 'after' => T1, before => T2}),
   {ok, Delta} = remote_ctl:delta_json(#{instance_id => InstanceId, 'after' => T1, before => T2}),
-  {ok, bt:atomize_events(Events), bt:atomize_delta(Delta)}.
+  {ok, Result, bt:atomize_events(Events), bt:atomize_delta(Delta)}.
 
 
 
