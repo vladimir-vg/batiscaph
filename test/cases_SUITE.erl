@@ -116,7 +116,9 @@ change_port_owner(Config) ->
   {ok, Events1} = take_subseq(#{pid => SelfBin}, [trace_started, port_open, port_owner_change, trace_stopped], Events),
   [_, _, #{type := <<"port_owner_change">>, port := PortBin, pid1 := OtherPidBin}, _] = Events1,
 
-  % #{ports := #{PortBin := #{parts := [#{pid := PidBin, startedAt := _, stoppedAt := _}], events := []}}} = Delta,
+  % ct:pal("got this port: ~p", [PortBin]),
+  #{ports := #{PortBin := #{parts := Parts, openedAt := _, closedAt := _}}} = Delta,
+  [#{pid := SelfBin, startedAt := _, stoppedAt := X}, #{pid := OtherPidBin, startedAt := X, stoppedAt := _}] = Parts,
   ok.
 
 
@@ -163,6 +165,9 @@ change_port_owner_by_message(Config) ->
   % ct:pal("~p got this: ~p", [self(), [{P, T} || #{pid := P, type := T} <- Events]]),
   {ok, Events1} = take_subseq(#{pid => SelfBin}, [trace_started, port_open, port_owner_change, trace_stopped], Events),
   [_, _, #{type := <<"port_owner_change">>, port := PortBin, pid1 := OtherPidBin}, _] = Events1,
+  % ct:pal("got this port: ~p", [PortBin]),
+  #{ports := #{PortBin := #{parts := Parts, openedAt := _, closedAt := _}}} = Delta,
+  [#{pid := SelfBin, startedAt := _, stoppedAt := X}, #{pid := OtherPidBin, startedAt := X, stoppedAt := _}] = Parts,
 
   ok.
 
@@ -190,13 +195,15 @@ trace_case(Config, Fun) when is_function(Fun) ->
   receive {trace_delivered, _, Ref} -> ok
   after 1000 -> error(timeout_trace_delivered)
   end,
+
   % collector consumed all trace messages
   ok = gen_server:call(z__client_collector, flush),
   % remote_ctl consumed all event messages
   ok = gen_server:call(Pid, sync, 20000),
 
-  {ok, Events} = clk_events:select(#{instance_id => InstanceId, 'after' => T1, before => T2}),
-  {ok, Delta} = remote_ctl:delta_json(#{instance_id => InstanceId, 'after' => T1, before => T2}),
+  {ok, Events} = clk_events:select(#{instance_id => InstanceId, from => T1, to => T2}),
+  {ok, Delta} = remote_ctl:delta_json(#{instance_id => InstanceId, from => T1, to => T2}),
+  % ct:pal("from ~p to ~p~n~p~n~p", [T1, T2, Delta, Events]),
   {ok, Result, bt:atomize_events(Events), bt:atomize_delta(Delta)}.
 
 

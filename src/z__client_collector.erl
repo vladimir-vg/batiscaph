@@ -15,6 +15,7 @@
 
   % temporary state that needed for producing
   % one event from several trace events
+  % TODO: from time to time need to cleanup this map, remove old failed attempts to change port owner
   change_port_owner_map = #{} :: #{{message, pid(), port()} => pid(), {call, pid()} => {pid(), port()}}
 }).
 

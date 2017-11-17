@@ -187,7 +187,7 @@ send_delta_to_websockets(#remote_ctl{id = Id, websockets = Websockets} = State) 
     case erlang:is_process_alive(Pid) of
       false -> Acc;
       true ->
-        {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id, 'after' => LastAt}),
+        {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id, from => LastAt}),
         Pid ! {delta, Delta},
         Acc#{Pid => LastAt1}
     end
@@ -211,7 +211,7 @@ fetch_events(#remote_ctl{last_fetched_at = LastAt, id = Id} = State) ->
   Opts = #{instance_id => Id, limit => ?MAX_EVENTS_PER_FETCH, type_in => n4j_processes:desired_event_types()},
   Opts1 = case LastAt of
     undefined -> Opts;
-    _ -> Opts#{'after' => LastAt}
+    _ -> Opts#{from => LastAt}
   end,
 
   case clk_events:select(Opts1) of
@@ -229,7 +229,7 @@ fetch_events(#remote_ctl{last_fetched_at = LastAt, id = Id} = State) ->
 
 
 produce_delta(#{} = Opts) ->
-  LastAt = maps:get('after', Opts, 0),
+  LastAt = maps:get(from, Opts, 0),
   {ok, Delta} = delta_json(Opts),
   LastAt1 = lastest_timestamp_in_delta(LastAt, Delta),
   {ok, LastAt1, Delta}.
@@ -253,7 +253,7 @@ delta_with_table_events(Delta, TableEvents) ->
   VarBinds = [E || #{<<"type">> := <<"var_bind">>} = E <- TableEvents],
   ExprEvals = [E || #{<<"type">> := T} = E <- TableEvents, T == <<"expr_eval_start">> orelse T == <<"expr_eval_stop">>],
   RestEvents = [E || #{<<"type">> := T} = E <- TableEvents, T =/= <<"context_start">>, T =/= <<"var_bind">>, T =/= <<"expr_eval_start">>, T =/= <<"expr_eval_stop">>],
-  #{events := Events} = Delta,
+  #{<<"events">> := Events} = Delta,
 
   Delta1 = delta_with_context_lines(Delta, ContextLines),
   Delta2 = delta_with_var_binds(Delta1, VarBinds),
@@ -265,24 +265,24 @@ delta_with_table_events(Delta, TableEvents) ->
   Events1 = lists:sort(fun (#{<<"at">> := A}, #{<<"at">> := B}) ->
     A < B
   end, RestEvents ++ Events),
-  Delta3#{events => Events1}.
+  Delta3#{<<"events">> => Events1}.
 
 
 
-delta_with_context_lines(#{contexts := Contexts} = Delta, ContextLines) ->
+delta_with_context_lines(#{<<"contexts">> := Contexts} = Delta, ContextLines) ->
   Contexts1 = lists:foldl(fun (#{<<"context">> := C, <<"lines">> := L}, Acc) ->
     Context = maps:get(C, Acc),
     Acc#{C => Context#{<<"lines">> => jsx:decode(L)}}
   end, Contexts, ContextLines),
-  Delta#{contexts => Contexts1}.
+  Delta#{<<"contexts">> => Contexts1}.
 
-delta_with_var_binds(#{contexts := Contexts} = Delta, VarBinds) ->
+delta_with_var_binds(#{<<"contexts">> := Contexts} = Delta, VarBinds) ->
   Contexts1 = lists:foldl(fun (#{<<"context">> := C, <<"atom">> := K, <<"term">> := V}, Acc) ->
     Context = maps:get(C, Acc),
     Binds = maps:get(<<"variables">>, Context, #{}),
     Acc#{C => Context#{<<"variables">> => Binds#{K => V}}}
   end, Contexts, VarBinds),
-  Delta#{contexts => Contexts1}.
+  Delta#{<<"contexts">> => Contexts1}.
 
 
 
@@ -293,13 +293,13 @@ delta_with_expr_evals(Delta, [#{<<"type">> := <<"expr_eval_start">>} = Start, #{
   #{<<"at">> := StoppedAt, <<"term">> := AST, <<"line">> := Line, <<"context">> := Key} = Stop,
   Result = maps:get(<<"result">>, Stop),
 
-  #{contexts := #{Key := Context} = Contexts} = Delta,
+  #{<<"contexts">> := #{Key := Context} = Contexts} = Delta,
   Evals = maps:get(<<"evals">>, Context, #{}),
   Eval = maps:get(integer_to_binary(Line), Evals, #{<<"line">> => Line, <<"exprs">> => []}),
   Exprs = maps:get(<<"exprs">>, Eval),
   Exprs1 = Exprs ++ [#{<<"startedAt">> => StartedAt, <<"stoppedAt">> => StoppedAt, <<"result">> => Result}],
   Context1 = Context#{<<"evals">> => Evals#{integer_to_binary(Line) => Eval#{<<"exprs">> => Exprs1}}},
-  delta_with_expr_evals(Delta#{contexts => Contexts#{Key => Context1}}, ExprEvals).
+  delta_with_expr_evals(Delta#{<<"contexts">> => Contexts#{Key => Context1}}, ExprEvals).
 
 
 
@@ -307,13 +307,13 @@ table_events_types() ->
   [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>,<<"expr_eval_start">>,<<"expr_eval_stop">>].
 
 clickhouse_opts(#{} = Opts) ->
-  Opts0 = maps:with([instance_id, 'after', before], Opts),
+  Opts0 = maps:with([instance_id, from, to], Opts),
   Opts0#{type_in => table_events_types()}.
 
 
 
 neo4j_opts(#{} = Opts, TableEvents) ->
-  Opts0 = maps:with([instance_id, 'after', before], Opts),
+  Opts0 = maps:with([instance_id, from, to], Opts),
   Pids = unique_pids_from_events(TableEvents),
   case Pids of
     [] -> Opts0;

@@ -41,7 +41,16 @@ atom_keys_to_binaries([E | Events]) ->
 
 
 % TODO: do not atomize line numbers and pids as keys
-atomize_delta(Delta) -> binary_keys_to_atoms(Delta).
+atomize_delta(Delta) ->
+  % ct:pal("atomize delta: ~p", [Delta]),
+  {Ports, Delta1} = maps:take(<<"ports">>, Delta),
+  {Processes, Delta2} = maps:take(<<"processes">>, Delta1),
+
+  Ports1 = maps:map(fun (_K, V) -> binary_keys_to_atoms(V) end, Ports),
+  Processes1 = maps:map(fun (_K, V) -> binary_keys_to_atoms(V) end, Processes),
+
+  Delta0 = binary_keys_to_atoms(Delta2),
+  Delta0#{ports => Ports1, processes => Processes1}.
 
 binary_keys_to_atoms(Value) when is_binary(Value) -> Value;
 binary_keys_to_atoms(Value) when is_number(Value) -> Value;

@@ -93,43 +93,53 @@ delta_json(#{instance_id := Id} = Opts) ->
       % "MATCH (context)-[bind:VAR_MENTION]->(proc:Process)\n"
       % "WITH COLLECT({at: bind.at, expr: bind.expr, pid: proc.pid}) AS binds, context\n"
       "RETURN context.startedAt AS startedAt, context.stoppedAt AS stoppedAt, context.context AS context, context.pid AS pid\n"
+    , TimeParams#{id => Id} },
+
+    { "MATCH (port:Port { instanceId: {id} })\n"
+      "WHERE "++where_start_stop_within(Opts, "port.openedAt", "port.closedAt")++"\n"
+      "MATCH (port)-[rel:OWNERSHIP]-(:Process)\n"
+      "WITH port, rel\n"
+      "ORDER BY rel.startedAt\n"
+      "WITH port, COLLECT(rel) AS rels\n"
+      "RETURN port.port AS port, port.openedAt AS openedAt, port.closedAt AS closedAt, rels AS parts\n"
     , TimeParams#{id => Id} }
   ],
-  {ok, [Processes, Events, ContextMentionEvents, Contexts]} = neo4j:commit(Statements),
+  {ok, [Processes, Events, ContextMentionEvents, Contexts, Ports]} = neo4j:commit(Statements),
 
   Processes1 = convert_rows_to_map(<<"pid">>, Processes),
   Events1 = convert_rows_to_objects(Events),
   ContextMentionEvents1 = convert_rows_to_objects(ContextMentionEvents),
   Contexts1 = convert_rows_to_map(<<"context">>, Contexts),
+  Ports1 = convert_rows_to_map(<<"port">>, Ports),
 
   Events2 = lists:sort(fun (#{<<"at">> := A}, #{<<"at">> := B}) ->
     A < B
   end, Events1 ++ ContextMentionEvents1),
 
-  {ok, #{processes => Processes1, events => Events2, contexts => Contexts1}}.
+  {ok, #{<<"processes">> => Processes1, <<"events">> => Events2, <<"contexts">> => Contexts1, <<"ports">> => Ports1}}.
 
 
 
-time_params_from_opts(#{'after' := After, before := Before}) -> #{afterAt => After, beforeAt => Before};
-time_params_from_opts(#{'after' := After}) -> #{afterAt => After};
-time_params_from_opts(#{before := Before}) -> #{beforeAt => Before};
+time_params_from_opts(#{from := From, to := To}) -> #{fromAt => From, toAt => To};
+time_params_from_opts(#{to := To}) -> #{toAt => To};
+time_params_from_opts(#{from := From}) -> #{fromAt => From};
 time_params_from_opts(_Opts) -> #{}.
 
-where_at_within(#{'after' := _, before := _}, Key) ->
-  "({afterAt} < "++Key++" AND "++Key++" > {beforeAt})";
-where_at_within(#{'after' := _}, Key) ->
-  "({afterAt} < "++Key++")";
-where_at_within(#{before := _}, Key) ->
-  "("++Key++" > {beforeAt})";
+where_at_within(#{from := _, to := _}, Key) ->
+  "({fromAt} < "++Key++" AND "++Key++" < {toAt})";
+where_at_within(#{to := _}, Key) ->
+  "({toAt} < "++Key++")";
+where_at_within(#{from := _}, Key) ->
+  "("++Key++" < {fromAt})";
 where_at_within(#{}, _Key) ->
   "true".
 
-where_start_stop_within(#{'after' := _, before := _}, StartKey, StopKey) ->
-  "((("++StopKey++" IS NULL) OR {afterAt} < "++StopKey++") AND (("++StartKey++" IS NULL) OR "++StartKey++" > {beforeAt}))";
-where_start_stop_within(#{'after' := _}, _StartKey, StopKey) ->
-  "(("++StopKey++" IS NULL) OR {afterAt} < "++StopKey++")";
-where_start_stop_within(#{before := _}, StartKey, _StopKey) ->
-  "(("++StartKey++" IS NULL) OR "++StartKey++" > {beforeAt})";
+where_start_stop_within(#{from := _, to := _}, StartKey, StopKey) ->
+  "((("++StartKey++" IS NULL) OR {fromAt} < "++StartKey++") AND (("++StopKey++" IS NULL) OR "++StopKey++" < {toAt}))";
+where_start_stop_within(#{from := _}, StartKey, _StopKey) ->
+  "(("++StartKey++" IS NULL) OR {fromAt} < "++StartKey++")";
+where_start_stop_within(#{to := _}, _StartKey, StopKey) ->
+  "(("++StopKey++" IS NULL) OR "++StopKey++" < {toAt})";
 where_start_stop_within(#{}, _StartKey, _StopKey) ->
   "true".
 
@@ -163,7 +173,7 @@ desired_event_types() ->
     <<"spawn">>, <<"exit">>, <<"link">>, <<"unlink">>, <<"register">>, <<"unregister">>,
     <<"trace_started">>, <<"trace_stopped">>, <<"found_dead">>, <<"mention">>,
     <<"context_start">>, <<"context_stop">>, <<"var_mention">>,
-    <<"port_open">>, <<"port_close">>
+    <<"port_open">>, <<"port_close">>, <<"port_owner_change">>
   ].
 
 
@@ -382,8 +392,27 @@ process_events(Id, [#{<<"type">> := <<"port_open">>} = E | Events], Acc) ->
     % otherwise just ignore it
     { "MATCH (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "CREATE (port:Port { port: {port}, instanceId: {id}, key: {key}, openedAt: {at} }),\n"
-      "\t(port)-[:OWNERSHIP { startedAt: {at} }]->(proc)\n"
+      "\t(port)-[:OWNERSHIP { startedAt: {at}, pid: {pid} }]->(proc)\n"
     , #{id => Id, pid => Pid, port => Port, at => At, key => Key} }
+  ],
+  process_events(Id, Events, [Statements] ++ Acc);
+
+process_events(Id, [#{<<"type">> := <<"port_owner_change">>} = E | Events], Acc) ->
+  #{<<"at">> := At, <<"pid">> := OldPid, <<"port">> := Port, <<"pid1">> := NewPid} = E,
+  PidKey = <<Id/binary,"/",NewPid/binary>>,
+  Statements = [
+    % find existing port and old OWNERSHIP
+    % close old one, and create new one at same timestamp
+    % create new process node, if needed
+    { "MATCH (oldProc:Process { pid: {oldPid}, instanceId: {id} }),\n"
+      "\t(port:Port { port: {port}, instanceId: {id} }),\n"
+      "\t(oldProc)-[oldRel:OWNERSHIP]-(port)\n"
+      "WHERE oldRel.stoppedAt IS NULL\n"
+      "MERGE (newProc:Process { pid: {newPid}, instanceId: {id}})\n"
+      "ON CREATE SET newProc.appearedAt = {at}, newProc.key = {pidKey}\n"
+      "SET oldRel.stoppedAt = {at}\n"
+      "CREATE (port)-[:OWNERSHIP { startedAt: {at}, pid: {newPid} }]->(newProc)\n"
+    , #{id => Id, oldPid => OldPid, newPid => NewPid, port => Port, at => At, pidKey => PidKey} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 
