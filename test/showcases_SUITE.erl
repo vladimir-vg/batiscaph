@@ -1,7 +1,7 @@
 -module(showcases_SUITE).
 -export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
--export([file_open_test/1, ets_match_spec_transform/1, open_port_and_change_owner/1]).
--batiscaph_steps([file_open_test, ets_match_spec_transform, open_port_and_change_owner]).
+-export([file_open_test/1, ets_match_spec_transform/1, open_port_and_change_owner/1, port_dies_with_bad_reason/1]).
+-batiscaph_steps([file_open_test, ets_match_spec_transform, open_port_and_change_owner, port_dies_with_bad_reason]).
 -include_lib("stdlib/include/ms_transform.hrl").
 -include_lib("records.hrl").
 -compile({parse_transform, batiscaph_suite_transform}).
@@ -40,7 +40,8 @@ groups() ->
     {main, [parallel], [
       file_open_test,
       ets_match_spec_transform,
-      open_port_and_change_owner
+      open_port_and_change_owner,
+      port_dies_with_bad_reason
     ]},
     {group2, [parallel], [file_open_test, ets_match_spec_transform, {group, group2_nested}]},
     {group2_nested, [], [file_open_test, ets_match_spec_transform]}
@@ -94,3 +95,27 @@ open_port_and_change_owner(_) ->
   after 1000 ->
     error(timeout_port_close)
   end.
+
+
+
+port_dies_with_bad_reason(_) ->
+  % load our own driver to ask it to fail
+  % to demonstrate port that dies with reason
+  % and how it displayed
+  ok = erl_ddll:load_driver(code:priv_dir(batiscaph), "batiscaph_drv"),
+
+  Pid = spawn(fun () ->
+    receive start -> ok end,
+    Port = erlang:open_port({spawn_driver, "batiscaph_drv"}, []),
+    erlang:port_command(Port, <<"please_fail">>)
+  end),
+
+  MRef = erlang:monitor(process, Pid),
+  Pid ! start,
+
+  receive
+    {'DOWN', MRef, process, Pid, Reason} ->
+      ct:pal("process with port successfuly died with: ~p", [Reason])
+  after 1000 -> error(timeout_awaiting_fail_from_port)
+  end,
+  ok.

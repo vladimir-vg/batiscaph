@@ -19,3 +19,4 @@ node_modules
 
 # generated during run
 priv/scenarios
+priv/batiscaph_drv.so

@@ -101,7 +101,7 @@ delta_json(#{instance_id := Id} = Opts) ->
       "WITH port, rel\n"
       "ORDER BY rel.startedAt\n"
       "WITH port, COLLECT(rel) AS rels\n"
-      "RETURN port.port AS port, port.openedAt AS openedAt, port.closedAt AS closedAt, rels AS parts\n"
+      "RETURN port.port AS port, port.openedAt AS openedAt, port.closedAt AS closedAt, port.reason AS reason, rels AS parts\n"
     , TimeParams#{id => Id} }
   ],
   {ok, [Processes, Events, ContextMentionEvents, Contexts, Ports]} = neo4j:commit(Statements),
@@ -420,13 +420,13 @@ process_events(Id, [#{<<"type">> := <<"port_owner_change">>} = E | Events], Acc)
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"port_close">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"port">> := Port} = E,
+  #{<<"at">> := At, <<"port">> := Port, <<"term">> := Reason} = E,
   Statements = [
     { "MATCH (port:Port { port: {port}, instanceId: {id} }),\n"
       "\t(port)-[rel:OWNERSHIP]-(proc:Process)\n"
       "WHERE (port.openedAt IS NOT NULL) AND (rel.stoppedAt IS NULL)\n"
-      "SET rel.stoppedAt = {at}, port.closedAt = {at}\n"
-    , #{id => Id, port => Port, at => At} }
+      "SET rel.stoppedAt = {at}, port.closedAt = {at}, port.reason = {reason}\n"
+    , #{id => Id, port => Port, at => At, reason => Reason} }
   ],
   process_events(Id, Events, [Statements] ++ Acc).
 
