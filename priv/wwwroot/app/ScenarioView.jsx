@@ -86,7 +86,7 @@ class ProcessElement extends React.Component {
     let exitRect = null;
     if (part.exitMark) {
       let h = part.unnormalExit ? (CELL_HEIGHT/2) : 2;
-      exitRect = <rect x={x} y={y+height-h} width={width} height={h} style={{fill: '#FC8888'}} />
+      exitRect = <rect x={x} y={y+height-h} width={width} height={h} className="exit-reason" />
     }
     return <g key={i}>
       {untracedNode}
@@ -379,12 +379,23 @@ class PortElement extends React.Component {
       let width = PORT_WIDTH;
       let height = (part.toY - part.fromY)*CELL_HEIGHT;
       parts.push(<rect key={i} x={x} y={y} width={width} height={height} className="port-body" />);
+
+      // add connecting line between different parts in different processes
       if (i != 0) {
         let prevPart = this.props.data.parts[i-1];
         let x1 = Math.min(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + CELL_WIDTH/2 + 1;
         let x2 = Math.max(part.x, prevPart.x)*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset + PORT_WIDTH;
         parts.push(<line key={"l"+i} x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="port-body" />);
       }
+    }
+    // if port already terminated, add mark
+    if (this.props.data.exitReason) {
+      let height = (this.props.data.exitReason == 'normal') ? 1 : CELL_HEIGHT/2;
+      let lastPart = this.props.data.parts[this.props.data.parts.length-1];
+      let x = lastPart.x*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset;
+      let y = lastPart.toY*CELL_HEIGHT - height;
+      let width = PORT_WIDTH;
+      parts.push(<rect key="reason" x={x} y={y} width={width} height={height} className="exit-reason" />);
     }
 
     return <Layer name="portBodies">

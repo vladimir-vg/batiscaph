@@ -139,6 +139,10 @@ svg.ScenarioView line.port-body {
   stroke-width: 1px;
 }
 
+svg.ScenarioView rect.exit-reason {
+  fill: #FC8888;
+}
+
 /*svg .unselectable {
   cursor: default;
   -webkit-user-select: none;
