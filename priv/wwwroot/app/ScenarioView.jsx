@@ -159,7 +159,7 @@ class ProcessElement extends React.Component {
       text = this.props.data.registeredName;
     }
 
-    return <text x={x} y={y} fontSize="12" fontFamily="'Ubuntu Mono', monospaced">{text}</text>;
+    return <text x={x} y={y} className="label">{text}</text>;
   }
 
   render() {
@@ -369,6 +369,26 @@ ContextElement.propTypes = {
 
 
 class PortElement extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      displayText: false
+    };
+
+    // because new EcmaScript standard is poorly designed
+    // we have to do bindings like that
+    this.onMouseEnter = this.onMouseEnter.bind(this);
+    this.onMouseLeave = this.onMouseLeave.bind(this);
+  }
+
+  onMouseEnter() {
+    this.setState({displayText: true});
+  }
+
+  onMouseLeave() {
+    this.setState({displayText: false})
+  }
+
   render() {
     let parts = [];
     let portWidthOffset = (CELL_WIDTH + PORT_BODY_SHIFT) - PORT_WIDTH;
@@ -388,19 +408,31 @@ class PortElement extends React.Component {
         parts.push(<line key={"l"+i} x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="port-body" />);
       }
     }
+
+    let lastPart = this.props.data.parts[this.props.data.parts.length-1];
     // if port already terminated, add mark
     if (this.props.data.exitReason) {
       let height = (this.props.data.exitReason == 'normal') ? 1 : CELL_HEIGHT/2;
-      let lastPart = this.props.data.parts[this.props.data.parts.length-1];
       let x = lastPart.x*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset;
       let y = lastPart.toY*CELL_HEIGHT - height;
       let width = PORT_WIDTH;
       parts.push(<rect key="reason" x={x} y={y} width={width} height={height} className="exit-reason" />);
     }
 
-    return <Layer name="portBodies">
-      <g>{parts}</g>
-    </Layer>;
+    let x = lastPart.x*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset;
+    let y = lastPart.fromY*CELL_HEIGHT - CELL_HEIGHT;
+    let textNode = <text x={x} y={y} className="label">
+      {this.state.displayText ? this.props.data.driverName : ''}
+    </text>;
+
+    return [
+      <Layer key="text" name="text">
+        {textNode}
+      </Layer>,
+      <Layer key="portBodies" name="portBodies">
+        <g onMouseEnter={this.onMouseEnter} onMouseLeave={this.onMouseLeave}>{parts}</g>
+      </Layer>
+    ];
   }
 }
 

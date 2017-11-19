@@ -101,7 +101,7 @@ delta_json(#{instance_id := Id} = Opts) ->
       "WITH port, rel\n"
       "ORDER BY rel.startedAt\n"
       "WITH port, COLLECT(rel) AS rels\n"
-      "RETURN port.port AS port, port.openedAt AS openedAt, port.closedAt AS closedAt, port.exitReason AS exitReason, rels AS parts\n"
+      "RETURN port.port AS port, port.openedAt AS openedAt, port.closedAt AS closedAt, port.exitReason AS exitReason, port.driverName AS driverName, rels AS parts\n"
     , TimeParams#{id => Id} }
   ],
   {ok, [Processes, Events, ContextMentionEvents, Contexts, Ports]} = neo4j:commit(Statements),
@@ -388,15 +388,15 @@ process_events(Id, [#{<<"type">> := <<"var_mention">>} = E | Events], Acc) ->
   process_events(Id, Events, [Statements] ++ Acc);
 
 process_events(Id, [#{<<"type">> := <<"port_open">>} = E | Events], Acc) ->
-  #{<<"at">> := At, <<"pid">> := Pid, <<"port">> := Port} = E,
+  #{<<"at">> := At, <<"pid">> := Pid, <<"port">> := Port, <<"atom">> := DriverName} = E,
   Key = <<Id/binary,"/",Port/binary>>,
   Statements = [
     % create port node only if process that opened port is already in graph
     % otherwise just ignore it
     { "MATCH (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "CREATE (port:Port { port: {port}, instanceId: {id}, key: {key}, openedAt: {at} }),\n"
+      "CREATE (port:Port { port: {port}, instanceId: {id}, key: {key}, openedAt: {at}, driverName: {driverName} }),\n"
       "\t(port)-[:OWNERSHIP { startedAt: {at}, pid: {pid} }]->(proc)\n"
-    , #{id => Id, pid => Pid, port => Port, at => At, key => Key} }
+    , #{id => Id, pid => Pid, port => Port, at => At, key => Key, driverName => DriverName} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
 

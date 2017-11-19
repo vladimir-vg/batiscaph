@@ -143,6 +143,11 @@ svg.ScenarioView rect.exit-reason {
   fill: #FC8888;
 }
 
+svg.ScenarioView text.label {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
 /*svg .unselectable {
   cursor: default;
   -webkit-user-select: none;

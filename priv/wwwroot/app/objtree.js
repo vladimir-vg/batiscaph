@@ -461,7 +461,7 @@ V.produceTree = (layout) => {
 
   for (let key in layout.ports) {
     let port = layout.ports[key];
-    tree.ports[key] = {port: port.port, exitReason: port.exitReason};
+    tree.ports[key] = {port: port.port, exitReason: port.exitReason, driverName: port.driverName};
     tree.ports[key].parts = [];
     for (let i in port.parts) {
       let part = port.parts[i];
