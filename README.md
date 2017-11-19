@@ -3,14 +3,21 @@
 ![Submersible MIR-2](https://pp.userapi.com/c639530/v639530374/4fcba/8ykO3N012hA.jpg)
 
 Batiscaph is a research device that submerges in ocean and explores unknown space.
-
 That's what this tool does -- submerges into Erlang node and observes how it works.
+
+Design ideas for this project could be found here: https://www.figma.com/file/Jz6rhLiGoFbRZOZnoeTBHIvj/Chertezh
 
 # Old demo
 
 If you want to locally setup demo [that was described in my blog](http://vladimir-vg.me/erlang-shell-visualization-demo/), please check out [demo-07-2017](https://github.com/vladimir-vg/espace/tree/demo-07-2017) git tag.
 
 This branch is for ongoing development.
+
+# Goals
+
+ * Provide shell UI that encourages exploration of remote erlang node. Provide a map of processes and their relationships.
+ * Allow users to inspect processes and have tracing automatically enabled.
+ * Record whole session to database, for later inspection and sharing. Should be good for referring to bugs in tickets.
 
 # Design ideas
 
@@ -20,7 +27,6 @@ This branch is for ongoing development.
 
 # Development setup
 
-Unlike in demo, batiscaph do not stores events in csv files anymore. Now it uses database for it.
 You need to install clickhouse (column oriented dbms) and neo4j (graph database).
 
 Specify neo4j url (`NEO4J_HTTP_URL`) with your login:pass if needed.
@@ -32,16 +38,9 @@ Also you need to install babel to use web interface in development mode:
 
 To start server just type `make`.
 
-# Goals
-
- * Provide shell UI that encourages exploration of remote erlang node. Provide a map of processes and their relationships.
- * Allow users to inspect processes and have tracing automatically enabled.
- * Record whole session to database, for later inspection and sharing. Should be good for referring to bugs in tickets.
-
 # How it supposed to work
 
-Target erlang have no prerequisites, or have small client library that allows batiscaph to connect to it.
-
+Target erlang node have no prerequisites, or have small client library that allows batiscaph to connect to it.
 After connection batiscaph uploads client modules to remote node, starts tracer and shell.
 
 Batiscaph collects events from remote node (including shell IO), stores it to database, and displays gathered information in browser.
@@ -56,27 +55,35 @@ Having many processes and events recorded, we should be able to query informatio
 
 It might be useful to have several queries in one workspace, and having interlapsing results highlighted.
 
-# Process tracing levels
+# Features to implement, tasks to do
 
- 1. Process was mentioned by some other process. No tracing is enabled. Some mentions (but not every) are followed by `erlang:is_process_alive/1` call. If it is alive, it displayed as gray box (according to timestamp) on timeline. If it's dead -- displayed as X. One process may have several mentions connected on timeline.
+ - [ ] collect and display info about, creating, deleting, owning and transferring (ets:give_away/3) ETS tables.
+ - [ ] workaround execution of record expressions in erl_eval (batiscaph_steps).
+ - [ ] create link-nodes that connected to all linked processes.
+       This required to make it clear which processes going to die, if any of them is dead.
+       Unlink, link and trap_exit create new link-nodes.
+ - [ ] run Erlang/OTP tests using batiscaph_steps.
+       Should reveal many bugs, and also good way to observe correctness of display.
+ - [ ] display expression for mentioned processes in steps.
+ - [ ] fix bug when only first line of multiline expression is copied when run through steps.
+ - [ ] find out how to organize JavaScript code that works with delta and tree. objtree.js is kinda messy now.
 
- 1. If mentioned process was selected by user, it turns into "explored" state. After that `exit`, `spawn`, `link` and `unlink` events are traced for this process. Same tracing applies to all process links recursively if process does not have trap_exit enabled. Such strategy will expand linked "islands" of processes, stopping at trap_exit-ed processes (usually supervisors, but also others). Also during exploration some other information gathered, if this process responds to OTP conventions, for example `$ancestors`.
-    
-    It's important to remember which process was selected by user. If linked process unlinks from that user-selected process, then tracing for it should be stopped. This policy is needed to avoid tracing being trasmitted to too many processes, outside of "linked island" that we were interested in.
+# Global ideas to think about
 
-1. Process was explicitly enabled to listen additional info. Currently it means collecting messages that were sent by this process. If number of message events exceeds some limit (process-wise and node-wise per second), then one summary event is generated instead. Also it might be great to trace work with ets tables, at least to count updates, inserts and deletions and to which table.
+ * When and how display information about loaded modules in system.
+   Might be useful to quickly check what modules and functions are available exactly on that system.
 
-# Other tracing
+ * It would be great to create a mechanism that allows to record communication of the port, and then reproduce it,
+   by creating a new port. How it would look like: you reproduce certain request in browser, see a problem.
+   Then you start a bot that tried to reproduce this request from time to time, while you debugging your system
+   and change code. If this mechanism could be generalized, and bots made smarter, this might become crucial part
+   of development workflow.
 
-Usually very few ports are used in apps. Probably it's safe to trace them all for `closed`, `open`, `link` and `unlink`, just like "explored" state for processes. But without having it recursively applied to linked processes. Just mention linked processes.
+ * Being able to make several queries to batiscaph, and having them displayed together with overlaps.
+   Query is actually a subscription, it updates if more info is available.
 
-Probably it's also safe to trace all `ets:new/2`, `ets:give_away/3` and `ets:setopts/2` globally. Collect information about ets tables just like about processes.
-
-If there would be a way to trace all `register`/`unregister` events, without tracing all processes in the system -- would love to have that.
-
-# Shell commands and map effects
-
- * `[whereis(A) || A <- registered()].`. Will mention and put on the map all processes that were registered on the node.
+ * Might be good to provide interface to write complicated tracing rules.
+   Just like in shell, but simplified and convenient as possible. But no abstractions on top, just as it is in runtime.
 
 # Other technical details
 
