@@ -58,7 +58,8 @@ It might be useful to have several queries in one workspace, and having interlap
 # Features to implement, tasks to do
 
  - [ ] collect and display info about, creating, deleting, owning and transferring (ets:give_away/3) ETS tables.
- - [ ] workaround execution of record expressions in erl_eval (batiscaph_steps).
+ - [x] workaround execution of record expressions in erl_eval (batiscaph_steps).
+ - [ ] calculate list of all testcases from running SUITE:all/0 through erl_eval, allow to specify 'all' in batiscaph_steps attribute
  - [ ] create link-nodes that connected to all linked processes.
        This required to make it clear which processes going to die, if any of them is dead.
        Unlink, link and trap_exit create new link-nodes.

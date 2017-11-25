@@ -42,9 +42,17 @@ parse_transform(Forms, _Options) ->
       % io:format("forms:~n~p~n", [Forms]),
       [Suite] = [M || {attribute,_,module,M} <- Forms],
       State = #suite_trans{suite = Suite, testcases = Testcases, local_finder_name = LocalFinderName},
-      case wrap_functions(Forms, State) of
-        Forms -> Forms; % no changes made, no need for local fun handler
-        Forms1 when Forms1 =/= Forms ->
+
+      % Use Erlang/OTP private module to expand record expressions
+      % into plain tuple expressions, to make it possible for erl_eval
+      % to execute.
+      %
+      % This can break in future if Erlang team decides to change this module.
+      Forms0 = erl_expand_records:module(Forms, []),
+
+      case wrap_functions(Forms0, State) of
+        Forms0 -> Forms0; % no changes made, no need for local fun handler
+        Forms1 when Forms1 =/= Forms0 ->
           % insert definiton of local fun handler at the end of the file
           [{eof, EofLine} | Rest] = lists:reverse(Forms1),
           lists:reverse([{eof, EofLine}, LocalFunHandler | Rest])

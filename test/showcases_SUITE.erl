@@ -1,7 +1,7 @@
 -module(showcases_SUITE).
 -export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
--export([file_open_test/1, ets_match_spec_transform/1, open_port_and_change_owner/1, port_dies_with_bad_reason/1]).
--batiscaph_steps([file_open_test, ets_match_spec_transform, open_port_and_change_owner, port_dies_with_bad_reason]).
+-export([empty_test/1, file_open_test/1, ets_match_spec_transform/1, ets_mspec_with_records/1, open_port_and_change_owner/1, port_dies_with_bad_reason/1]).
+-batiscaph_steps([empty_test, file_open_test, ets_match_spec_transform, ets_mspec_with_records, open_port_and_change_owner, port_dies_with_bad_reason]).
 -include_lib("stdlib/include/ms_transform.hrl").
 -include_lib("records.hrl").
 -compile({parse_transform, batiscaph_suite_transform}).
@@ -38,14 +38,20 @@ all() ->
 groups() ->
   [
     {main, [parallel], [
+      empty_test,
       file_open_test,
       ets_match_spec_transform,
+      ets_mspec_with_records,
       open_port_and_change_owner,
       port_dies_with_bad_reason
     ]},
-    {group2, [parallel], [file_open_test, ets_match_spec_transform, {group, group2_nested}]},
-    {group2_nested, [], [file_open_test, ets_match_spec_transform]}
+    {group2, [parallel], [empty_test, {group, group2_nested}]},
+    {group2_nested, [], [empty_test]}
   ].
+
+
+
+empty_test(_) -> ok.
 
 
 
@@ -62,11 +68,20 @@ file_open_test(_Config) ->
 ets_match_spec_transform(_) ->
   Tid = ets:new(test_table1, []),
   true = ets:insert(Tid, [{key1, <<"val1">>}]),
-  % true = ets:insert(Tid, [#test_record{field2 = <<"foobar">>, field1 = 1}]),
   MSpec1 = ets:fun2ms(fun ({Key, _Value} = E) when Key =:= key1 -> E end),
   [{key1, <<"val1">>}] = ets:select(Tid, MSpec1),
-  % MSpec2 = ets:fun2ms(fun (#test_record{field2 = <<"foobar">>, _ = '_'} = E) -> E end),
-  % [#test_record{field1 = 1, field2 = <<"foobar">>}] = ets:select(Tid, MSpec2),
+  ok.
+
+
+
+% test record is defined in records.hrl
+ets_mspec_with_records(_) ->
+  Tid = ets:new(test_table2, []),
+  Rec = #test_record{field2 = <<"foobar">>, field1 = 1},
+  true = ets:insert(Tid, [Rec#test_record{field3 = some_value}]),
+  MSpec = ets:fun2ms(fun (#test_record{field2 = <<"foobar">>, _ = '_'} = E) -> E end),
+  [#test_record{field1 = 1, field2 = <<"foobar">>, field3 = Val}] = ets:select(Tid, MSpec),
+  some_value = Val,
   ok.
 
 
