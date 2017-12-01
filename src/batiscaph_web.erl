@@ -10,6 +10,7 @@ restart_cowboy() ->
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/websocket", batiscaph_ws_handler, []},
+      {"/mobx_ws", batiscaph_mobx_ws_handler, []},
       {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       {"/scenarios.json", scenarios_list_handler, []},

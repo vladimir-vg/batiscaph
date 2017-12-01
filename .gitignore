@@ -1,6 +1,7 @@
 .rebar3
 .eunit
 *.o
+*.d
 *.beam
 *.plt
 *.swp
