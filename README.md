@@ -66,7 +66,7 @@ It might be useful to have several queries in one workspace, and having interlap
  - [ ] run Erlang/OTP tests using batiscaph_steps.
        Should reveal many bugs, and also good way to observe correctness of display.
  - [ ] display expression for mentioned processes in steps.
- - [ ] fix bug when only first line of multiline expression is copied when run through steps.
+ - [x] fix bug when only first line of multiline expression is copied when run through steps.
  - [ ] find out how to organize JavaScript code that works with delta and tree. objtree.js is kinda messy now.
 
 # Global ideas to think about
