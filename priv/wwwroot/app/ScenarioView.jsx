@@ -285,16 +285,20 @@ class PointElement extends React.Component {
 
 
 
+const WPADDING = CELL_HGUTTER/2;
+const HPADDING = CELL_HEIGHT/2;
+
 class ContextElement extends React.Component {
   constructor() {
     super();
     this.state = {
-      // mentionHover: null // key of the mention which is hovered
+      mentionHover: null // key of the mention which is hovered
     }
 
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
     this.onSelectClick = this.onSelectClick.bind(this);
+    this.onMouseLeaveMention = this.onMouseLeaveMention.bind(this);
   }
 
   onSelectClick() {
@@ -305,58 +309,105 @@ class ContextElement extends React.Component {
     }
   }
 
+  onMouseEnterMention(key) {
+    this.setState({mentionHover: key});
+  }
+
+  onMouseLeaveMention() {
+    this.setState({mentionHover: null})
+  }
+
   renderMentions(mentions, className) {
-    let wpadding = CELL_HGUTTER/2;
-    let nodes = [];
+    let lines = [];
+    let selectables = [];
+    const selectableHeight = 8;
     for (var key in mentions) {
       let m = mentions[key];
       let y = CELL_HEIGHT*m.y;
       let x1, x2;
       if (this.props.data.x < m.toX) {
-        x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH + wpadding;
+        x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH + WPADDING;
         x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX;
       } else {
-        x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x - wpadding;
+        x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x - WPADDING;
         x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX + CELL_WIDTH;
       }
-      nodes.push(
-        <line key={key} x1={x1} y1={y} x2={x2} y2={y} className={className}
-          onClick={this.onSelectClick} />
+
+      // actualy visible node
+      lines.push(
+        <line key={key} x1={x1} y1={y} x2={x2} y2={y} className={className} />
+      );
+
+      // clickable area
+      selectables.push(
+        <rect key={key + "-selection"} x={Math.min(x1,x2)} y={y - selectableHeight/2} width={Math.abs(x2-x1)} height={selectableHeight}
+          onClick={this.onSelectClick}
+          style={{fill: 'transparent'}}
+          onMouseEnter={this.onMouseEnterMention.bind(this, key)}
+          onMouseLeave={this.onMouseLeaveMention} />
       );
     }
-    return nodes;
+    return {lines, selectables};
+  }
+
+  renderHoveredMentionText() {
+    if (!this.state.mentionHover) { return null; }
+    let m = this.props.data.mentions[this.state.mentionHover];
+    let y = CELL_HEIGHT*m.y;
+    let dy = 4; // offset for text
+    let dx = 4; // offset for text
+    if (this.props.data.x < m.toX) {
+      let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH + WPADDING;
+      return <text x={x+dy} y={y-dy} className="label">{m.expr}</text>;
+      // x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX;
+    } else {
+      let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x - WPADDING;
+      return <text x={x-dy} y={y-dy} textAnchor="end" className="label">{m.expr}</text>;
+      // x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX + CELL_WIDTH;
+    }
   }
 
   render() {
     let ys = [this.props.data.fromY, this.props.data.toY];
     ys.sort((a,b) => a-b);
 
-    let wpadding = CELL_HGUTTER/2;
-    let hpadding = CELL_HEIGHT/2;
-    let radius = Math.floor(Math.min(wpadding, hpadding));
-    let x = this.props.data.x*(CELL_WIDTH+CELL_HGUTTER) - wpadding;
-    let y = this.props.data.fromY*CELL_HEIGHT - hpadding;
-    let width = CELL_WIDTH + wpadding*2;
-    let height = (this.props.data.toY - this.props.data.fromY)*CELL_HEIGHT + hpadding*2;
+    let radius = Math.floor(Math.min(WPADDING, HPADDING));
+    let x = this.props.data.x*(CELL_WIDTH+CELL_HGUTTER) - WPADDING;
+    let y = this.props.data.fromY*CELL_HEIGHT - HPADDING;
+    let width = CELL_WIDTH + WPADDING*2;
+    let height = (this.props.data.toY - this.props.data.fromY)*CELL_HEIGHT + HPADDING*2;
 
     if (this.props.selectedContext == this.props.data.key) {
+      let mentionText = this.renderHoveredMentionText();
+      const {lines, selectables} = this.renderMentions(this.props.data.mentions, "var-mention active");
       return [
         <Layer key="inactiveContexts" name="inactiveContexts"></Layer>,
         <Layer key="activeContexts" name="activeContexts">
           <rect onClick={this.onSelectClick} className="context active"
             x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
-          <g>{this.renderMentions(this.props.data.mentions, "var-mention active")}</g>
+          <g>{lines}</g>
+        </Layer>,
+        <Layer key="text" name="text">
+          {mentionText}
+        </Layer>,
+        <Layer key="selection" name="selection">
+          {selectables}
         </Layer>
       ];
     }
 
+    const {lines, selectables} = this.renderMentions(this.props.data.mentions, "var-mention");
     return [
       <Layer key="inactiveContexts" name="inactiveContexts">
         <rect onClick={this.onSelectClick} className="context"
           x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
-        <g>{this.renderMentions(this.props.data.mentions, "var-mention")}</g>
+        <g>{lines}</g>
       </Layer>,
-      <Layer key="activeContexts" name="activeContexts"></Layer>
+      <Layer key="activeContexts" name="activeContexts"></Layer>,
+      <Layer key="text" name="text"></Layer>,
+      <Layer key="selection" name="selection">
+        {selectables}
+      </Layer>
     ];
   }
 }
@@ -567,6 +618,7 @@ class ScenarioView extends React.Component {
         <g ref="points"></g>
         <g ref="activeContexts"></g>
         <g ref="text"></g>
+        <g ref="selection"></g>
 
         {/* entities, compose different parts on different layers */}
         <g>
