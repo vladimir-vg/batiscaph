@@ -33,7 +33,8 @@
 parse_transform(Forms, _Options) ->
   case get_steps_attr_value(Forms) of
     undefined -> Forms;
-    {ok, Testcases} ->
+    {ok, Attr} ->
+      Testcases = calculate_testcases_to_wrap(Attr, Forms),
       {eof, EofLine} = lists:last(Forms),
       % generate secret function that provides access to local functions in suite
       % later append it at the end of file
@@ -59,9 +60,84 @@ parse_transform(Forms, _Options) ->
       end
   end.
 
+
+
 get_steps_attr_value([]) -> undefined;
 get_steps_attr_value([{attribute,_Line,batiscaph_steps,Value} | _Forms]) -> {ok, Value};
 get_steps_attr_value([_ | Forms]) -> get_steps_attr_value(Forms).
+
+
+
+calculate_testcases_to_wrap(all, Forms) ->
+  calculate_testcases_from_all(Forms);
+calculate_testcases_to_wrap(Testcases, _Forms) when is_list(Testcases) ->
+  Testcases.
+
+
+
+calculate_testcases_from_all(Forms) ->
+  % if 'all' is specified in batiscaph_steps attribute
+  % then transform should try to extract list of testcases from SUITE:all/0
+  % function.
+
+  % all/0 don't have any arguments, should have no guards
+  % expected to have only one clause
+  [{function,_,all,0,[{clause,_,[],[],Exprs}]}] = [F || {function,_,all,0,_} = F <- Forms],
+  All = exec_ast_exprs(Exprs),
+  GroupsToExpand = [Name || {group, Name} <- All],
+  Testcases = [T || T <- All, is_atom(T)],
+  case GroupsToExpand of
+    [] -> Testcases;
+    _ ->
+      Testcases1 = calculate_testcases_from_groups(GroupsToExpand, Forms),
+      lists:usort(Testcases ++ Testcases1)
+  end.
+
+
+
+calculate_testcases_from_groups(Names, Forms) ->
+  [{function,_,groups,0,[{clause,_,[],[],Exprs}]}] = [F || {function,_,groups,0,_} = F <- Forms],
+  Groups = exec_ast_exprs(Exprs),
+  Map = group_testcases_map(Groups),
+  lists:flatten(maps:values(maps:with(Names, Map))).
+
+
+
+group_testcases_map(Groups) ->
+  group_testcases_map(Groups, #{}).
+
+group_testcases_map([], Acc) -> Acc;
+group_testcases_map([{Name, _Opts, Testcases} | Groups], Acc) ->
+  Testcases1 = [T || T <- Testcases, is_atom(T)],
+  SubGroupNames = [G || {group, G} <- Testcases],
+  SubGroups = maps:with(SubGroupNames, Acc),
+  Testcases2 = lists:flatten(maps:values(SubGroups)),
+  LeftSubGroups = SubGroupNames -- maps:keys(SubGroups),
+  case LeftSubGroups of
+    [] -> group_testcases_map(Groups, Acc#{Name => lists:usort(Testcases1 ++ Testcases2)});
+    [_|_] ->
+      % recursively finish the rest,
+      % and then use freshly found groups to finish this one
+      Acc1 = group_testcases_map(Groups, Acc),
+      Testcases3 = [maps:get(G, Acc1) || G <- LeftSubGroups],
+      Acc#{Name => lists:usort(Testcases1 ++ Testcases2 ++ Testcases3)}
+  end.
+
+
+
+exec_ast_exprs(Exprs) ->
+  Bindings = erl_eval:new_bindings(),
+  exec_ast_exprs(Exprs, Bindings).
+
+exec_ast_exprs([E], Bindings) ->
+  % for now no local functions execution is supported
+  {value, Value, _Bindings1} = erl_eval:expr(E, Bindings),
+  Value;
+
+exec_ast_exprs([E | Exprs], Bindings) ->
+  % for now no local functions execution is supported
+  {value, _Value, Bindings1} = erl_eval:expr(E, Bindings),
+  exec_ast_exprs(Exprs, Bindings1).
 
 
 
