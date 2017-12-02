@@ -22,7 +22,7 @@
 exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
   PrivDir = proplists:get_value(priv_dir, CtConfig),
   [_Priv, _RunDir, _, TopRunDir | _] = lists:reverse(filename:split(PrivDir)), % use RunDir as an Id for this ct run
-  {ok, BatiscaphNode} = application:get_env(batiscaph, batiscaph_node),
+  {ok, BatiscaphNode} = get_batiscaph_node(),
 
   Context = get_context_path(Suite, Testcase, CtConfig),
 
@@ -50,6 +50,18 @@ exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs)
   Value = exec1(State),
   z__client_collector ! context_stop_event(Context),
   Value.
+
+
+
+get_batiscaph_node() ->
+  case application:get_env(batiscaph, batiscaph_node) of
+    {ok, Node} when is_atom(Node) -> {ok, Node};
+    undefined ->
+      case os:getenv("BATISCAPH_NODE") of
+        false -> {error, no_batiscaph_node_to_connect};
+        Node when is_list(Node) -> {ok, list_to_atom(Node)}
+      end
+  end.
 
 
 
