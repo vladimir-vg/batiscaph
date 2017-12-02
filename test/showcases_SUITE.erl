@@ -1,7 +1,8 @@
 -module(showcases_SUITE).
 -export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
 -export([empty_test/1, file_open_test/1, ets_match_spec_transform/1, ets_mspec_with_records/1, open_port_and_change_owner/1, port_dies_with_bad_reason/1]).
--batiscaph_steps([empty_test, file_open_test, ets_match_spec_transform, ets_mspec_with_records, open_port_and_change_owner, port_dies_with_bad_reason]).
+-batiscaph_steps(all).
+% -batiscaph_steps([empty_test, file_open_test, ets_match_spec_transform, ets_mspec_with_records, open_port_and_change_owner, port_dies_with_bad_reason]).
 -include_lib("stdlib/include/ms_transform.hrl").
 -include_lib("records.hrl").
 -compile({parse_transform, batiscaph_suite_transform}).
