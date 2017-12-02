@@ -219,7 +219,25 @@ wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{suite =
 
 
 last_line_in_forms([], Line) -> Line;
-last_line_in_forms(Forms, _Line) -> element(2, lists:last(Forms)). % second element in tuple is always line number
+last_line_in_forms(Forms, Line) ->
+  % second element in tuple is always a line number
+  Last = lists:last(Forms),
+  lists:max([Line] ++ lists:flatten(get_subexpr_lines(Last))).
+
+
+
+% take second element from all tuples,
+% repeat recursively for all nested tuples
+get_subexpr_lines(Form)
+when is_tuple(Form) andalso is_atom(element(1, Form)) andalso is_integer(element(2, Form)) ->
+  Line = element(2, Form),
+  SubExprLines = lists:map(fun (I) ->
+    get_subexpr_lines(element(I, Form))
+  end, lists:seq(3, tuple_size(Form))),
+  [Line | SubExprLines];
+
+get_subexpr_lines(Form) when is_list(Form) -> [get_subexpr_lines(F) || F <- Form];
+get_subexpr_lines(_Form) -> [].
 
 
 
