@@ -140,6 +140,9 @@ handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}, State) w
 handle_trace_message0({trace_ts, Port, getting_linked, Pid, _Timestamp}, State) when is_port(Port) andalso is_pid(Pid) ->
   % ignore for now
   {ok, [], State};
+handle_trace_message0({trace_ts, Port, getting_unlinked, Pid, _Timestamp}, State) when is_port(Port) andalso is_pid(Pid) ->
+  % ignore for now
+  {ok, [], State};
 
 handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}, State) when is_pid(Pid) andalso is_pid(Pid1) ->
   E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
