@@ -162,13 +162,22 @@ read_value(<<"String">>, Binary) ->
 
 
 read_sting(<<>>, Acc) -> {ok, Acc, <<>>};
-read_sting(<<"\\\t", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\t">>);
-read_sting(<<"\\\n", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\n">>);
-read_sting(<<"\\\r", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\r">>);
-read_sting(<<"\\\\", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\\">>);
-read_sting(<<"\\t", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\t">>);
-read_sting(<<"\\n", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\n">>);
+
+% these might be present in input, but usually not in output:
+% read_sting(<<"\\\t", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\t">>);
+% read_sting(<<"\\\n", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\n">>);
+% read_sting(<<"\\\r", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\r">>);
+
+% \b, \f, \r, \n, \t, \0, \', \\
+read_sting(<<"\\b", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\b">>);
+read_sting(<<"\\f", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\f">>);
 read_sting(<<"\\r", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\r">>);
+read_sting(<<"\\n", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\n">>);
+read_sting(<<"\\t", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\t">>);
+read_sting(<<"\\0", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, 0>>);
+read_sting(<<"\\'", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "'">>);
+read_sting(<<"\\\\", Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, "\\">>);
+
 read_sting(<<"\t", Rest/binary>>, Acc) -> {ok, Acc, Rest};
 read_sting(<<"\n", Rest/binary>>, Acc) -> {ok, Acc, Rest};
 read_sting(<<C, Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, C>>).

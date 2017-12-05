@@ -159,7 +159,7 @@ context_start_event(Context, Lines) ->
     <<"pid">> => pid_to_list(self()),
     <<"type">> => <<"context_start">>,
     <<"context">> => Context,
-    <<"lines">> => jsx:encode([[N, L] || {N, L} <- Lines])
+    <<"lines">> => erlang:term_to_binary([[N, L] || {N, L} <- Lines])
   }).
 
 context_stop_event(Context) ->
