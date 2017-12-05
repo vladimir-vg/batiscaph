@@ -181,7 +181,7 @@ var_bind_event_event(Timestamp, Var, Value, Context) ->
 
 
 trace_binded_pids(Value)
-when is_atom(Value) orelse is_number(Value) orelse is_binary(Value)
+when is_atom(Value) orelse is_number(Value) orelse is_binary(Value) orelse is_bitstring(Value)
 orelse is_reference(Value) orelse is_port(Value) orelse is_function(Value) ->
   ok;
 
@@ -220,6 +220,7 @@ var_mention_events(Timestamp, Var, Value, Context) ->
 
 var_mention_events0(_, _, Value, _) when is_number(Value) -> [];
 var_mention_events0(_, _, Value, _) when is_binary(Value) -> [];
+var_mention_events0(_, _, Value, _) when is_bitstring(Value) -> [];
 var_mention_events0(_, _, Value, _) when is_atom(Value) -> [];
 var_mention_events0(_, _, Value, _) when is_reference(Value) -> [];
 var_mention_events0(_, _, Value, _) when is_port(Value) -> [];
@@ -268,6 +269,15 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_ma
     Suffix1 = <<Suffix/binary, ")">>,
     var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
   end, Keys).
+
+
+
+% E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
+% <<"pid">> => pid_to_list(self()),
+% <<"type">> => <<"error">>,
+% <<"term">> => io_lib:format("error ~p", [Args])
+% }),
+% ok = gen_server:call(z__client_collector, {event, E}),
 
 
 

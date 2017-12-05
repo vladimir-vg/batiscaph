@@ -48,7 +48,7 @@ parse_transform(Forms, _Options) ->
       % into plain tuple expressions, to make it possible for erl_eval
       % to execute.
       %
-      % This can break in future if Erlang team decides to change this module.
+      % This can break in future, if Erlang team decides to change erl_expand_records
       Forms0 = erl_expand_records:module(Forms, []),
 
       case wrap_functions(Forms0, State) of
