@@ -272,7 +272,7 @@ delta_with_table_events(Delta, TableEvents) ->
 delta_with_context_lines(#{<<"contexts">> := Contexts} = Delta, ContextLines) ->
   Contexts1 = lists:foldl(fun (#{<<"context">> := C, <<"lines">> := L}, Acc) ->
     Context = maps:get(C, Acc),
-    Acc#{C => Context#{<<"lines">> => jsx:decode(L)}}
+    Acc#{C => Context#{<<"lines">> => erlang:binary_to_term(L)}}
   end, Contexts, ContextLines),
   Delta#{<<"contexts">> => Contexts1}.
 

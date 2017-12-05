@@ -48,7 +48,7 @@ context_events_create_context(_Config) ->
   ],
   SomePid = bt:g(pid),
   Delta = produce_delta(with_map(#{at_s => bt:g(at_s), pid => bt:g(pid), context => <<"context1">>, instance_id => bt:g(instance_id, ?FUNCTION_NAME)}, [
-    #{at_mcs => 1, type => <<"context_start">>, lines => jsx:encode(Lines)},
+    #{at_mcs => 1, type => <<"context_start">>, lines => erlang:term_to_binary(Lines)},
     #{at_mcs => 2, type => <<"expr_eval_start">>, term => <<"AST1">>, line => 15},
     #{at_mcs => 3, type => <<"expr_eval_stop">>, term => <<"AST1">>, line => 15, result => <<"Term describing result of execution">>},
     #{at_mcs => 4, type => <<"expr_eval_start">>, term => <<"AST2">>, line => 15},
@@ -83,7 +83,7 @@ mixed_expr_eval_events(_Config) ->
   SomePid = bt:g(pid),
   AtS = bt:g(at_s),
   Events1 = with_map(#{at_s => AtS, pid => bt:g(pid), context => <<"mixed1">>, instance_id => bt:g(instance_id, ?FUNCTION_NAME)}, [
-    #{at_mcs => 1, type => <<"context_start">>, lines => jsx:encode(Lines)},
+    #{at_mcs => 1, type => <<"context_start">>, lines => erlang:term_to_binary(Lines)},
     #{at_mcs => 2, type => <<"expr_eval_start">>, term => <<"AST1">>, line => 15},
     #{at_mcs => 3, type => <<"expr_eval_stop">>, term => <<"AST1">>, line => 15, result => <<"Term describing result of execution">>},
     #{at_mcs => 4, type => <<"expr_eval_start">>, term => <<"AST2">>, line => 15},
@@ -96,7 +96,7 @@ mixed_expr_eval_events(_Config) ->
   ]),
 
   Events2 = with_map(#{at_s => bt:g(at_s), pid => bt:g(pid), context => <<"mixed2">>, instance_id => bt:g(instance_id, ?FUNCTION_NAME)}, [
-    #{at_mcs => 1, type => <<"context_start">>, lines => jsx:encode(Lines)},
+    #{at_mcs => 1, type => <<"context_start">>, lines => erlang:term_to_binary(Lines)},
     #{at_mcs => 2, type => <<"expr_eval_start">>, term => <<"AST1">>, line => 15},
     #{at_mcs => 3, type => <<"expr_eval_stop">>, term => <<"AST1">>, line => 15, result => <<"Term describing result of execution">>},
     #{at_mcs => 4, type => <<"expr_eval_start">>, term => <<"AST2">>, line => 15},
