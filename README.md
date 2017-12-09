@@ -29,14 +29,16 @@ This branch is for ongoing development.
 
 You need to install clickhouse (column oriented dbms) and neo4j (graph database).
 
-Specify neo4j url (`NEO4J_HTTP_URL`) with your login:pass if needed.
-You may take look at `batiscaph_app:read_config/0` function for better understanding.
+You need to specify CLICKHOUSE_DB, CLICKHOUSE_URL, NEO4J_HTTP_URL, HTTP_PORT environment variables.
+Take look at `Makefile` for better understanding.
 
 Also you need to install babel to use web interface in development mode:
 
     npm install .
 
 To start server just type `make`.
+
+When running Common Tests with batiscaph_steps you need to specify BATISCAPH_NODE environment variable, which should point out to running batiscaph server.
 
 # How it supposed to work
 
@@ -66,6 +68,7 @@ It might be useful to have several queries in one workspace, and having interlap
  - [ ] display how long it took to execute each line in batiscaph steps.
  - [ ] when context is selected, highlight all time segments where lines of this context were executed.
 
+ - [ ] make javascript tree/layout looks exactly as delta, but with some additional calculated data.
  - [ ] figure out how to correctly display one process owning many ports.
  - [ ] generate process mention expressions using record syntax when possible.
  - [ ] mechanism of skipping some of the messages if there are too many of them. Properly display that some messages were skipped.
