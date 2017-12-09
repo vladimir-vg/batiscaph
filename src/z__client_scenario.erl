@@ -1,6 +1,6 @@
 -module(z__client_scenario).
 -behaviour(gen_server).
--export([trace_started_events/2, trace_pid/1, trace_pid/2, clear_tracing/1]).
+-export([trace_started_events/2, trace_pid/1, trace_pid/2, clear_tracing/1, format_term/1]).
 -export([start_link/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -179,7 +179,7 @@ trace_pid(Pid, Opts) ->
     undefined -> % dead
       E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
         <<"type">> => <<"found_dead">>,
-        <<"pid">> => pid_to_list(Pid)
+        <<"pid">> => z__client_scenario:format_term(Pid)
       }),
       CollectorPid ! E,
       ok;
@@ -203,7 +203,7 @@ trace_pid(Pid, Opts) ->
               % just record event that it was dead at this timestamp already
               E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
                 <<"type">> => <<"found_dead">>,
-                <<"pid">> => pid_to_list(Pid)
+                <<"pid">> => z__client_scenario:format_term(Pid)
               }),
               % E = event_now(),
               % E1 = E#{<<"type">> => <<"found_dead">>, <<"pid">> => list_to_binary(pid_to_list(Pid))},
@@ -229,7 +229,7 @@ clear_tracing(Pid) ->
     1 ->
       E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
         <<"type">> => <<"trace_stopped">>,
-        <<"pid">> => erlang:pid_to_list(Pid)
+        <<"pid">> => z__client_scenario:format_term(Pid)
       }),
       z__client_collector ! E,
       ok
@@ -237,7 +237,7 @@ clear_tracing(Pid) ->
     false = erlang:is_process_alive(Pid),
     E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
       <<"type">> => <<"found_dead">>,
-      <<"pid">> => erlang:pid_to_list(Pid)
+      <<"pid">> => z__client_scenario:format_term(Pid)
     }),
     z__client_collector ! E,
     ok
@@ -260,7 +260,7 @@ trace_started_events(Timestamp, Pid) ->
     undefined ->
       [z__client_collector:event_with_timestamp(Timestamp, #{
         <<"type">> => <<"trace_started">>,
-        <<"pid">> => erlang:pid_to_list(Pid)
+        <<"pid">> => z__client_scenario:format_term(Pid)
       })];
 
     Props when is_list(Props) ->
@@ -290,7 +290,7 @@ trace_started_events(Timestamp, Pid) ->
         <<"trap_exit">> => TrapExit,
         <<"atom">> => RegName,
         <<"type">> => <<"trace_started">>,
-        <<"pid">> => erlang:pid_to_list(Pid)
+        <<"pid">> => z__client_scenario:format_term(Pid)
       }),
       [E | OtherEvents]
   end.
@@ -302,6 +302,12 @@ processes_list_to_binary(Ancestors) ->
     (Port) when is_port(Port) -> port_to_list(Port)
   end, Ancestors),
   iolist_to_binary(lists:join(" ", AncestorsBin)).
+
+
+
+format_term(Term) when is_port(Term) -> list_to_binary(port_to_list(Term));
+format_term(Term) when is_pid(Term) -> list_to_binary(pid_to_list(Term));
+format_term(Term) -> list_to_binary(io_lib:format("~P", [Term, 30])).
 
 
 
@@ -322,8 +328,8 @@ processes_list_to_binary(Ancestors) ->
 %     undefined ->
 %       E = z__client_collector:event_with_timestamp(Timestamp, #{
 %         <<"type">> => <<"found_dead">>,
-%         <<"pid">> => erlang:pid_to_list(Pid),
-%         <<"pid1">> => erlang:pid_to_list(FirstPid)
+%         <<"pid">> => pid_to_list(Pid),
+%         <<"pid1">> => pid_to_list(FirstPid)
 %       }),
 %       [E | mention_events(Timestamp, FirstPid, Pids)];
 % 
@@ -334,8 +340,8 @@ processes_list_to_binary(Ancestors) ->
 %       end,
 %       E = z__client_collector:event_with_timestamp(Timestamp, #{
 %         <<"type">> => <<"mention">>,
-%         <<"pid">> => erlang:pid_to_list(Pid),
-%         <<"pid1">> => erlang:pid_to_list(FirstPid),
+%         <<"pid">> => pid_to_list(Pid),
+%         <<"pid1">> => pid_to_list(FirstPid),
 %         <<"trap_exit">> => TrapExit
 %       }),
 %       [E | mention_events(Timestamp, FirstPid, Pids)]

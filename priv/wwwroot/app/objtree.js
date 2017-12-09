@@ -208,6 +208,11 @@ let availableColumns = (proc, layout) => {
   // iterate all parent pids
   let parentPid = proc.parentPid;
   while (parentPid) {
+    // BUG: parent might be not processed yet
+    // need to recursively process parentPid, and only then return here
+    // just skip for now
+    if (!layout.processes[parentPid]) { break; }
+
     const columnId = layout.processes[parentPid].columnId;
     const i = columns.indexOf(columnId);
     if (i != -1) {
@@ -472,12 +477,7 @@ V.produceTree = (layout) => {
     tree.contexts[key].key = key;
     tree.contexts[key].x = xFromPid(c.pid);
     tree.contexts[key].fromY = yFromTimestamp(c.startedAt);
-    if (c.stoppedAt) {
-      tree.contexts[key].toY = yFromTimestamp(c.stoppedAt);
-    } else {
-      tree.contexts[key].toY = yFromTimestamp(lastAt);
-      // tree.contexts[key].notTerminated = true;
-    }
+    tree.contexts[key].toY = yFromTimestamp(c.stoppedAt || layout.processes[c.pid].exitedAt || lastAt);
     tree.contexts[key].lines = c.lines;
     tree.contexts[key].variables = c.variables;
     tree.contexts[key].evals = {};

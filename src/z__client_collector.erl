@@ -133,7 +133,7 @@ handle_trace_message0({trace_ts, _Pid, link, _PidPort, _Timestamp}, State) -> {o
 handle_trace_message0({trace_ts, _Pid, unlink, _PidPort, _Timestamp}, State) -> {ok, [], State};
 
 handle_trace_message0({trace_ts, Pid, getting_linked, Pid1, Timestamp}, State) when is_pid(Pid) andalso is_pid(Pid1) ->
-  E = #{<<"type">> => <<"link">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
+  E = #{<<"type">> => <<"link">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"pid1">> => z__client_scenario:format_term(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1], State};
 
@@ -145,7 +145,7 @@ handle_trace_message0({trace_ts, Port, getting_unlinked, Pid, _Timestamp}, State
   {ok, [], State};
 
 handle_trace_message0({trace_ts, Pid, getting_unlinked, Pid1, Timestamp}, State) when is_pid(Pid) andalso is_pid(Pid1) ->
-  E = #{<<"type">> => <<"unlink">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => erlang:pid_to_list(Pid1)},
+  E = #{<<"type">> => <<"unlink">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"pid1">> => z__client_scenario:format_term(Pid1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1], State};
 
@@ -170,7 +170,7 @@ handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}, St
         true -> {ok, [], State}; % everything will be processed in spawned event
         false ->
           MFA1 = mfa_str(MFA),
-          E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
+          E = #{<<"type">> => <<"spawn">>, <<"pid">> => z__client_scenario:format_term(ChildPid), <<"pid1">> => z__client_scenario:format_term(ParentPid), <<"mfa">> => MFA1},
           E1 = event_with_timestamp(Timestamp, E),
           {ok, [E1], State}
       end
@@ -179,27 +179,27 @@ handle_trace_message0({trace_ts, ParentPid, spawn, ChildPid, MFA, Timestamp}, St
 % spawned is received only if ChildPid is already traced (unlike spawn)
 handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}, State) ->
   MFA1 = mfa_str(MFA),
-  E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
+  E = #{<<"type">> => <<"spawn">>, <<"pid">> => z__client_scenario:format_term(ChildPid), <<"pid1">> => z__client_scenario:format_term(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
   Events = z__client_scenario:trace_started_events(Timestamp, ChildPid),
-  % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
+  % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => pid_to_list(ChildPid)},
   % F1 = event_with_timestamp(Timestamp, F),
   {ok, [E1 | Events], State};
 
 
 
 handle_trace_message0({trace_ts, Pid, exit, Reason, Timestamp}, State) ->
-  E = #{<<"type">> => <<"exit">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Reason])},
+  E = #{<<"type">> => <<"exit">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"term">> => z__client_scenario:format_term(Reason)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1], State};
 
 handle_trace_message0({trace_ts, Pid, register, Atom, Timestamp}, State) when is_pid(Pid) ->
-  E = #{<<"type">> => <<"register">>, <<"pid">> => erlang:pid_to_list(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
+  E = #{<<"type">> => <<"register">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1], State};
 
 handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}, State) when is_pid(Pid) ->
-  E = #{<<"type">> => <<"unregister">>, <<"pid">> => erlang:pid_to_list(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
+  E = #{<<"type">> => <<"unregister">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"atom">> => atom_to_binary(Atom,latin1)},
   E1 = event_with_timestamp(Timestamp, E),
   {ok, [E1], State};
 
@@ -207,19 +207,19 @@ handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}, State) when 
 
 % handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) when is_pid(Pid) ->
 %   E = case To of
-%     _ when is_pid(To) -> #{<<"pid1">> => erlang:pid_to_list(To)};
+%     _ when is_pid(To) -> #{<<"pid1">> => pid_to_list(To)};
 %     _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
 %   end,
-%   E1 = E#{<<"type">> => <<"send">>, <<"pid">> => erlang:pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
+%   E1 = E#{<<"type">> => <<"send">>, <<"pid">> => pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
 %   E2 = event_with_timestamp(Timestamp, E1),
 %   {ok, [E2]};
 
 % handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) when is_pid(Pid) ->
 %   To1 = case To of
-%     _ when is_pid(To) -> erlang:pid_to_list(To);
+%     _ when is_pid(To) -> pid_to_list(To);
 %     _ when is_atom(To) -> atom_to_binary(To, latin1)
 %   end,
-%   E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => erlang:pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
+%   E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
 %   E1 = event_with_timestamp(Timestamp, E),
 %   {ok, [E1]};
 
@@ -227,15 +227,15 @@ handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}, State) when 
 
 handle_trace_message0({trace_ts, Port, open, Pid, DriverName, Timestamp}, State) when is_port(Port) ->
   E = event_with_timestamp(Timestamp, #{
-    <<"type">> => <<"port_open">>, <<"pid">> => io_lib:format("~p", [Pid]), <<"port">> => io_lib:format("~p", [Port]),
+    <<"type">> => <<"port_open">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"port">> => z__client_scenario:format_term(Port),
     <<"atom">> => atom_to_binary(DriverName,latin1)
   }),
   {ok, [E], State};
 
 handle_trace_message0({trace_ts, Port, closed, Reason, Timestamp}, State) when is_port(Port) ->
   E = event_with_timestamp(Timestamp, #{
-    <<"type">> => <<"port_close">>, <<"pid">> => <<>>, <<"port">> => io_lib:format("~p", [Port]),
-    <<"term">> => io_lib:format("~p", [Reason])
+    <<"type">> => <<"port_close">>, <<"pid">> => <<>>, <<"port">> => z__client_scenario:format_term(Port),
+    <<"term">> => z__client_scenario:format_term(Reason)
   }),
   {ok, [E], State};
 
@@ -261,8 +261,8 @@ when is_pid(Pid) andalso is_port(Port) ->
 
     {NewOwner, Map1} when is_pid(NewOwner) ->
       E = event_with_timestamp(Timestamp, #{
-        <<"type">> => <<"port_owner_change">>, <<"pid">> => pid_to_list(Pid), <<"port">> => io_lib:format("~p", [Port]),
-        <<"pid1">> => pid_to_list(NewOwner)
+        <<"type">> => <<"port_owner_change">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"port">> => z__client_scenario:format_term(Port),
+        <<"pid1">> => z__client_scenario:format_term(NewOwner)
       }),
       State1 = State#collector{change_port_owner_map = Map1},
       {ok, [E], State1}
@@ -286,8 +286,8 @@ handle_trace_message0({trace_ts, Pid, return_from, {erlang, port_connect, 2}, tr
 
     {{NewOwner, Port}, Map1} when is_pid(NewOwner) andalso is_port(Port) ->
       E = event_with_timestamp(Timestamp, #{
-        <<"type">> => <<"port_owner_change">>, <<"pid">> => pid_to_list(Pid), <<"port">> => io_lib:format("~p", [Port]),
-        <<"pid1">> => pid_to_list(NewOwner)
+        <<"type">> => <<"port_owner_change">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"port">> => z__client_scenario:format_term(Port),
+        <<"pid1">> => z__client_scenario:format_term(NewOwner)
       }),
       State1 = State#collector{change_port_owner_map = Map1},
       {ok, [E], State1}
