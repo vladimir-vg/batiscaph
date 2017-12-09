@@ -71,7 +71,7 @@ delta_json(#{instance_id := Id} = Opts) ->
       "ORDER BY rel.at\n"
       "WITH p1, FILTER(e IN COLLECT({at: rel.at, type: TYPE(rel)}) WHERE e.at IS NOT NULL) AS events\n"
       "ORDER BY p1.appearedAt\n"
-      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, p1.registeredName AS registeredName, events\n"
+      "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.parentPid AS parentPid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, p1.registeredName AS registeredName, events\n"
     , TimeParams#{id => Id} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
@@ -194,8 +194,8 @@ process_events(Id, [#{<<"type">> := <<"spawn">>} = E | Events], Acc) ->
     { "MATCH (parent:Process {pid: {parent}, instanceId: {id}})\n"
       % "WHERE parent.instanceId = {id} AND parent.pid = {parent}\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.spawnedAt = {at}, proc.appearedAt = {at}, proc.key = {key}\n"
-      "ON MATCH SET proc.spawnedAt = {at}\n"
+      "ON CREATE SET proc.spawnedAt = {at}, proc.parentPid = {parent}, proc.appearedAt = {at}, proc.key = {key}\n"
+      "ON MATCH SET proc.spawnedAt = {at}, proc.parentPid = {parent}\n"
       "CREATE (parent)-[:SPAWN { at: {at} }]->(proc)\n"
       % "CREATE\t(proc:Process { instanceId: {id}, pid: {pid}, spawnedAt: {at}, appearedAt: {at} }),\n"
       % "\t\n"

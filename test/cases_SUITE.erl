@@ -1,6 +1,13 @@
 -module(cases_SUITE).
 -export([all/0, groups/0, init_per_suite/1, end_per_suite/1]).
--export([open_and_close_port/1, register_port/1, link_port_to_other_process/1, change_port_owner/1, change_port_owner_by_message/1]).
+-export([
+  have_parent_pid/1,
+  open_and_close_port/1,
+  register_port/1,
+  link_port_to_other_process/1,
+  change_port_owner/1,
+  change_port_owner_by_message/1
+]).
 
 
 
@@ -14,6 +21,7 @@ all() ->
 
 groups() ->
   [{main, [parallel], [
+    have_parent_pid,
     open_and_close_port,
     register_port,
     link_port_to_other_process,
@@ -48,6 +56,28 @@ end_per_suite(Config) ->
   exit(Pid, kill),
   exit(whereis(z__client_sup), kill),
   Config.
+
+
+
+have_parent_pid(Config) ->
+  {ok, {ok, Pid1, Pid2}, _Events, Delta} = trace_case(Config, fun () ->
+    Self = self(),
+    Pid1 = spawn(fun () ->
+      Pid2 = spawn(fun () -> ok end),
+      Self ! {second_pid, Pid2}
+    end),
+
+    receive {second_pid, Pid2} -> {ok, Pid1, Pid2}
+    after 1000 -> error(expected_to_receive_child_pid)
+    end
+  end),
+
+  Pid1Bin = list_to_binary(pid_to_list(Pid1)),
+  Pid2Bin = list_to_binary(pid_to_list(Pid2)),
+  ct:pal("Pid1: ~p, pid2: ~p, delta: ~p", [Pid1, Pid2, Delta]),
+  #{processes := #{Pid1Bin := #{spawnedAt := _}, Pid2Bin := #{parentPid := Pid1Bin, spawnedAt := _}}} = Delta,
+
+  ok.
 
 
 
@@ -182,7 +212,7 @@ trace_case(Config, Fun) when is_function(Fun) ->
   InstanceId = proplists:get_value(instance_id, Config),
 
   T1 = erlang:system_time(micro_seconds),
-  ok = z__client_scenario:trace_pid(self()),
+  ok = z__client_scenario:trace_pid(self(), #{set_on_spawn => true}),
 
   Result = Fun(),
 
