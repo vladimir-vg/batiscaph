@@ -9,6 +9,9 @@ const PORT_BODY_SHIFT = 2; // how many pixels of port body should be outside pro
 const MENTION_PADDING = 2;
 const SOURCE_PANEL_WIDTH = 520;
 
+const LABEL_XPADDING = 4;
+const LABEL_YPADDING = 4;
+
 
 
 class Layer extends React.Component {
@@ -156,7 +159,7 @@ class ProcessElement extends React.Component {
     //   text = "."; // show that we have something to display
     // }
     if (this.state.displayText) {
-      text = this.props.data.registeredName;
+      text = this.props.data.registeredName || this.props.data.pid;
     }
 
     return <text x={x} y={y} className="label">{text}</text>;
@@ -354,17 +357,24 @@ class ContextElement extends React.Component {
     if (!this.state.mentionHover) { return null; }
     let m = this.props.data.mentions[this.state.mentionHover];
     let y = CELL_HEIGHT*m.y;
-    let dy = 4; // offset for text
-    let dx = 4; // offset for text
     if (this.props.data.x < m.toX) {
       let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH + WPADDING;
-      return <text x={x+dy} y={y-dy} className="label">{m.expr}</text>;
+      return <text x={x+LABEL_XPADDING} y={y-LABEL_YPADDING} className="label">{m.expr}</text>;
       // x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX;
     } else {
       let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x - WPADDING;
-      return <text x={x-dy} y={y-dy} textAnchor="end" className="label">{m.expr}</text>;
+      return <text x={x-LABEL_XPADDING} y={y-LABEL_YPADDING} textAnchor="end" className="label">{m.expr}</text>;
       // x2 = (CELL_WIDTH+CELL_HGUTTER)*m.toX + CELL_WIDTH;
     }
+  }
+
+  renderContextText() {
+    const parts = this.props.data.key.split(' ');
+    const text = parts[parts.length-1];
+
+    let x = 1 + this.props.data.x*(CELL_WIDTH+CELL_HGUTTER) - WPADDING;
+    let y = this.props.data.fromY*CELL_HEIGHT - HPADDING;
+    return <text x={x} y={y-LABEL_YPADDING} className="label">{text}</text>;
   }
 
   render() {
@@ -378,6 +388,7 @@ class ContextElement extends React.Component {
     let height = (this.props.data.toY - this.props.data.fromY)*CELL_HEIGHT + HPADDING*2;
 
     if (this.props.selectedContext == this.props.data.key) {
+      const contextText = this.renderContextText();
       let mentionText = this.renderHoveredMentionText();
       const {lines, selectables} = this.renderMentions(this.props.data.mentions, "var-mention active");
       return [
@@ -389,6 +400,7 @@ class ContextElement extends React.Component {
         </Layer>,
         <Layer key="text" name="text">
           {mentionText}
+          {contextText}
         </Layer>,
         <Layer key="selection" name="selection">
           {selectables}
