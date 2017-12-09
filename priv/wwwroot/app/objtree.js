@@ -126,6 +126,7 @@ let updateProcessInLayout = (data, layout) => {
   // so simply update them
   proc.appearedAt = data.appearedAt;
   proc.spawnedAt = data.spawnedAt;
+  proc.parentPid = data.parentPid;
   proc.exitedAt = data.exitedAt;
   proc.exitReason = data.exitReason;
   proc.disappearedAt = data.disappearedAt;
@@ -144,7 +145,7 @@ let updateProcessInLayout = (data, layout) => {
 
   if (!wasOpen) {
     if (proc.columnId) { console.error("proc not supposed to have columnId, was just opened", proc); return; }
-    let columnId = selectColumnAvailableAt(proc.appearedAt, layout);
+    let columnId = selectColumnAvailableAt(proc, layout);
     proc.columnId = columnId;
     layout.columns[columnId].processes.push({pid: proc.pid, appearedAt: proc.appearedAt, disappearedAt: proc.disappearedAt});
   } if (wasOpen && !wasClosed) {
@@ -199,11 +200,35 @@ let insertTimestampIntoOrder = (at, layout) => {
   }
 };
 
-let selectColumnAvailableAt = (at, layout) => {
+
+
+let availableColumns = (proc, layout) => {
+  let columns = layout.columnsOrder.slice();
+
+  // iterate all parent pids
+  let parentPid = proc.parentPid;
+  while (parentPid) {
+    const columnId = layout.processes[parentPid].columnId;
+    const i = columns.indexOf(columnId);
+    if (i != -1) {
+      // copy all columns located to right from current
+      columns = columns.slice(i);
+    }
+    parentPid = layout.processes[parentPid].parentPid;
+  }
+
+  return columns;
+};
+
+let selectColumnAvailableAt = (proc, layout) => {
+  const at = proc.appearedAt;
+
   if (!at) { console.error("got bad value for column select: ", at); return; }
 
-  for (let i in layout.columnsOrder) {
-    let id = layout.columnsOrder[i];
+  let columns = availableColumns(proc, layout);
+
+  for (let i in columns) {
+    let id = columns[i];
     let lastProc = layout.columns[id].processes[layout.columns[id].processes.length-1];
     if (!lastProc) {
       console.error("Unexpected column without processes: ", id, layout.columns[id]);

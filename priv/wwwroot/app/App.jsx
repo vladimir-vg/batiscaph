@@ -40,6 +40,7 @@ class App extends React.Component {
       this.setState({instanceId: id});
     } else if (event.data.indexOf("delta ") == 0) {
       let delta = JSON.parse(event.data.slice("delta ".length));
+      console.log("delta", delta);
       this.applyDeltaSetState(delta);
     } else if (event.data.indexOf('shell_input_ready ') == 0) {
       let prompt = event.data.split(' ')[1];
