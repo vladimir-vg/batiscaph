@@ -144,7 +144,7 @@ class ProcessElement extends React.Component {
     let y1 = CELL_HEIGHT*startY - CELL_HEIGHT/2;
     let y2 = CELL_HEIGHT*stopY - CELL_HEIGHT/2;
 
-    return <line x1={x} y1={y1} x2={x} y2={y2} style={{stroke: '#EDEDED', strokeWidth: 2}} />;
+    return <line x1={x} y1={y1} x2={x} y2={y2} className="process-connecting-line" />;
   }
 
   renderTextInfo() {
@@ -285,7 +285,7 @@ class PointElement extends React.Component {
 
 
 
-const WPADDING = CELL_HGUTTER/2;
+const WPADDING = 0; // CELL_HGUTTER/2;
 const HPADDING = CELL_HEIGHT/2;
 
 class ContextElement extends React.Component {
@@ -372,9 +372,9 @@ class ContextElement extends React.Component {
     ys.sort((a,b) => a-b);
 
     let radius = Math.floor(Math.min(WPADDING, HPADDING));
-    let x = this.props.data.x*(CELL_WIDTH+CELL_HGUTTER) - WPADDING;
+    let x = 1 + this.props.data.x*(CELL_WIDTH+CELL_HGUTTER) - WPADDING;
     let y = this.props.data.fromY*CELL_HEIGHT - HPADDING;
-    let width = CELL_WIDTH + WPADDING*2;
+    let width = -2 + CELL_WIDTH + WPADDING*2;
     let height = (this.props.data.toY - this.props.data.fromY)*CELL_HEIGHT + HPADDING*2;
 
     if (this.props.selectedContext == this.props.data.key) {
@@ -384,7 +384,7 @@ class ContextElement extends React.Component {
         <Layer key="inactiveContexts" name="inactiveContexts"></Layer>,
         <Layer key="activeContexts" name="activeContexts">
           <rect onClick={this.onSelectClick} className="context active"
-            x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
+            x={x} y={y} width={width} height={height} />
           <g>{lines}</g>
         </Layer>,
         <Layer key="text" name="text">
@@ -400,7 +400,9 @@ class ContextElement extends React.Component {
     return [
       <Layer key="inactiveContexts" name="inactiveContexts">
         <rect onClick={this.onSelectClick} className="context"
-          x={x} y={y} width={width} height={height} rx={radius} ry={radius} />
+          x={x} y={y} width={width} height={height} />
+      </Layer>,
+      <Layer key="inactiveContextsLines" name="inactiveContextsLines">
         <g>{lines}</g>
       </Layer>,
       <Layer key="activeContexts" name="activeContexts"></Layer>,
@@ -608,10 +610,11 @@ class ScenarioView extends React.Component {
         {/* layers where dom is actually rendered */}
         <g ref="highlightArea"></g>
         <g ref="mentions"></g>
-        <g ref="inactiveContexts"></g>
         <g ref="linksBehindProcesses"></g>
         <g ref="spawnsBehindProcesses"></g>
+        <g ref="inactiveContextsLines"></g>
         <g ref="processes"></g>
+        <g ref="inactiveContexts"></g>
         <g ref="portBodies"></g>
         <g ref="linksOnProcesses"></g>
         <g ref="spawnsOnProcesses"></g>

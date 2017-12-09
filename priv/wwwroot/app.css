@@ -106,7 +106,8 @@ code { font-family: 'Ubuntu Mono', monospace; }
 
 
 svg.ScenarioView rect.context {
-  stroke: #D9D9D9;
+  /*stroke: #D9D9D9;*/
+  stroke: #BDBDBD;
   stroke-width: 2px;
   fill: transparent;
 }
@@ -115,7 +116,8 @@ svg.ScenarioView rect.context.active {
 }
 
 svg.ScenarioView line.var-mention {
-  stroke: #D9D9D9;
+  stroke: #EDEDED;
+  /*style={{stroke: '#EDEDED', strokeWidth: 2}}*/
   stroke-width: 2px;
 }
 svg.ScenarioView line.var-mention.active {
@@ -146,6 +148,13 @@ svg.ScenarioView rect.exit-reason {
 svg.ScenarioView text.label {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 12px;
+}
+
+
+
+svg.ScenarioView line.process-connecting-line {
+  stroke: #D9D9D9;
+  stroke-width: 2px;
 }
 
 /*svg .unselectable {
