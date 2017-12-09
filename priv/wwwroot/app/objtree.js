@@ -439,13 +439,20 @@ V.produceTree = (layout) => {
     tree.processes[pid].parts = produceVisibleParts(p.events, tree.processes[pid].mentions, tree.processes[pid].stopY);
   }
 
+
+  const lastAt = layout.timestamps[layout.timestamps.length-1];
   for (const key in layout.contexts) {
     let c = layout.contexts[key];
     tree.contexts[key] = tree.contexts[key] || {};
     tree.contexts[key].key = key;
     tree.contexts[key].x = xFromPid(c.pid);
     tree.contexts[key].fromY = yFromTimestamp(c.startedAt);
-    tree.contexts[key].toY = yFromTimestamp(c.stoppedAt);
+    if (c.stoppedAt) {
+      tree.contexts[key].toY = yFromTimestamp(c.stoppedAt);
+    } else {
+      tree.contexts[key].toY = yFromTimestamp(lastAt);
+      // tree.contexts[key].notTerminated = true;
+    }
     tree.contexts[key].lines = c.lines;
     tree.contexts[key].variables = c.variables;
     tree.contexts[key].evals = {};
