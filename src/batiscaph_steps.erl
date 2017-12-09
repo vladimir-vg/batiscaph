@@ -156,7 +156,7 @@ log_bindings(Timestamp, Bindings, Context) ->
 
 context_start_event(Context, Lines) ->
   z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
-    <<"pid">> => pid_to_list(self()),
+    <<"pid">> => z__client_scenario:format_term(self()),
     <<"type">> => <<"context_start">>,
     <<"context">> => Context,
     <<"lines">> => erlang:term_to_binary([[N, L] || {N, L} <- Lines])
@@ -164,18 +164,18 @@ context_start_event(Context, Lines) ->
 
 context_stop_event(Context) ->
   z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
-    <<"pid">> => pid_to_list(self()),
+    <<"pid">> => z__client_scenario:format_term(self()),
     <<"type">> => <<"context_stop">>,
     <<"context">> => Context
   }).
 
 var_bind_event_event(Timestamp, Var, Value, Context) ->
   z__client_collector:event_with_timestamp(Timestamp, #{
-    <<"pid">> => pid_to_list(self()),
+    <<"pid">> => z__client_scenario:format_term(self()),
     <<"type">> => <<"var_bind">>,
     <<"context">> => Context,
     <<"atom">> => atom_to_binary(Var, latin1),
-    <<"term">> => io_lib:format("~p", [Value])
+    <<"term">> => z__client_scenario:format_term(Value)
   }).
 
 
@@ -250,7 +250,7 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_li
           var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context);
 
         Value1 ->
-          Prefix1 = <<"proplists:get_value(", (list_to_binary(io_lib:format("~p",[Key])))/binary, ",", Prefix/binary>>,
+          Prefix1 = <<"proplists:get_value(", (z__client_scenario:format_term(Key))/binary, ",", Prefix/binary>>,
           Suffix1 = <<Suffix/binary, ")">>,
           var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
       end;
@@ -265,7 +265,7 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_ma
   Keys = maps:keys(Value),
   lists:map(fun (Key) ->
     Value1 = maps:get(Key, Value),
-    Prefix1 = <<"maps:get(", (list_to_binary(io_lib:format("~p",[Key])))/binary, ",", Prefix/binary>>,
+    Prefix1 = <<"maps:get(", (z__client_scenario:format_term(Key))/binary, ",", Prefix/binary>>,
     Suffix1 = <<Suffix/binary, ")">>,
     var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
   end, Keys).
@@ -273,7 +273,7 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_ma
 
 
 % E = z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
-% <<"pid">> => pid_to_list(self()),
+% <<"pid">> => z__client_scenario:format_term(self()),
 % <<"type">> => <<"error">>,
 % <<"term">> => io_lib:format("error ~p", [Args])
 % }),
@@ -283,11 +283,11 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_ma
 
 var_mention_event1(Timestamp, Expr, Pid, Context) when is_binary(Expr) ->
   z__client_collector:event_with_timestamp(Timestamp, #{
-    <<"pid">> => pid_to_list(self()),
+    <<"pid">> => z__client_scenario:format_term(self()),
     <<"type">> => <<"var_mention">>,
     % <<"atom">> => atom_to_binary(Var, latin1),
     <<"term">> => Expr, % this is not really a term, but an expression how this value was extracted
-    <<"pid1">> => pid_to_list(Pid),
+    <<"pid1">> => z__client_scenario:format_term(Pid),
     <<"context">> => Context
   }).
 
@@ -295,26 +295,26 @@ var_mention_event1(Timestamp, Expr, Pid, Context) when is_binary(Expr) ->
 
 expr_eval_start_event(Timestamp, Expr, Context) ->
   z__client_collector:event_with_timestamp(Timestamp, #{
-    <<"pid">> => pid_to_list(self()),
+    <<"pid">> => z__client_scenario:format_term(self()),
     <<"type">> => <<"expr_eval_start">>,
-    <<"term">> => io_lib:format("~p", [Expr]),
+    <<"term">> => z__client_scenario:format_term(Expr),
     <<"context">> => Context,
     <<"line">> => element(2, Expr)
   }).
 
 expr_eval_stop_event(Timestamp, Expr, Context, Result) ->
   z__client_collector:event_with_timestamp(Timestamp, #{
-    <<"pid">> => pid_to_list(self()),
+    <<"pid">> => z__client_scenario:format_term(self()),
     <<"type">> => <<"expr_eval_stop">>,
-    <<"term">> => io_lib:format("~p", [Expr]),
+    <<"term">> => z__client_scenario:format_term(Expr),
     <<"context">> => Context,
     <<"line">> => element(2, Expr),
-    <<"result">> => io_lib:format("~p", [Result])
+    <<"result">> => z__client_scenario:format_term(Result)
   }).
 
 % exec_step_start_event(Expr, Lines, Context) ->
 %   z__client_collector:event_with_timestamp(erlang:system_time(micro_seconds), #{
-%     <<"pid">> => pid_to_list(self()),
+%     <<"pid">> => z__client_scenario:format_term(self()),
 %     <<"type">> => <<"exec_step_start">>,
 %     <<"context">> => Context,
 %     <<"term">> => io_lib:format("~p", [Expr])
