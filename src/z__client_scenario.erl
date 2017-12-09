@@ -188,7 +188,7 @@ trace_pid(Pid, Opts) ->
     {flags, []} ->
       try erlang:trace(Pid, true, [{tracer, CollectorPid} | Flags]) of
         1 ->
-          Events = trace_started_events(erlang:system_time(micro_seconds), Pid, [with_mentions]),
+          Events = trace_started_events(erlang:system_time(micro_seconds), Pid),
           % io:format("got events: ~p\n",[Events]),
           % E = trace_started_event(erlang:system_time(micro_seconds), Pid),
           CollectorPid ! {events, Events},
@@ -245,17 +245,21 @@ clear_tracing(Pid) ->
 
 
 
-trace_started_events(Timestamp, Pid) -> trace_started_events(Timestamp, Pid, []).
+% trace_started_events(Timestamp, Pid) -> trace_started_events(Timestamp, Pid, []).
 
-trace_started_events(Timestamp, Pid, Opts) ->
+trace_started_events(Timestamp, Pid) ->
   App = case application:get_application(Pid) of
     {ok, Atom} -> atom_to_binary(Atom, latin1);
     undefined -> <<>>
   end,
   case process_info(Pid, [dictionary, registered_name, trap_exit, links]) of
+    % If process is already dead
+    % then generate trace_started with no additional info.
+    % If this process is really traced, then it will generate exit event
+    % and will be properly handled, shouldn't worry about it here.
     undefined ->
       [z__client_collector:event_with_timestamp(Timestamp, #{
-        <<"type">> => <<"found_dead">>,
+        <<"type">> => <<"trace_started">>,
         <<"pid">> => erlang:pid_to_list(Pid)
       })];
 
@@ -301,38 +305,38 @@ processes_list_to_binary(Ancestors) ->
 
 
 
-mention_events(_Timestamp, _FirstPid, []) -> [];
-mention_events(Timestamp, FirstPid, [Port | Pids]) when is_port(Port) ->
-  mention_events(Timestamp, FirstPid, Pids);
-mention_events(Timestamp, FirstPid, [Atom | Pids]) when is_atom(Atom) ->
-  case whereis(Atom) of
-    undefined -> mention_events(Timestamp, FirstPid, Pids);
-    Pid when is_pid(Pid) ->
-      % maybe would be better to show mention not towards particular process,
-      % but to registered name
-      mention_events(Timestamp, FirstPid, [Pid | Pids])
-  end;
-
-mention_events(Timestamp, FirstPid, [Pid | Pids]) when is_pid(Pid) ->
-  case process_info(Pid, [trap_exit]) of
-    undefined ->
-      E = z__client_collector:event_with_timestamp(Timestamp, #{
-        <<"type">> => <<"found_dead">>,
-        <<"pid">> => erlang:pid_to_list(Pid),
-        <<"pid1">> => erlang:pid_to_list(FirstPid)
-      }),
-      [E | mention_events(Timestamp, FirstPid, Pids)];
-
-    Props ->
-      TrapExit = case proplists:get_value(trap_exit, Props) of
-        true -> 1;
-        false -> 0
-      end,
-      E = z__client_collector:event_with_timestamp(Timestamp, #{
-        <<"type">> => <<"mention">>,
-        <<"pid">> => erlang:pid_to_list(Pid),
-        <<"pid1">> => erlang:pid_to_list(FirstPid),
-        <<"trap_exit">> => TrapExit
-      }),
-      [E | mention_events(Timestamp, FirstPid, Pids)]
-  end.
+% mention_events(_Timestamp, _FirstPid, []) -> [];
+% mention_events(Timestamp, FirstPid, [Port | Pids]) when is_port(Port) ->
+%   mention_events(Timestamp, FirstPid, Pids);
+% mention_events(Timestamp, FirstPid, [Atom | Pids]) when is_atom(Atom) ->
+%   case whereis(Atom) of
+%     undefined -> mention_events(Timestamp, FirstPid, Pids);
+%     Pid when is_pid(Pid) ->
+%       % maybe would be better to show mention not towards particular process,
+%       % but to registered name
+%       mention_events(Timestamp, FirstPid, [Pid | Pids])
+%   end;
+% 
+% mention_events(Timestamp, FirstPid, [Pid | Pids]) when is_pid(Pid) ->
+%   case process_info(Pid, [trap_exit]) of
+%     undefined ->
+%       E = z__client_collector:event_with_timestamp(Timestamp, #{
+%         <<"type">> => <<"found_dead">>,
+%         <<"pid">> => erlang:pid_to_list(Pid),
+%         <<"pid1">> => erlang:pid_to_list(FirstPid)
+%       }),
+%       [E | mention_events(Timestamp, FirstPid, Pids)];
+% 
+%     Props ->
+%       TrapExit = case proplists:get_value(trap_exit, Props) of
+%         true -> 1;
+%         false -> 0
+%       end,
+%       E = z__client_collector:event_with_timestamp(Timestamp, #{
+%         <<"type">> => <<"mention">>,
+%         <<"pid">> => erlang:pid_to_list(Pid),
+%         <<"pid1">> => erlang:pid_to_list(FirstPid),
+%         <<"trap_exit">> => TrapExit
+%       }),
+%       [E | mention_events(Timestamp, FirstPid, Pids)]
+%   end.

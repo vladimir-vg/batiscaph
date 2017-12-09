@@ -181,10 +181,10 @@ handle_trace_message0({trace_ts, ChildPid, spawned, ParentPid, MFA, Timestamp}, 
   MFA1 = mfa_str(MFA),
   E = #{<<"type">> => <<"spawn">>, <<"pid">> => erlang:pid_to_list(ChildPid), <<"pid1">> => erlang:pid_to_list(ParentPid), <<"mfa">> => MFA1},
   E1 = event_with_timestamp(Timestamp, E),
-  [F] = z__client_scenario:trace_started_events(Timestamp, ChildPid),
+  Events = z__client_scenario:trace_started_events(Timestamp, ChildPid),
   % F = #{<<"type">> => <<"trace_started">>, <<"pid">> => erlang:pid_to_list(ChildPid)},
   % F1 = event_with_timestamp(Timestamp, F),
-  {ok, [E1, F], State};
+  {ok, [E1 | Events], State};
 
 
 
