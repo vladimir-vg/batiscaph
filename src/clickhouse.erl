@@ -126,10 +126,19 @@ parse_rows(ReturnType, Binary) ->
   Columns = binary:split(ColumnsRaw, <<"\t">>, [global]),
   [TypesRaw, Rest2] = binary:split(Rest1, <<"\n">>),
   Types = binary:split(TypesRaw, <<"\t">>, [global]),
-  parse_rows(ReturnType, lists:zip(Columns, Types), Rest2, []).
+  parse_rows(ReturnType, lists:zip(Columns, Types), Rest2, parse_rows_init(ReturnType)).
 
-% currently no other return types supported than 'maps'
+
+
+parse_rows_init({two_column_lists_map, _}) -> #{};
+parse_rows_init(_) -> [].
+
+
+
 parse_rows(maps, _Columns, <<>>, Acc) -> {ok, lists:reverse(Acc)};
+parse_rows(one_column_list, _Columns, <<>>, Acc) -> {ok, lists:reverse(Acc)};
+parse_rows({two_column_lists_map, _Key}, _Columns, <<>>, Acc) -> {ok, Acc};
+parse_rows({lists_prop, _Key}, _Columns, <<>>, Acc) -> {ok, lists:reverse(Acc)};
 parse_rows(ReturnType, Columns, Binary, Acc) ->
   {Row, Rest} = read_row(Columns, Binary),
   Acc1 = collect_row(ReturnType, Columns, Row, Acc),
@@ -185,7 +194,7 @@ read_sting(<<C, Rest/binary>>, Acc) -> read_sting(Rest, <<Acc/binary, C>>).
 
 
 read_int(Binary) ->
-  [Val, Rest] = binary:split(Binary, [<<"\t">>, <<"\n">>]),
+  [Val, Rest] = binary:split(Binary, [<<"\t">>, <<"\n">>]), 
   {binary_to_integer(Val), Rest}.
 
 
@@ -204,4 +213,26 @@ collect_row(maps, Columns, Values, Acc) ->
   Row = lists:foldl(fun ({{Col, _Type}, Value}, Row1) ->
     Row1#{Col => Value}
   end, #{}, lists:zip(Columns, Values)),
-  [Row | Acc].
+  [Row | Acc];
+
+collect_row(one_column_list, [_], [Value], Acc) ->
+  [Value | Acc];
+
+collect_row({two_column_lists_map, Key1}, [{Key1, _}, {_, _}], [Value1, Value2], Acc) ->
+  List = maps:get(Value1, Acc, []),
+  Acc#{Value1 => [Value2 | List]};
+collect_row({two_column_lists_map, Key1}, [{_, _}, {Key1, _}], [Value2, Value1], Acc) ->
+  List = maps:get(Value1, Acc, []),
+  Acc#{Value1 => [Value2 | List]};
+
+collect_row({lists_prop, Key1}, [{Key1, _}, {_, _}], [Value1, Value2], Acc) ->
+  collect_row_lists_prop(Value1, Value2, Acc);
+collect_row({lists_prop, Key1}, [{_, _}, {Key1, _}], [Value2, Value1], Acc) ->
+  collect_row_lists_prop(Value1, Value2, Acc).
+
+collect_row_lists_prop(KeyValue, ElementValue, [{KeyValue, List} | Acc]) ->
+  [{KeyValue, [ElementValue | List]} | Acc];
+collect_row_lists_prop(KeyValue1, ElementValue, [{KeyValue2, List} | Acc]) ->
+  [{KeyValue1, [ElementValue]}, {KeyValue2, lists:reverse(List)} | Acc];
+collect_row_lists_prop(KeyValue1, ElementValue, []) ->
+  [{KeyValue1, [ElementValue]}].

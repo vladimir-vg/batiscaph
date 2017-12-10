@@ -16,7 +16,7 @@ terminate(_Reason, _Req, _State) ->
 
 
 handle(Req, State) ->
-  case get_items_list(1000) of
+  case get_items_list(100) of
     % {error, Reason} ->
     %   Body = iolist_to_binary(io_lib:format("~p", [Reason])),
     %   {ok, Req1} = cowboy_req:reply(500, [{<<"content-type">>, <<"text/plain">>}], Body, Req),
@@ -34,14 +34,55 @@ handle(Req, State) ->
 % scenarios which dir doesn't look like a date go first (like 'learn-you-some-erlang')
 get_items_list(MaxItems) ->
   DBName = batiscaph:get_prop(clickhouse_dbname),
-  SQL = iolist_to_binary([
-    "SELECT instance_id, min(toUInt64(at_s)) AS min_at\n",
+  SQL1 = iolist_to_binary([
+    "SELECT instance_id\n",
     "FROM `", DBName, "`.events\n",
     "GROUP BY instance_id\n",
-    "ORDER BY min_at DESC\n",
+    "ORDER BY min(toUInt64(at_s)) DESC\n",
     "LIMIT ", integer_to_binary(MaxItems), "\n",
     "FORMAT TabSeparatedWithNamesAndTypes\n"
   ]),
-  {ok, Body} = clickhouse:execute(SQL),
-  {ok, Items} = clickhouse:parse_rows(maps, Body),
-  {ok, Items}.
+  {ok, Body1} = clickhouse:execute(SQL1),
+  {ok, Ids} = clickhouse:parse_rows(one_column_list, Body1),
+
+  SQL2 = iolist_to_binary([
+    "SELECT instance_id, context\n"
+    "FROM `", DBName, "`.events\n"
+    "WHERE ", clickhouse:id_in_values_sql(<<"instance_id">>, Ids), "\n"
+    "\tAND context != ''\n"
+    "\tAND position(context, ' init_per_suite') == 0\n"
+    "\tAND position(context, ' end_per_suite') == 0\n"
+    "\tAND position(context, ' init_per_group') == 0\n"
+    "\tAND position(context, ' end_per_group') == 0\n"
+    "\tAND position(context, ' init_per_testcase') == 0\n"
+    "\tAND position(context, ' end_per_testcase') == 0\n"
+    "GROUP BY instance_id, context\n"
+    "ORDER BY min(at_s) DESC\n"
+    "FORMAT TabSeparatedWithNamesAndTypes\n"
+  ]),
+
+  {ok, Body2} = clickhouse:execute(SQL2),
+  {ok, Scenarios} = clickhouse:parse_rows({lists_prop, <<"instance_id">>}, Body2),
+  Scenarios1 = turn_context_lines_into_trees(Scenarios),
+
+  {ok, Scenarios1}.
+
+
+
+turn_context_lines_into_trees(Scenarios) ->
+  lists:map(fun ({InstanceId, Contexts}) when is_list(Contexts) ->
+    [InstanceId, list_to_tree(Contexts, #{})]
+  end, Scenarios).
+
+list_to_tree([], Acc) -> Acc;
+list_to_tree([Context | Rest], Acc) ->
+  Parts = binary:split(Context, <<" ">>, [global]),
+  Acc1 = parts_into_map(Parts, Acc),
+  list_to_tree(Rest, Acc1).
+
+parts_into_map([Part], Acc) ->
+  Acc#{Part => true};
+parts_into_map([Part | Rest], Acc) ->
+  Map = maps:get(Part, Acc, #{}),
+  Map1 = parts_into_map(Rest, Map),
+  Acc#{Part => Map1}.
