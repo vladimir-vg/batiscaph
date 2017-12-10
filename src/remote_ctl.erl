@@ -337,7 +337,7 @@ lastest_timestamp_in_delta(LastAt, #{<<"processes">> := Processes, <<"events">> 
     _ -> LastAt
   end,
 
-  ProcTimestamps = maps:fold(fun (_, #{<<"events">> := Events1} = P, Acc) ->
+  ProcTimestamps = lists:foldl(fun (#{<<"events">> := Events1} = P, Acc) ->
     EventsTimestamps = [At || #{<<"at">> := At} <- Events1],
     AppearedAt = case maps:get(<<"appearedAt">>, P, null) of
       At2 when is_integer(At2) -> At2;

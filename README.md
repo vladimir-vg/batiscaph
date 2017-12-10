@@ -60,7 +60,7 @@ It might be useful to have several queries in one workspace, and having interlap
 # Features to implement, tasks to do
 
  - [x] capture `(init|end)_per_(testcase|group|suite)` common test callbacks into batiscaph steps.
- - [ ] always display spawned processes to right from parent
+ - [x] always display spawned processes to right from parent
  - [ ] display all captured tests in structured manner, some kind of replacement for Common Test html reports
  - [ ] automatically switch to fresh common test run for selected test, if detected. Should be convenient to debug one problem, observe one test and switch automatically between runs.
  - [ ] do capture send/receive events for traced processes. Collapse message events on map if have many message events in a row.

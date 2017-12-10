@@ -47,7 +47,7 @@ atomize_delta(Delta) ->
   {Processes, Delta2} = maps:take(<<"processes">>, Delta1),
 
   Ports1 = maps:map(fun (_K, V) -> binary_keys_to_atoms(V) end, Ports),
-  Processes1 = maps:map(fun (_K, V) -> binary_keys_to_atoms(V) end, Processes),
+  Processes1 = lists:map(fun (V) -> binary_keys_to_atoms(V) end, Processes),
 
   Delta0 = binary_keys_to_atoms(Delta2),
   Delta0#{ports => Ports1, processes => Processes1}.

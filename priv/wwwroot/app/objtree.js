@@ -83,8 +83,8 @@ V.updateLayout = (delta, layout) => {
   layout.columnsOrder = layout.columnsOrder || [];
   layout.columns = layout.columns || {};
 
-  for (var pid in delta.processes) {
-    updateProcessInLayout(delta.processes[pid], layout);
+  for (var i in delta.processes) {
+    updateProcessInLayout(delta.processes[i], layout);
   }
 
   layout.events = layout.events || [];
