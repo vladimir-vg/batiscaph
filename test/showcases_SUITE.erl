@@ -17,24 +17,9 @@
 
 
 init_per_suite(Config) ->
-  % BatiscaphNode = list_to_atom("batiscaph@" ++ net_adm:localhost()),
-  % application:set_env(batiscaph, batiscaph_node, BatiscaphNode),
-  % case net_adm:ping(BatiscaphNode) of
-  %   pong -> Config;
-  %   pang -> {skip, {unable_to_connect_to_batiscaph_node, BatiscaphNode}}
-  % end,
   Config.
 
 end_per_suite(Config) ->
-  % TODO: currently flush is executed during this last context
-  % and as a result, it loses events about finishing this very context
-  % Need flush somehow after executing this callback.
-  % It can be done using ct hooks (after end_per_suite),
-
-  % make sure that collector consumed all trace messages
-  ok = gen_server:call(z__client_collector, flush),
-
-  exit(whereis(z__client_sup), kill),
   Config.
 
 

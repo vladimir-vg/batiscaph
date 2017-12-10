@@ -20,7 +20,17 @@
 % executes expressons step by step
 exec_steps(Context, Args, Lines, Bindings, LocalFunFinder, Exprs) ->
   {ok, Context1, CtConfig} = get_context_path_and_config(Context, Args),
-  exec_steps1(Context1, Lines, CtConfig, Bindings, LocalFunFinder, Exprs).
+  Result = exec_steps1(Context1, Lines, CtConfig, Bindings, LocalFunFinder, Exprs),
+
+  % make sure that up to this point all trace messages were delivered to collector
+  Ref = erlang:trace_delivered(self()),
+  receive {trace_delivered, _Self, Ref} -> ok
+  after 2000 -> error(trace_delivery_takes_too_long)
+  end,
+  % make sure that all those delivered traced are flushed to server
+  ok = gen_server:call(z__client_collector, flush),
+
+  Result.
 
 
 
@@ -271,13 +281,14 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_li
   lists:map(fun
     ({I, {Key, Value1}}) ->
       case proplists:get_value(Key, Value) of
-        undefined ->
-          Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
+        Value1 ->
+          Prefix1 = <<"proplists:get_value(", (z__client_scenario:format_term(Key))/binary, ",", Prefix/binary>>,
           Suffix1 = <<Suffix/binary, ")">>,
           var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context);
 
-        Value1 ->
-          Prefix1 = <<"proplists:get_value(", (z__client_scenario:format_term(Key))/binary, ",", Prefix/binary>>,
+        % undefined or single-atom value like: proplists:get_value(key, [key])
+        _ ->
+          Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
           Suffix1 = <<Suffix/binary, ")">>,
           var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
       end;

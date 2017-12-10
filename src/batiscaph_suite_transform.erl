@@ -175,6 +175,7 @@ wrap_functions([{attribute, _, file, {Path, _}} = F | Forms], #suite_trans{} = S
 
 wrap_functions([{function,_,Atom,Arity,_} = F | Forms], State)
 when (Atom =:= init_per_suite andalso Arity == 1)
+orelse (Atom =:= end_per_suite andalso Arity == 1)
 orelse (Atom =:= init_per_group andalso Arity == 2)
 orelse (Atom =:= end_per_group andalso Arity == 2)
 orelse (Atom =:= init_per_testcase andalso Arity == 2)
