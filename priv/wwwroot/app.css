@@ -14,10 +14,17 @@ code { font-family: 'Ubuntu Mono', monospace; }
 
 /* Main Page */
 
-.content-page {
+#MainPage.content-page {
   margin: 0 auto;
   padding: 100px 0;
   width: 800px;
+}
+
+#MainPage .scenario-item {
+  white-space: nowrap;
+}
+#MainPage .scenario-item.selected {
+  font-weight: bold;
 }
 
 /* Scenario View */
