@@ -1,11 +1,10 @@
 -module(batiscaph_steps).
--export([exec_testcase/7]).
+-export([exec_steps/6]).
 
 
 
 -record(steps, {
   local_fun_handler,
-  testcase,
   context :: binary(),
   bindings,
   exprs
@@ -19,12 +18,72 @@
 
 
 % executes expressons step by step
-exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
+exec_steps(Context, Args, Lines, Bindings, LocalFunFinder, Exprs) ->
+  {ok, Context1, CtConfig} = get_context_path_and_config(Context, Args),
+  exec_steps1(Context1, Lines, CtConfig, Bindings, LocalFunFinder, Exprs).
+
+
+
+% {tc_group_properties,[{name,group1},parallel,{suite,showcases_SUITE}]},
+% {tc_group_path,[[{suite,showcases_SUITE}]]},
+% 
+% {tc_group_properties,[{suite,showcases_SUITE}]},
+% {tc_group_path,[]},
+% 
+% {tc_group_properties,[{name,group2},{suite,showcases_SUITE}]},
+% {tc_group_path,[[{suite,showcases_SUITE}]]},
+% 
+% {tc_group_properties,[{name,group1_nested},{suite,showcases_SUITE}]},
+% {tc_group_path,[[{name,group1},parallel,{suite,showcases_SUITE}],
+%                 [{suite,showcases_SUITE}]]},
+%
+% should return following:
+% [suite, group1, group2, ..., testcase]
+get_context_path_and_config({testcase, Suite, Testcase}, [CtConfig]) ->
+  Props = proplists:get_value(tc_group_properties, CtConfig),
+  Path = proplists:get_value(tc_group_path, CtConfig),
+  Groups = lists:reverse(lists:flatten(get_group(Props) ++ [get_group(Part) || Part <- Path])),
+  ContextAtoms = [Suite] ++ Groups ++ [Testcase],
+  Context = iolist_to_binary(lists:join(<<" ">>, [atom_to_binary(A,latin1) || A <- ContextAtoms])),
+  {ok, Context, CtConfig};
+
+get_context_path_and_config({Callback, Suite}, [CtConfig])
+when Callback =:= init_per_suite orelse Callback =:= end_per_suite ->
+  Context = iolist_to_binary([atom_to_binary(Suite,latin1), " ", atom_to_binary(Callback,latin1)]),
+  {ok, Context, CtConfig};
+
+get_context_path_and_config({Callback, Suite}, [Group, CtConfig])
+when Callback =:= init_per_group orelse Callback =:= end_per_group ->
+  Path = proplists:get_value(tc_group_path, CtConfig),
+  Groups = lists:reverse(lists:flatten([get_group(Part) || Part <- Path])),
+  ContextAtoms = [Suite] ++ Groups ++ [Group, Callback],
+  Context = iolist_to_binary(lists:join(<<" ">>, [atom_to_binary(A,latin1) || A <- ContextAtoms])),
+  {ok, Context, CtConfig};
+
+get_context_path_and_config({Callback, Suite}, [Testcase, CtConfig])
+when Callback =:= init_per_testcase orelse Callback =:= end_per_testcase ->
+  Props = proplists:get_value(tc_group_properties, CtConfig),
+  Path = proplists:get_value(tc_group_path, CtConfig),
+  Groups = lists:reverse(lists:flatten(get_group(Props) ++ [get_group(Part) || Part <- Path])),
+  ContextAtoms = [Suite] ++ Groups ++ [Testcase, Callback],
+  Context = iolist_to_binary(lists:join(<<" ">>, [atom_to_binary(A,latin1) || A <- ContextAtoms])),
+  {ok, Context, CtConfig}.
+
+
+
+get_group(Part) ->
+  case proplists:get_value(name, Part, undefined) of
+    undefined -> [];
+    Group when is_atom(Group) -> [Group]
+  end.
+
+
+
+exec_steps1(Context, Lines, CtConfig, Bindings, LocalFunFinder, Exprs) ->
   PrivDir = proplists:get_value(priv_dir, CtConfig),
   [_Priv, _RunDir, _, TopRunDir | _] = lists:reverse(filename:split(PrivDir)), % use RunDir as an Id for this ct run
   {ok, BatiscaphNode} = get_batiscaph_node(),
 
-  Context = get_context_path(Suite, Testcase, CtConfig),
 
   {ok, _} = ct_rpc:call(BatiscaphNode, remote_ctl, ensure_started, [list_to_binary(TopRunDir), #{node => node()}]),
   ok = wait_for_collector_to_appear(300),
@@ -39,7 +98,7 @@ exec_testcase(Suite, Testcase, Lines, CtConfig, Bindings, LocalFunFinder, Exprs)
   end,
 
   State = #steps{
-    local_fun_handler = LocalFunHandler, testcase = Testcase,
+    local_fun_handler = LocalFunHandler,
     bindings = Bindings, exprs = Exprs, context = Context
   },
   z__client_collector ! context_start_event(Context, Lines),
@@ -70,38 +129,6 @@ wait_for_collector_to_appear(Timeout) ->
   case whereis(z__client_collector) of
     undefined -> timer:sleep(2), wait_for_collector_to_appear(Timeout-2);
     Pid when is_pid(Pid) -> ok
-  end.
-
-
-
-
-% {tc_group_properties,[{name,group1},parallel,{suite,showcases_SUITE}]},
-% {tc_group_path,[[{suite,showcases_SUITE}]]},
-% 
-% {tc_group_properties,[{suite,showcases_SUITE}]},
-% {tc_group_path,[]},
-% 
-% {tc_group_properties,[{name,group2},{suite,showcases_SUITE}]},
-% {tc_group_path,[[{suite,showcases_SUITE}]]},
-% 
-% {tc_group_properties,[{name,group1_nested},{suite,showcases_SUITE}]},
-% {tc_group_path,[[{name,group1},parallel,{suite,showcases_SUITE}],
-%                 [{suite,showcases_SUITE}]]},
-%
-% should return following:
-% [suite, group1, group2, ..., testcase]
--spec get_context_path(atom(), atom(), any()) -> binary().
-get_context_path(Suite, Testcase, CtConfig) ->
-  Props = proplists:get_value(tc_group_properties, CtConfig),
-  Path = proplists:get_value(tc_group_path, CtConfig),
-  Groups = lists:reverse(lists:flatten(get_group(Props) ++ [get_group(Part) || Part <- Path])),
-  ContextAtoms = [Suite] ++ Groups ++ [Testcase],
-  iolist_to_binary(lists:join(<<" ">>, [atom_to_binary(A,latin1) || A <- ContextAtoms])).
-
-get_group(Part) ->
-  case proplists:get_value(name, Part, undefined) of
-    undefined -> [];
-    Group when is_atom(Group) -> [Group]
   end.
 
 
