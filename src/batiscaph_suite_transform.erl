@@ -166,8 +166,22 @@ generate_local_fun_finder(EofLine, Forms) ->
 
 
 wrap_functions([], _State) -> [];
+
+% file attribute mean that following AST was taken from specific file
+% for example via -include_lib(...)
+% need to track current file, for proper source code extraction
 wrap_functions([{attribute, _, file, {Path, _}} = F | Forms], #suite_trans{} = State) ->
   [F | wrap_functions(Forms, State#suite_trans{current_file = list_to_binary(Path)})];
+
+wrap_functions([{function,_,Atom,Arity,_} = F | Forms], State)
+when (Atom =:= init_per_suite andalso Arity == 1)
+orelse (Atom =:= init_per_group andalso Arity == 2)
+orelse (Atom =:= end_per_group andalso Arity == 2)
+orelse (Atom =:= init_per_testcase andalso Arity == 2)
+orelse (Atom =:= end_per_testcase andalso Arity == 2) ->
+  {ok, F1, State1} = wrap_one_function(F, State),
+  [F1 | wrap_functions(Forms, State1)];
+
 wrap_functions([{function,_,Atom,1,_} = F | Forms], #suite_trans{testcases = Testcases} = State) ->
   case lists:member(Atom, Testcases) of
     false -> [F | wrap_functions(Forms, State)];
@@ -175,45 +189,90 @@ wrap_functions([{function,_,Atom,1,_} = F | Forms], #suite_trans{testcases = Tes
       {ok, F1, State1} = wrap_one_function(F, State),
       [F1 | wrap_functions(Forms, State1)]
   end;
+
 wrap_functions([F | Forms], State) ->
   [F | wrap_functions(Forms, State)].
 
 
-wrap_one_function({function, Line, Atom, 1, Clauses}, #suite_trans{} = State) ->
+wrap_one_function({function, Line, Atom, Arity, Clauses} = F, #suite_trans{suite = Suite} = State) ->
+  Context = get_context(F, Suite),
   {Clauses1, State1} = lists:foldl(fun (C, {Acc, State2}) ->
-    {ok, C1, State3} = wrap_fun_clause(Atom, C, State2),
+    {ok, C1, State3} = wrap_fun_clause(Context, C, State2),
     {[C1 | Acc], State3}
   end, {[], State}, Clauses),
 
-  F = {function, Line, Atom, 1, lists:reverse(Clauses1)},
-  {ok, F, State1}.
+  F1 = {function, Line, Atom, Arity, lists:reverse(Clauses1)},
+  {ok, F1, State1}.
+
+
+
+get_context({function, _, init_per_suite, 1, _}, Suite) -> {init_per_suite, Suite};
+get_context({function, _, end_per_suite, 1, _}, Suite) -> {end_per_suite, Suite};
+get_context({function, _, init_per_group, 2, _}, Suite) -> {init_per_group, Suite};
+get_context({function, _, end_per_group, 2, _}, Suite) -> {end_per_group, Suite};
+get_context({function, _, init_per_testcase, 2, _}, Suite) -> {init_per_testcase, Suite};
+get_context({function, _, end_per_testcase, 2, _}, Suite) -> {end_per_testcase, Suite};
+get_context({function, _, Atom, 1, _}, Suite) -> {testcase, Suite, Atom}.
+
+
+
+gensym() ->
+  list_to_atom("Batiscaph_gen_var" ++ integer_to_list(erlang:unique_integer([positive]))).
+
+t_new_bindings() ->
+  % erl_eval:new_bindings()
+  {call,0,{remote,0,{atom,0,erl_eval},{atom,0,new_bindings}},[]}.
+
+t_add_binding({var,_,VarAtom} = Var, Bindings) ->
+  % erl_eval:add_binding('VarName',Var, @Bindings)
+  {call,0,{remote,0,{atom,0,erl_eval},{atom,0,add_binding}},[{atom,0,VarAtom},Var,Bindings]}.
+
+
+
+t_cons([]) -> {nil,0};
+t_cons([E | Rest]) -> {cons,0,E,t_cons(Rest)}.
+
+
+
+wrap_vars_for_bindings(Vars) ->
+  {Vars1, Bindings} = lists:foldl(fun
+    ({var,_,'_'}, {Vars1, Bindings}) ->
+      % because var was ignored, do not add it to bindings
+      % rename it, to be able to pass it to batiscaph_steps:exec_steps as arg 
+      Var1 = {var,0,gensym()},
+      {[Var1 | Vars1], Bindings};
+
+    ({var,_,_} = V, {Vars1, Bindings}) ->
+      % variable has a name, add it to bindings
+      % will be passed to batiscaph_steps:exec_steps as it is
+      {[V | Vars1], t_add_binding(V, Bindings)};
+
+    (Other, {Vars1, Bindings}) ->
+      % looks like it's not a variable, but a pattern or literal
+      % should keep it like that
+      {[Other | Vars1], Bindings}
+  end, {[], t_new_bindings()}, Vars),
+  {ok, lists:reverse(Vars1), Bindings}.
 
 
 
 % just quote all expressions, and pass them to batiscaph_shell
 % also create new bindings, add Config arg
-wrap_fun_clause(FuncAtom, {clause,Line,[Var],Guards,Exprs}, #suite_trans{suite = Suite, local_finder_name = LocalFinderName} = State) ->
+wrap_fun_clause(Context, {clause,Line,Vars,Guards,Exprs}, #suite_trans{local_finder_name = LocalFinderName} = State) ->
+  {ok, Vars1, Bindings} = wrap_vars_for_bindings(Vars),
+  Context1 = erl_syntax:revert(erl_syntax:abstract(Context)),
   {ok, Lines, State1} = get_source_lines(Line, last_line_in_forms(Exprs, Line), State),
+  Lines1 = erl_syntax:revert(erl_syntax:abstract(Lines)),
 
   QuotedTree = erl_syntax:revert(erl_syntax:abstract(Exprs)),
-  Lines1 = erl_syntax:revert(erl_syntax:abstract(Lines)),
-  % erl_eval:new_bindings()
-  NewBindings = {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,new_bindings}},[]},
-  Var1 = {var,Line,'Config'}, % use this name for config var, pass it to steps
-  Bindings = case Var of
-    {var,_,'_'} -> NewBindings;
-    {var,_,VarName} ->
-      % erl_eval:add_binding('VarName',Var,erl_eval:new_bindings())
-      {call,Line,{remote,Line,{atom,Line,erl_eval},{atom,Line,add_binding}},[{atom,Line,VarName},Var1,NewBindings]}
-  end,
   % erl_syntax:revert(QuotedTree)
-  RevertedQuoted = {call,Line,{remote,Line,{atom,Line,erl_syntax},{atom,Line,revert_forms}},[QuotedTree]},
+  RevertedQuoted = {call,0,{remote,0,{atom,0,erl_syntax},{atom,0,revert_forms}},[QuotedTree]},
   % fun local_fun_handler/2
-  LocalFinder = {'fun',Line,{function,LocalFinderName,2}},
-  % batiscaph_shell:exec_testcase(suite_name, testcase_name, Lines, Config, erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
-  Exprs1 = [{call,Line,{remote,Line,{atom,Line,batiscaph_steps},{atom,Line,exec_testcase}}, [{atom,Line,Suite}, {atom,Line,FuncAtom}, Lines1, Var1, Bindings, LocalFinder, RevertedQuoted]}],
+  LocalFinder = {'fun',0,{function,LocalFinderName,2}},
+  % batiscaph_shell:exec_steps({testcase, suite_name, testcase_name}, Lines, [Config], erl_eval:add_binding('VarName',{Var},erl_eval:new_bindings()), fun local_fun_handler/2, Forms),
+  Exprs1 = [{call,0,{remote,0,{atom,0,batiscaph_steps},{atom,0,exec_steps}}, [Context1, t_cons(Vars1), Lines1, Bindings, LocalFinder, RevertedQuoted]}],
 
-  C = {clause,Line,[Var1],Guards,Exprs1},
+  C = {clause,0,Vars1,Guards,Exprs1},
   {ok, C, State1}.
 
 

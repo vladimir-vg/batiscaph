@@ -74,7 +74,6 @@ have_parent_pid(Config) ->
 
   Pid1Bin = list_to_binary(pid_to_list(Pid1)),
   Pid2Bin = list_to_binary(pid_to_list(Pid2)),
-  ct:pal("Pid1: ~p, pid2: ~p, delta: ~p", [Pid1, Pid2, Delta]),
   #{processes := #{Pid1Bin := #{spawnedAt := _}, Pid2Bin := #{parentPid := Pid1Bin, spawnedAt := _}}} = Delta,
 
   ok.
