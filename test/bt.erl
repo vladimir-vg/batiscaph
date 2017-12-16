@@ -14,6 +14,11 @@ g(at_s) ->
   Max = 1509115271,
   Min + rand:uniform(Max-Min);
 
+g(at) ->
+  Min = 1400000000,
+  Max = 1509115271,
+  (Min + rand:uniform(Max-Min))*1000*1000 + rand:uniform(999999);
+
 g(pid) ->
   A1 = integer_to_binary(rand:uniform(1000)),
   A2 = integer_to_binary(rand:uniform(1000)),
