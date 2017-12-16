@@ -83,8 +83,8 @@ V.updateLayout = (delta, layout) => {
   layout.columnsOrder = layout.columnsOrder || [];
   layout.columns = layout.columns || {};
 
-  for (var i in delta.processes) {
-    updateProcessInLayout(delta.processes[i], layout);
+  for (var pid in delta.processes) {
+    updateProcessInLayout(pid, delta.processes, layout);
   }
 
   layout.events = layout.events || [];
@@ -115,7 +115,15 @@ V.updateLayout = (delta, layout) => {
 
 
 
-let updateProcessInLayout = (data, layout) => {
+let updateProcessInLayout = (pid, processes, layout) => {
+  const proc = processes[pid];
+  if (proc.parentPid && processes[proc.parentPid]) {
+    updateProcessInLayout(proc.parentPid, processes, layout);
+  }
+  updateProcessInLayout1(proc, layout);
+};
+
+let updateProcessInLayout1 = (data, layout) => {
   layout.processes[data.pid] = layout.processes[data.pid] || {pid: data.pid, events: []};
   let proc = layout.processes[data.pid];
 

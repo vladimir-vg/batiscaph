@@ -74,10 +74,8 @@ have_parent_pid(Config) ->
 
   Pid1Bin = list_to_binary(pid_to_list(Pid1)),
   Pid2Bin = list_to_binary(pid_to_list(Pid2)),
-  #{processes := Processes} = Delta,
+  #{processes := #{Pid1Bin := #{spawnedAt := _}, Pid2Bin := #{parentPid := Pid1Bin, spawnedAt := _}}} = Delta,
 
-  [#{pid := Pid1Bin, spawnedAt := _}] = [P || #{pid := PidN} = P <- Processes, PidN =:= Pid1Bin],
-  [#{pid := Pid2Bin, parentPid := Pid1Bin, spawnedAt := _}] = [P || #{pid := PidN} = P <- Processes, PidN =:= Pid2Bin],
   ok.
 
 
