@@ -67,6 +67,7 @@ It might be useful to have several queries in one workspace, and having interlap
  - [ ] script that will export given list of scenarios into static html/jsx files.
  - [ ] display how long it took to execute each line in batiscaph steps.
  - [ ] when context is selected, highlight all time segments where lines of this context were executed.
+ - [ ] capture and display on map all stdout during batiscaph steps. Allow to see all stdout as usuall wall of text, but with pointing out who sent each piece on the map.
 
  - [ ] make javascript tree/layout looks exactly as delta, but with some additional calculated data.
  - [ ] figure out how to correctly display one process owning many ports.
