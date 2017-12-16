@@ -3,7 +3,7 @@
 ![Submersible MIR-2](https://pp.userapi.com/c639530/v639530374/4fcba/8ykO3N012hA.jpg)
 
 Batiscaph is a research device that submerges in ocean and explores unknown space.
-That's what this tool does -- submerges into Erlang node and observes how it works.
+That's what this tool does -- submerges into Erlang node and observes how work programs in it.
 
 UI ideas for this project could be found here: https://www.figma.com/file/Jz6rhLiGoFbRZOZnoeTBHIvj/Chertezh
 
@@ -15,9 +15,9 @@ This branch is for ongoing development.
 
 # Goals
 
- * Provide shell UI that encourages exploration of remote erlang node. Provide a map of processes and their relationships.
- * Allow users to inspect processes and have tracing automatically enabled.
- * Record whole session to database, for later inspection and sharing. Should be good for referring to bugs in tickets.
+ * Provide UI that encourages exploration of remote erlang node. Provide a map of processes and their relationships.
+ * Allow users to inspect processes and have tracing automatically enabled, as they discover processes.
+ * Record whole session to database, for later inspection and sharing. Should be good for referring to bugs in tickets and sharing knowledge.
 
 # Design ideas
 
@@ -38,7 +38,7 @@ Also you need to install babel to use web interface in development mode:
 
 To start server just type `make`.
 
-When running Common Tests with batiscaph_steps you need to specify BATISCAPH_NODE environment variable, which should point out to running batiscaph server.
+When running Common Tests with batiscaph_steps you need to specify BATISCAPH_NODE environment variable, which should point out to running batiscaph server, like: `BATISCAPH_NODE=batiscaph@localhost`.
 
 # How it supposed to work
 
@@ -69,8 +69,9 @@ It might be useful to have several queries in one workspace, and having interlap
  - [ ] when context is selected, highlight all time segments where lines of this context were executed.
  - [ ] capture and display on map all stdout during batiscaph steps. Allow to see all stdout as usuall wall of text, but with pointing out who sent each piece on the map.
 
+ - [ ] grab more info about opened files, path and params. Since we trace all ports globaly anyway.
  - [ ] make javascript tree/layout looks exactly as delta, but with some additional calculated data.
- - [ ] figure out how to correctly display one process owning many ports.
+ - [ ] figure out how to correctly display one process owning many ports. More complicated layout system?
  - [ ] generate process mention expressions using record syntax when possible.
  - [ ] mechanism of skipping some of the messages if there are too many of them. Properly display that some messages were skipped.
  - [ ] collect and display info about, creating, deleting, owning and transferring (ets:give_away/3) ETS tables.
