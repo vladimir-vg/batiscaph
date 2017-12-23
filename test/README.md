@@ -6,6 +6,9 @@ There are several suite files, each containing different tests.
  * __delta_SUITE__ tests correct delta generation from specified list of events.
    Sometimes this is needed to check weird combination of events that hard to reproduce by running code.
 
+ * __query_SUITE__ tests differents kind of delta queries to store.
+   Should check the same interface that websocket provides.
+
  * __tree_SUITE__ supposed to check generation JavaScript tree from given delta. Currently not much tests there.
    Should be useful to check that certain combination of events merge into one visual object (like spawn and link right after).
    Also should be useful to check correct layout.

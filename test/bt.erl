@@ -14,10 +14,11 @@ g(at_s) ->
   Max = 1509115271,
   Min + rand:uniform(Max-Min);
 
+g(at_mcs) ->
+  rand:uniform(999999);
+
 g(at) ->
-  Min = 1400000000,
-  Max = 1509115271,
-  (Min + rand:uniform(Max-Min))*1000*1000 + rand:uniform(999999);
+  g(at_s)*1000*1000 + g(at_mcs);
 
 g(pid) ->
   A1 = integer_to_binary(rand:uniform(1000)),
@@ -25,9 +26,9 @@ g(pid) ->
   A3 = integer_to_binary(rand:uniform(1000)),
   iolist_to_binary(["<",A1,".",A2,".",A3,">"]).
 
-g(instance_id, Testcase) ->
+g(instance_id, Atom) ->
   iolist_to_binary([
-    atom_to_binary(Testcase, latin1), "/",
+    atom_to_binary(Atom, latin1), "/",
     batiscaph:binary_to_hex(crypto:strong_rand_bytes(5))
   ]).
 
