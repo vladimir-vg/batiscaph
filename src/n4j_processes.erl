@@ -42,7 +42,7 @@
 %  * instanceId
 %  * startedAt
 %  * stoppedAt
-%  * context -- list of strings, for example: [suite, group1, group2, testcase]
+%  * context -- "context1 subcontext2 subcontext3"
 %
 % may have following relationships to Processes
 %  * VAR_MENTION { at, expr } -- indicates that some process was mentioned in variable in context
@@ -358,7 +358,6 @@ process_events(Id, [#{<<"type">> := <<"context_start">>} = E | Events], Acc) ->
       "ON CREATE SET context.startedAt = {at}\n"
       "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
       "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
-      % "CREATE (context)-[:VAR_MENTION { at: {at}, expr: 'self()' }]->(proc)\n"
     , #{id => Id, pid => Pid, context => Context, at => At, key => Key} }
   ],
   process_events(Id, Events, [Statements] ++ Acc);
