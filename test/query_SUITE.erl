@@ -1,18 +1,20 @@
 -module(query_SUITE).
 -export([all/0, init_per_suite/1, end_per_suite/1]).
 -export([
-  delta_contains_only_related_contexts/1,
-  delta_contains_only_subcontext/1,
-  delta_contains_only_related_pids/1
+  related_contexts/1,
+  subcontext/1,
+  context_related_pids/1
+  % explicit_pids/1
 ]).
 
 
 
 all() ->
   [
-    delta_contains_only_related_contexts,
-    delta_contains_only_subcontext,
-    delta_contains_only_related_pids
+    related_contexts,
+    subcontext,
+    context_related_pids
+    % explicit_pids
   ].
 
 
@@ -47,7 +49,6 @@ feed_events(Id) ->
   end, Events0),
 
   {ok, Pid} = remote_ctl:start_link(Id, #{node => false}),
-  unlink(Pid), % gonna be terminated in end_per_suite
   ok = gen_server:call(Pid, {events, bt:binarify_events(Events)}),
 
   {ok, Pid}.
@@ -61,6 +62,7 @@ init_per_suite(Config) ->
 
   InstanceId = bt:g(instance_id, query_SUITE),
   {ok, Pid} = feed_events(InstanceId),
+  unlink(Pid), % gonna be terminated in end_per_suite
 
   [{instance_id, InstanceId}, {remote_ctl_pid, Pid} | Config].
 
@@ -74,7 +76,7 @@ end_per_suite(Config) ->
 
 
 
-delta_contains_only_related_contexts(Config) ->
+ related_contexts(Config) ->
   Id = proplists:get_value(instance_id, Config),
 
   {ok, Delta1} = remote_ctl:delta_json(#{instance_id => Id, context => <<"context1">>}),
@@ -85,16 +87,20 @@ delta_contains_only_related_contexts(Config) ->
   0 = maps:size(maps:without([<<"context1">>, <<"context1 subcontext1">>], Contexts1)),
 
   {ok, Delta2} = remote_ctl:delta_json(#{instance_id => Id, context => <<"context2">>}),
-  #{contexts := Contexts2} = bt:atomize_delta(Delta2),
+  #{contexts := Contexts2, events := Events} = bt:atomize_delta(Delta2),
 
   #{<<"context2">> := _} = Contexts2,
   0 = maps:size(maps:without([<<"context2">>], Contexts2)),
+
+  % expected to have two VAR_MENTION events, for parent and child contexts
+  MentionEvents = [E || #{type := <<"VAR_MENTION">>} = E <- Events],
+  2 = length(MentionEvents),
 
   ok.
 
 
 
-delta_contains_only_subcontext(Config) ->
+subcontext(Config) ->
   Id = proplists:get_value(instance_id, Config),
 
   {ok, Delta} = remote_ctl:delta_json(#{instance_id => Id, context => <<"context1 subcontext1">>}),
@@ -104,11 +110,15 @@ delta_contains_only_subcontext(Config) ->
   #{<<"context1 subcontext1">> := _} = Contexts,
   0 = maps:size(maps:without([<<"context1 subcontext1">>], Contexts)),
 
+  % expected to have two VAR_MENTION events, for parent and child contexts
+  MentionEvents = [E || #{type := <<"VAR_MENTION">>} = E <- Events],
+  1 = length(MentionEvents),
+
   ok.
 
 
 
-delta_contains_only_related_pids(Config) ->
+context_related_pids(Config) ->
   Id = proplists:get_value(instance_id, Config),
 
   {ok, Delta} = remote_ctl:delta_json(#{instance_id => Id, context => <<"context1">>}),
@@ -128,7 +138,15 @@ delta_contains_only_related_pids(Config) ->
   % none of extra are provided
   0 = maps:size(maps:without(Pids, Processes)),
 
+  % expected to have two VAR_MENTION events, for parent and child contexts
+  MentionEvents = [E || #{type := <<"VAR_MENTION">>} = E <- Events],
+  1 = length(MentionEvents),
+
   ok.
 
 
 
+% explicit_pids(Config) ->
+%   Id = proplists:get_value(instance_id, Config),
+% 
+%   ok.
