@@ -7,6 +7,8 @@ That's what this tool does -- submerges into Erlang node and observes how work p
 
 UI ideas for this project could be found here: https://www.figma.com/file/Jz6rhLiGoFbRZOZnoeTBHIvj/Chertezh
 
+I want to work on this project full time, but unfontunatelly can't afford now. If you want to help to make it happen please support me at Patreon: https://www.patreon.com/VladimirVG
+
 # Old demo
 
 If you want to locally setup demo [that was described in my blog](http://vladimir-vg.me/erlang-shell-visualization-demo/), please check out [demo-07-2017](https://github.com/vladimir-vg/espace/tree/demo-07-2017) git tag.
