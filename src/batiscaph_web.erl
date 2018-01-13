@@ -18,7 +18,8 @@ restart_cowboy() ->
       % {"/api/scenarios2/[:id]", scenario_tree_handler, []},
       {"/style/app.css", cowboy_static, {priv_file, batiscaph, "wwwroot/app.css"}},
       {"/", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
-      {"/scenarios2/[:id]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}}
+      {"/scenarios2/[:id]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
+      {"/scenarios2/[:id]/[...]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}}
     ]}
   ]),
   Opts = [

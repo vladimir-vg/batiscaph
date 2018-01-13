@@ -107,6 +107,8 @@ select_columns_sql([{Name, _Type} | Rest]) ->
 
 
 
+% TODO: this is totally SQL-injection vulnerable
+% later need to rework it into safe execution
 where_cond(Opts) ->
   Conds = maps:fold(fun
     (limit, _Val, Acc) -> Acc; % ignore
@@ -129,6 +131,13 @@ where_cond(Opts) ->
     (type_in, Vals, Acc) when is_list(Vals) ->
       Cond = ["(", clickhouse:id_in_values_sql(<<"type">>, Vals), ")"],
       [Cond | Acc];
+
+    (only_pids, Pids, Acc) when is_list(Pids) ->
+      Cond = ["(", clickhouse:id_in_values_sql(<<"pid">>, Pids), ")"],
+      [Cond | Acc];
+
+    (context, Context, Acc) when is_binary(Context) ->
+      [["(context = '", Context, "')"] | Acc];
 
     (Key, Val, _Acc) -> error({unknown_select_opt, Key, Val})
   end, [], Opts),

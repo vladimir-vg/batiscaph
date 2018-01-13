@@ -104,7 +104,7 @@ subcontext(Config) ->
   Id = proplists:get_value(instance_id, Config),
 
   {ok, Delta} = remote_ctl:delta_json(#{instance_id => Id, context => <<"context1 subcontext1">>}),
-  #{contexts := Contexts} = bt:atomize_delta(Delta),
+  #{contexts := Contexts, events := Events} = bt:atomize_delta(Delta),
 
   % shouldn't contain unrelated contexts
   #{<<"context1 subcontext1">> := _} = Contexts,

@@ -28,8 +28,11 @@ websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefin
   {ok, Reply, State1} = start_shell(State),
   {reply, Reply, Req, State1};
 
-websocket_handle({text, <<"connect_to_shell ", Id/binary>>}, Req, #ws_state{scenario_id = undefined} = State) ->
-  {ok, Reply, State1} = connect_to_shell(Id, State),
+websocket_handle({text, <<"connect_to_shell ", Rest/binary>>}, Req, #ws_state{scenario_id = undefined} = State) ->
+  {ok, Reply, State1} = case binary:split(Rest, <<" ">>) of
+    [Id] -> connect_to_shell(Id, undefined, State);
+    [Id, Context] -> connect_to_shell(Id, Context, State)
+  end,
   {reply, Reply, Req, State1};
 
 
@@ -99,16 +102,21 @@ start_shell(State) ->
 
 
 
-connect_to_shell(Id, State) ->
+connect_to_shell(Id, Context, State) ->
+  QueryOpts = case Context of
+    undefined -> #{};
+    _ when is_binary(Context) -> #{context => Context}
+  end,
+
   case remote_ctl:currently_running(Id) of
     none ->
-      {ok, Delta} = remote_ctl:delta_json(#{instance_id => Id}),
+      {ok, Delta} = remote_ctl:delta_json(QueryOpts#{instance_id => Id}),
       self() ! {delta, Delta},
       State1 = State#ws_state{scenario_id = Id},
       {ok, {text, <<"shell_lost ", Id/binary>>}, State1};
 
     {ok, Pid} ->
-      ok = gen_server:call(Pid, {subscribe_websocket, self()}),
+      ok = gen_server:call(Pid, {subscribe_websocket, self(), QueryOpts}),
       {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
       State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
       {ok, {text, <<"shell_connected ", Id/binary>>}, State1}

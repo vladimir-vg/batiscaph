@@ -25,11 +25,11 @@ class App extends React.Component {
     this.selectContext = this.selectContext.bind(this);
   }
 
-  onInstanceIdChange(id) {
+  onInstanceIdChange(id, context) {
     this._layout = {};
     this.setState({tree: undefined, shellPrompt: undefined, shellEvents: []});
     if (!V.socket) {
-      this.connectToExistingShell(id);
+      this.connectToExistingShell(id, context);
     }
     // this.fetchInitialDelta(id);
   }
@@ -86,11 +86,15 @@ class App extends React.Component {
     }).bind(this));
   }
 
-  connectToExistingShell(id) {
+  connectToExistingShell(id, context) {
     V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
     V.socket.addEventListener('message', this.onWSMessage);
+    let cmd = 'connect_to_shell ' + id;
+    if (context) {
+      cmd += " " + context;
+    }
     V.socket.addEventListener('open', (function () {
-      V.socket.send('connect_to_shell ' + id);
+      V.socket.send(cmd);
     }).bind(this));
   }
 
@@ -115,7 +119,7 @@ class App extends React.Component {
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id" render={(props) =>
+      <Route path="/scenarios2/:id/:context*" render={(props) =>
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
             submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange}
             tracePid={this.tracePid} selectContext={this.selectContext}
