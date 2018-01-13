@@ -60,12 +60,12 @@ context_events_create_context(_Config) ->
     #{at_mcs => 1000, type => <<"context_stop">>}
   ])),
 
-  #{contexts := #{context1 := Context}, events := Events} = Delta,
+  #{contexts := #{<<"context1">> := Context}, events := Events} = Delta,
   #{context := <<"context1">>, pid := _, startedAt := At1, stoppedAt := At2, lines := Lines, variables := Vars, evals := Evals} = Context,
   true = At1 < At2,
-  #{'T1' := <<"123456789">>, 'Duration' := <<"500">>, 'SomePid' := SomePid} = Vars,
+  #{<<"T1">> := <<"123456789">>, <<"Duration">> := <<"500">>, <<"SomePid">> := SomePid} = Vars,
   [#{pid1 := _, pid2 := SomePid, expr := <<"SomePid">>}] = [E || #{type := <<"VAR_MENTION">>} = E <- Events],
-  #{'15' := #{exprs := [#{startedAt := _, stoppedAt := _, result := _}, #{startedAt := _, stoppedAt := _, result := _}]}} = Evals,
+  #{<<"15">> := #{exprs := [#{startedAt := _, stoppedAt := _, result := _}, #{startedAt := _, stoppedAt := _, result := _}]}} = Evals,
   ok.
 
 
@@ -110,10 +110,10 @@ mixed_expr_eval_events(_Config) ->
 
   % interleave these events together
   Events3 = lists:flatten([[E1, E2] || {E1, E2} <- lists:zip(Events1, Events2)]),
-  #{contexts := #{mixed1 := Context1, mixed2 := Context2}, events := _} = produce_delta(Events3),
+  #{contexts := #{<<"mixed1">> := Context1, <<"mixed2">> := Context2}, events := _} = produce_delta(Events3),
   #{context := <<"mixed1">>, pid := _, startedAt := _, stoppedAt := _, lines := Lines, variables := Vars, evals := _} = Context1,
   #{context := <<"mixed2">>, pid := _, startedAt := _, stoppedAt := _, lines := Lines, variables := Vars, evals := _} = Context2,
-  #{'T1' := <<"123456789">>, 'Duration' := <<"500">>, 'SomePid' := SomePid} = Vars,
+  #{<<"T1">> := <<"123456789">>, <<"Duration">> := <<"500">>, <<"SomePid">> := SomePid} = Vars,
 
   ok.
 

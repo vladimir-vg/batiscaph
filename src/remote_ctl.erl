@@ -90,7 +90,9 @@ handle_call({events, Events}, _From, #remote_ctl{} = State) ->
   {reply, ok, State1};
 
 % currently allow to subscribe only one websocket
-handle_call({subscribe_websocket, Pid}, _From, #remote_ctl{} = State) ->
+handle_call({subscribe_websocket, Pid, _QueryOpts}, _From, #remote_ctl{} = State) ->
+  % TODO: currently just ignore QueryOpts (like context)
+  % need to implement it someday
   {ok, State1} = subscribe_websocket(Pid, State),
   {reply, ok, State1};
 
@@ -237,10 +239,12 @@ produce_delta(#{} = Opts) ->
 
 
 delta_json(Opts) ->
-  ClkOpts = clickhouse_opts(Opts),
-  {ok, TableEvents} = clk_events:select(ClkOpts),
-  Neo4jOpts = neo4j_opts(Opts, TableEvents),
+  Neo4jOpts = neo4j_opts(Opts),
   {ok, Delta1} = n4j_processes:delta_json(Neo4jOpts),
+
+  ClkOpts = clickhouse_opts(Opts, Delta1),
+  {ok, TableEvents} = clk_events:select(ClkOpts),
+
   Delta2 = delta_with_table_events(Delta1, TableEvents),
   {ok, Delta2}.
 
@@ -306,26 +310,22 @@ delta_with_expr_evals(Delta, [#{<<"type">> := <<"expr_eval_start">>} = Start, #{
 table_events_types() ->
   [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>,<<"expr_eval_start">>,<<"expr_eval_stop">>].
 
-clickhouse_opts(#{} = Opts) ->
+clickhouse_opts(#{context := _} = Opts, _Delta) ->
+  Opts0 = maps:with([instance_id, from, to, context], Opts),
+  Opts0#{type_in => table_events_types()};
+
+clickhouse_opts(#{} = Opts, #{<<"processes">> := Processes}) ->
   Opts0 = maps:with([instance_id, from, to], Opts),
-  Opts0#{type_in => table_events_types()}.
+  Pids = maps:keys(Processes),
+  % TODO: mark processes with shell IO or context events
+  % during creation of graph. This would allow to query only few pids
+  % not to pass huge list into query, as it is now.
+  Opts0#{type_in => table_events_types(), only_pids => Pids}.
 
 
 
-neo4j_opts(#{} = Opts, TableEvents) ->
-  Opts0 = maps:with([instance_id, from, to], Opts),
-  Pids = unique_pids_from_events(TableEvents),
-  case Pids of
-    [] -> Opts0;
-    [_|_] -> Opts0#{include_processes => Pids}
-  end.
-
-unique_pids_from_events(Events) ->
-  unique_pids_from_events(Events, sets:new()).
-
-unique_pids_from_events([], Set) -> sets:to_list(Set);
-unique_pids_from_events([#{<<"pid">> := Pid} | Events], Set) ->
-  unique_pids_from_events(Events, sets:add_element(Pid, Set)).
+neo4j_opts(#{} = Opts) ->
+  maps:with([instance_id, from, to, context], Opts).
 
 
 

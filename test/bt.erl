@@ -55,7 +55,13 @@ atomize_delta(Delta) ->
 
   Ports1 = maps:map(fun (_K, V) -> binary_keys_to_atoms(V) end, Ports),
   Processes1 = maps:map(fun (_, V) -> binary_keys_to_atoms(V) end, Processes),
-  Contexts1 = maps:map(fun (_, V) -> binary_keys_to_atoms(V) end, Contexts),
+  Contexts1 = maps:map(fun (_, Context) ->
+    maps:fold(fun
+      (<<"variables">>, V, Acc) -> Acc#{variables => V};
+      (<<"evals">>, V, Acc) -> Acc#{evals => maps:map(fun (_, V1) -> binary_keys_to_atoms(V1) end, V)};
+      (Key, V, Acc) when is_binary(Key) -> Acc#{binary_to_atom(Key,latin1) => binary_keys_to_atoms(V)}
+    end, #{}, Context)
+  end, Contexts),
 
   Delta0 = binary_keys_to_atoms(Delta3),
   Delta0#{ports => Ports1, processes => Processes1, contexts => Contexts1}.

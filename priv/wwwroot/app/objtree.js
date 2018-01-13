@@ -91,6 +91,10 @@ V.updateLayout = (delta, layout) => {
   delta.events.forEach(function (event) {
     insertTimestampIntoOrder(event.at, layout);
     layout.events.push(event);
+
+    if (event.pid && !layout.processes[event.pid]) { updateProcessInLayout1({pid: event.pid, events: [], appearedAt: event.at}, layout); }
+    if (event.pid1 && !layout.processes[event.pid1]) { updateProcessInLayout1({pid: event.pid1, events: [], appearedAt: event.at}, layout); }
+    if (event.pid2 && !layout.processes[event.pid2]) { updateProcessInLayout1({pid: event.pid2, events: [], appearedAt: event.at}, layout); }
   });
   // layout.events.sort(eventCmpFunction);
 

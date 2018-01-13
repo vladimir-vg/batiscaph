@@ -57,6 +57,11 @@
 % Currently it can select only all processes.
 delta_json(#{instance_id := Id} = Opts) ->
   TimeParams = time_params_from_opts(Opts),
+  {ContextPids, ContextPidsKey, ContextKey} = case request_context_pids(Opts) of
+    undefined -> {undefined, undefined, undefined};
+    [_|_] = Pids -> {Pids, "contextPids", "context"}
+  end,
+
   Statements = [
     % for some weird reason OPTIONAL MATCH (p1)-[rel]-(p1)
     % returned null relationship that was impossible to filter out by WHERE
@@ -64,6 +69,7 @@ delta_json(#{instance_id := Id} = Opts) ->
 
     { "MATCH (p1:Process {instanceId: {id}})\n"
       "WHERE "++where_start_stop_within(Opts, "p1.appearedAt", "p1.disappearedAt")++"\n"
+      "  AND "++where_id_in_values("p1.pid", ContextPidsKey)++"\n"
       % "WHERE ((p1.disappearedAt IS NULL) OR "++where_start_stop_within(Opts, "p1.disappearedAt", "p1.appearedAt")++"\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
       "WHERE TYPE(rel) IN ['TRACE_STARTED', 'TRACE_STOPPED', 'FOUND_DEAD'] AND "++where_at_within(Opts, "rel.at")++"\n"
@@ -72,37 +78,40 @@ delta_json(#{instance_id := Id} = Opts) ->
       "WITH p1, FILTER(e IN COLLECT({at: rel.at, type: TYPE(rel)}) WHERE e.at IS NOT NULL) AS events\n"
       "ORDER BY p1.appearedAt\n"
       "RETURN p1.appearedAt AS appearedAt, p1.pid AS pid, p1.parentPid AS parentPid, p1.spawnedAt AS spawnedAt, p1.exitedAt AS exitedAt, p1.exitReason AS exitReason, p1.disappearedAt AS disappearedAt, p1.application AS application, p1.registeredName AS registeredName, events\n"
-    , TimeParams#{id => Id} },
+    , TimeParams#{id => Id, contextPids => ContextPids} },
 
     { "MATCH (p1:Process {instanceId: {id}})-[rel]->(p2:Process {instanceId: {id}})\n"
       "WHERE NOT TYPE(rel) IN [\"TRACE_STARTED\", \"TRACE_STOPPED\", \"FOUND_DEAD\"] AND "++where_at_within(Opts, "rel.at")++"\n"
+      "  AND "++where_id_in_values("p1.pid", ContextPidsKey)++" OR "++where_id_in_values("p2.pid", ContextPidsKey)++"\n"
       "RETURN rel.at AS at, p1.pid AS pid1, p2.pid AS pid2, TYPE(rel) AS type\n"
       "ORDER BY rel.at\n"
-    , TimeParams#{id => Id} },
+    , TimeParams#{id => Id, contextPids => ContextPids} },
 
     { "MATCH (p:Process {instanceId: {id}})-[rel:VAR_MENTION]-(c:Context {instanceId: {id}})\n"
       "WHERE "++where_at_within(Opts, "rel.at")++"\n"
+      "  AND "++where_id_in_values("p.pid", ContextPidsKey)++"\n"
       "RETURN rel.at AS at, c.pid AS pid1, p.pid AS pid2, TYPE(rel) AS type, c.context AS context, rel.expr AS expr\n"
       "ORDER BY rel.at\n"
-    , TimeParams#{id => Id} },
+    , TimeParams#{id => Id, contextPids => ContextPids} },
 
     { "MATCH (context:Context { instanceId: {id} })\n"
       "WHERE "++where_start_stop_within(Opts, "context.startedAt", "context.stoppedAt")++"\n"
+      "  AND "++where_start_with("context.context", ContextKey)++"\n"
       % "WHERE ((context.stoppedAt IS NULL) OR context.stoppedAt > {at})\n"
 
       % "MATCH (context)-[bind:VAR_MENTION]->(proc:Process)\n"
       % "WITH COLLECT({at: bind.at, expr: bind.expr, pid: proc.pid}) AS binds, context\n"
       "RETURN context.startedAt AS startedAt, context.stoppedAt AS stoppedAt, context.context AS context, context.pid AS pid\n"
-    , TimeParams#{id => Id} },
+    , TimeParams#{id => Id, context => maps:get(context, Opts, undefined)} },
 
-    { "MATCH (port:Port { instanceId: {id} })\n"
+    { "MATCH (port:Port { instanceId: {id} })-[rel:OWNERSHIP]-(p:Process)\n"
       "WHERE "++where_start_stop_within(Opts, "port.openedAt", "port.closedAt")++"\n"
-      "MATCH (port)-[rel:OWNERSHIP]-(:Process)\n"
+      "  AND "++where_id_in_values("p.pid", ContextPidsKey)++"\n"
       "WITH port, rel\n"
       "ORDER BY rel.startedAt\n"
       "WITH port, COLLECT(rel) AS rels\n"
       "RETURN port.port AS port, port.openedAt AS openedAt, port.closedAt AS closedAt, port.exitReason AS exitReason, port.driverName AS driverName, rels AS parts\n"
-    , TimeParams#{id => Id} }
+    , TimeParams#{id => Id, contextPids => ContextPids} }
   ],
   {ok, [Processes, Events, ContextMentionEvents, Contexts, Ports]} = neo4j:commit(Statements),
 
@@ -143,6 +152,28 @@ where_start_stop_within(#{to := _}, _StartKey, StopKey) ->
 where_start_stop_within(#{}, _StartKey, _StopKey) ->
   "true".
 
+where_id_in_values(_Key, undefined) -> "true";
+where_id_in_values(Key, DataKey) -> "("++Key++" IN {"++DataKey++"})".
+
+where_start_with(_Key, undefined) -> "true";
+where_start_with(Key, DataKey) -> "("++Key++" STARTS WITH {"++DataKey++"})".
+
+
+
+request_context_pids(#{instance_id := Id, context := Context}) ->
+  Statements = [
+  { "MATCH (c:Context { instanceId: {id} })\n"
+    "WHERE c.context STARTS WITH {context}\n"
+    "OPTIONAL MATCH (c)-[:VAR_MENTION {}]->(proc:Process)\n"
+    "RETURN COLLECT(proc.pid) AS pids, c.pid AS contextPid\n"
+  , #{id => Id, context => Context} }
+  ],
+  {ok, [Result]} = neo4j:commit(Statements),
+  convert_all_to_one_list(Result);
+
+request_context_pids(#{}) ->
+  undefined.
+
 
 
 convert_rows_to_objects(#{<<"columns">> := Cols, <<"data">> := Rows}) ->
@@ -156,6 +187,9 @@ convert_rows_to_map(ColumnKey, #{<<"columns">> := Cols, <<"data">> := Rows}) ->
     Key = maps:get(ColumnKey, Obj),
     Acc#{Key => Obj}
   end, #{}, Rows).
+
+convert_all_to_one_list(#{<<"columns">> := _Cols, <<"data">> := Rows}) ->
+  lists:usort(lists:flatten([V || #{<<"row">> := V} <- Rows])).
 
 
 
