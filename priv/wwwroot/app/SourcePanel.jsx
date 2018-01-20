@@ -27,7 +27,7 @@ class SourcePanel extends React.Component {
   onKeyPress(e) {
     // plain Enter makes new line
     // Shift + Enter sends input to remote shell
-    if (e.key === 'Enter' && e.shiftKey && this.state.text) {
+    if (e.key === 'Enter' && !e.shiftKey && this.state.text) {
       console.log("---\nshell input: ", this.state.text);
       this.submitInput()
     }
@@ -108,7 +108,7 @@ class SourcePanel extends React.Component {
   }
 
   render() {
-    let maxHeight = this.state.viewportHeight - 40;
+    let maxHeight = this.state.viewportHeight - (40 + 60);
 
     if (this.props.selectedContext) {
       let context = this.props.contexts[this.props.selectedContext];

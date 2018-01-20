@@ -314,13 +314,13 @@ clickhouse_opts(#{context := _} = Opts, _Delta) ->
   Opts0 = maps:with([instance_id, from, to, context], Opts),
   Opts0#{type_in => table_events_types()};
 
-clickhouse_opts(#{} = Opts, #{<<"processes">> := Processes}) ->
+clickhouse_opts(#{} = Opts, #{}) ->
   Opts0 = maps:with([instance_id, from, to], Opts),
-  Pids = maps:keys(Processes),
+  % Pids = maps:keys(Processes),
   % TODO: mark processes with shell IO or context events
   % during creation of graph. This would allow to query only few pids
   % not to pass huge list into query, as it is now.
-  Opts0#{type_in => table_events_types(), only_pids => Pids}.
+  Opts0#{type_in => table_events_types()}.
 
 
 

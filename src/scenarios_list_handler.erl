@@ -62,17 +62,20 @@ get_items_list(MaxItems) ->
   ]),
 
   {ok, Body2} = clickhouse:execute(SQL2),
-  {ok, Scenarios} = clickhouse:parse_rows({lists_prop, <<"instance_id">>}, Body2),
-  Scenarios1 = turn_context_lines_into_trees(Scenarios),
+  {ok, Contexts} = clickhouse:parse_rows({lists_prop, <<"instance_id">>}, Body2),
+  Scenarios = turn_context_lines_into_trees(Ids, maps:from_list(Contexts)),
 
-  {ok, Scenarios1}.
+  {ok, Scenarios}.
 
 
 
-turn_context_lines_into_trees(Scenarios) ->
-  lists:map(fun ({InstanceId, Contexts}) when is_list(Contexts) ->
-    [InstanceId, list_to_tree(Contexts, #{})]
-  end, Scenarios).
+turn_context_lines_into_trees(Ids, Contexts) ->
+  lists:map(fun (InstanceId) ->
+    case maps:get(InstanceId, Contexts, undefined) of
+      undefined -> [InstanceId, #{}];
+      ContextsList -> [InstanceId, list_to_tree(ContextsList, #{})]
+    end
+  end, Ids).
 
 list_to_tree([], Acc) -> Acc;
 list_to_tree([Context | Rest], Acc) ->
