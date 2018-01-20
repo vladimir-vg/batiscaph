@@ -57,7 +57,7 @@ class MainPage extends React.Component {
     }
     const id = this.state.items[this.state.selectedIndex][0];
     const tree = this.state.items[this.state.selectedIndex][1];
-    const path = '/scenarios2/'+id;
+    const path = '/scenarios/'+id;
     return this.renderRecursiveTree(path, tree);
   }
 
@@ -71,7 +71,7 @@ class MainPage extends React.Component {
       }
       links.push(
         <div key={i}>
-          <Link to={'/scenarios2/'+id} onMouseEnter={this.onLinkEnter.bind(this, i)} className={className}>
+          <Link to={'/scenarios/'+id} onMouseEnter={this.onLinkEnter.bind(this, i)} className={className}>
             {id}
           </Link>
         </div>

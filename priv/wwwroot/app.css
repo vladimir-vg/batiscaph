@@ -37,6 +37,24 @@ code { font-family: 'Ubuntu Mono', monospace; }
   stroke-width: 1px;
 }
 
+.ScenarioView #back-button {
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  padding: 10px;
+  background-color: rgba(255,255,255,0.7);
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.16);
+  border-radius: 10px;
+
+  text-decoration: none;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #2F80ED;
+}
+
 .SourcePanel {
   position: fixed;
   left: 20px;
@@ -112,54 +130,54 @@ code { font-family: 'Ubuntu Mono', monospace; }
 
 
 
-svg.ScenarioView rect.context {
+.ScenarioView svg rect.context {
   /*stroke: #D9D9D9;*/
   stroke: #BDBDBD;
   stroke-width: 2px;
   fill: transparent;
 }
-svg.ScenarioView rect.context.active {
+.ScenarioView svg rect.context.active {
   stroke: #2F80ED;
 }
 
-svg.ScenarioView line.var-mention {
+.ScenarioView svg line.var-mention {
   stroke: #EDEDED;
   /*style={{stroke: '#EDEDED', strokeWidth: 2}}*/
   stroke-width: 2px;
 }
-svg.ScenarioView line.var-mention.active {
+.ScenarioView svg line.var-mention.active {
   stroke: #2F80ED;
 }
 
-svg.ScenarioView line.spawn-line {
+.ScenarioView svg line.spawn-line {
   stroke: #8C8C8C;
   stroke-width: 2px;
 }
-svg.ScenarioView line.link-line {
+.ScenarioView svg line.link-line {
   stroke: #F2994A;
   stroke-width: 2px;
 }
 
-svg.ScenarioView rect.port-body {
+.ScenarioView svg rect.port-body {
   fill: #B4C2D4;
 }
-svg.ScenarioView line.port-body {
+.ScenarioView svg line.port-body {
   stroke: #B4C2D4;
   stroke-width: 1px;
 }
 
-svg.ScenarioView rect.exit-reason {
+.ScenarioView svg rect.exit-reason {
   fill: #FC8888;
 }
 
-svg.ScenarioView text.label {
+.ScenarioView svg text.label {
   font-family: 'Ubuntu Mono', monospace;
   font-size: 12px;
 }
 
 
 
-svg.ScenarioView line.process-connecting-line {
+.ScenarioView svg line.process-connecting-line {
   stroke: #D9D9D9;
   stroke-width: 2px;
 }

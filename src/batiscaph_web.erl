@@ -14,12 +14,12 @@ restart_cowboy() ->
       {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       {"/scenarios.json", scenarios_list_handler, []},
       % {"/scenarios/[:id]/erlmodules", erlmodules_handler, []},
-      {"/scenarios/[...]", scenarios_csv_handler, []},
+      % {"/scenarios/[...]", scenarios_csv_handler, []},
       % {"/api/scenarios2/[:id]", scenario_tree_handler, []},
       {"/style/app.css", cowboy_static, {priv_file, batiscaph, "wwwroot/app.css"}},
       {"/", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
-      {"/scenarios2/[:id]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
-      {"/scenarios2/[:id]/[...]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}}
+      {"/scenarios/[:id]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
+      {"/scenarios/[:id]/[...]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}}
     ]}
   ]),
   Opts = [
