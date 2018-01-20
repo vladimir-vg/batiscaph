@@ -28,9 +28,11 @@ class App extends React.Component {
   onInstanceIdChange(id, context) {
     this._layout = {};
     this.setState({tree: undefined, shellPrompt: undefined, shellEvents: []});
-    if (!V.socket) {
-      this.connectToExistingShell(id, context);
+    if (V.socket) {
+      V.socket.close();
+      V.socket = null;
     }
+    this.connectToExistingShell(id, context);
     // this.fetchInitialDelta(id);
   }
 

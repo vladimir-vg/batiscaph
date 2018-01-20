@@ -532,7 +532,9 @@ class ScenarioView extends React.Component {
   }
 
   componentWillReceiveProps(props) {
-    if (this.props.match.params.id != props.match.params.id) {
+    const idChanged = this.props.match.params.id != props.match.params.id;
+    const contextChanged = this.props.match.params.context != props.match.params.context;
+    if (idChanged || contextChanged) {
       let context = null;
       if (this.props.match.params.context) {
         context = this.props.match.params.context.split('/').join(' ');
