@@ -664,7 +664,7 @@ class ScenarioView extends React.Component {
         </g>
 
       </SvgView>
-      <Link to="/" id="back-button">Back to list</Link>
+      <Link to="/" className="button" id="back-button">Back to list</Link>
       <SourcePanel width={SOURCE_PANEL_WIDTH} contexts={this.props.tree.contexts} selectedContext={this.props.selectedContext}
         events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput}
         highlightRange={this.highlightRange} />

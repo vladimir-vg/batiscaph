@@ -1,6 +1,6 @@
 # batiscaph
 
-![batiscaph display example](https://github.com/vladimir-vg/batiscaph/raw/master/open_port_and_change_owner.gif)
+![batiscaph display example](https://github.com/vladimir-vg/batiscaph/raw/demo-01-2018/open_port_and_change_owner.gif)
 
 Batiscaph is a research device that submerges into ocean and explores unknown space.
 That's what this tool does -- submerges into Erlang node and observes how programs work in it.

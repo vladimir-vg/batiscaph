@@ -80,7 +80,8 @@ class MainPage extends React.Component {
 
     return <div id="MainPage" className="content-page">
       <div className="head-block">
-        <button className="btn" onClick={this.props.startNewShell}>Start new shell</button>
+        <p><button className="button" onClick={this.props.startNewShell}>Start new shell</button></p>
+        <p>or connect to already running node: <input /> <button className="button">connect</button></p>
       </div>
       <br />
       <h1>Previous sessions:</h1>

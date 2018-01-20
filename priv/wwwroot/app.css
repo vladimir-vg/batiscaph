@@ -1,4 +1,4 @@
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; font-family: sans-serif;}
 
 code { font-family: 'Ubuntu Mono', monospace; }
 
@@ -10,6 +10,26 @@ code { font-family: 'Ubuntu Mono', monospace; }
      -moz-user-select: none;
       -ms-user-select: none;
           user-select: none;
+}
+
+.button {
+  padding: 10px;
+  background-color: rgba(255,255,255,0.7);
+  box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.3);
+  border-radius: 10px;
+
+  text-decoration: none;
+  font-family: sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #2F80ED;
+  outline: 0;
+  border: 0;
+  cursor: pointer;
+}
+.button:hover {
+  background-color: #2F80ED;
+  color: white;
 }
 
 /* Main Page */
@@ -41,18 +61,8 @@ code { font-family: 'Ubuntu Mono', monospace; }
   position: fixed;
   left: 20px;
   top: 20px;
-  padding: 10px;
-  background-color: rgba(255,255,255,0.7);
   overflow-y: auto;
   box-sizing: border-box;
-  box-shadow: 0px 0px 8px 0px rgba(0,0,0,0.16);
-  border-radius: 10px;
-
-  text-decoration: none;
-  font-family: sans-serif;
-  font-size: 14px;
-  font-weight: bold;
-  color: #2F80ED;
 }
 
 .SourcePanel {
