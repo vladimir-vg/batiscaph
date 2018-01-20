@@ -26,19 +26,24 @@ class App extends React.Component {
   }
 
   onInstanceIdChange(id, context) {
+    if (V.socket && id == this._id && context == this._context) { return; }
+
     this._layout = {};
     this.setState({tree: undefined, shellPrompt: undefined, shellEvents: []});
     if (V.socket) {
       V.socket.close();
       V.socket = null;
     }
+
+    this._id = id;
+    this._context = context;
     this.connectToExistingShell(id, context);
-    // this.fetchInitialDelta(id);
   }
 
   onWSMessage(event) {
     if (event.data.indexOf("shell_connected ") == 0) {
       let id = event.data.slice("shell_connected ".length);
+      this._id = id;
       this.setState({instanceId: id});
     } else if (event.data.indexOf("delta ") == 0) {
       let delta = JSON.parse(event.data.slice("delta ".length));
@@ -81,6 +86,13 @@ class App extends React.Component {
   }
 
   startNewShell(id) {
+    if (V.socket) {
+      V.socket.close();
+      delete V.socket;
+      delete this._id;
+      delete this._context;
+    }
+
     V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
     V.socket.addEventListener('message', this.onWSMessage);
     V.socket.addEventListener('open', (function () {

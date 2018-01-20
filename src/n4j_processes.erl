@@ -137,9 +137,9 @@ time_params_from_opts(_Opts) -> #{}.
 where_at_within(#{from := _, to := _}, Key) ->
   "({fromAt} < "++Key++" AND "++Key++" < {toAt})";
 where_at_within(#{to := _}, Key) ->
-  "({toAt} < "++Key++")";
+  "("++Key++" < {toAt})";
 where_at_within(#{from := _}, Key) ->
-  "("++Key++" < {fromAt})";
+  "({fromAt} < "++Key++")";
 where_at_within(#{}, _Key) ->
   "true".
 
