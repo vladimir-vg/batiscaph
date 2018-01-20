@@ -114,12 +114,12 @@ class App extends React.Component {
   render() {
     let scenarioRedirect = null;
     if (this.state.instanceId) {
-      scenarioRedirect = <Redirect to={"/scenarios2/" + this.state.instanceId} />;
+      scenarioRedirect = <Redirect to={"/scenarios/" + this.state.instanceId} />;
     }
 
     return <div>
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
-      <Route path="/scenarios2/:id/:context*" render={(props) =>
+      <Route path="/scenarios/:id/:context*" render={(props) =>
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
             submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange}
             tracePid={this.tracePid} selectContext={this.selectContext}

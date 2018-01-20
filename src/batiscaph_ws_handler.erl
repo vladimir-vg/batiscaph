@@ -95,7 +95,7 @@ websocket_terminate(_Reason, _Req, _State) ->
 start_shell(State) ->
   Id = batiscaph:binary_to_hex(crypto:strong_rand_bytes(10)),
   {ok, Pid} = remote_ctl:ensure_started(Id),
-  ok = gen_server:call(Pid, {subscribe_websocket, self()}),
+  ok = gen_server:call(Pid, {subscribe_websocket, self(), #{}}),
   {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
   State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
   {ok, {text, <<"shell_connected ", Id/binary>>}, State1}.

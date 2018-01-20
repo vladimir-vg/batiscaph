@@ -1,4 +1,4 @@
-
+const Link = ReactRouterDOM.Link;
 
 
 const CELL_WIDTH = 10;
@@ -437,7 +437,7 @@ class PortElement extends React.Component {
   constructor() {
     super();
     this.state = {
-      displayText: false
+      displayTextOnPart: null
     };
 
     // because new EcmaScript standard is poorly designed
@@ -446,12 +446,12 @@ class PortElement extends React.Component {
     this.onMouseLeave = this.onMouseLeave.bind(this);
   }
 
-  onMouseEnter() {
-    this.setState({displayText: true});
+  onMouseEnter(index) {
+    this.setState({displayTextOnPart: index});
   }
 
   onMouseLeave() {
-    this.setState({displayText: false})
+    this.setState({displayTextOnPart: null})
   }
 
   render() {
@@ -463,7 +463,9 @@ class PortElement extends React.Component {
       let y = part.fromY*CELL_HEIGHT;
       let width = PORT_WIDTH;
       let height = (part.toY - part.fromY)*CELL_HEIGHT;
-      parts.push(<rect key={i} x={x} y={y} width={width} height={height} className="port-body" />);
+      parts.push(<rect key={i}
+        onMouseEnter={this.onMouseEnter.bind(this, i)} onMouseLeave={this.onMouseLeave}
+        x={x} y={y} width={width} height={height} className="port-body" />);
 
       // add connecting line between different parts in different processes
       if (i != 0) {
@@ -484,18 +486,22 @@ class PortElement extends React.Component {
       parts.push(<rect key="reason" x={x} y={y} width={width} height={height} className="exit-reason" />);
     }
 
-    let x = lastPart.x*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset;
-    let y = lastPart.fromY*CELL_HEIGHT - CELL_HEIGHT;
-    let textNode = <text x={x} y={y} className="label">
-      {this.state.displayText ? this.props.data.driverName : ''}
-    </text>;
+    let textNode = null;
+    if (this.state.displayTextOnPart) {
+      const part = this.props.data.parts[this.state.displayTextOnPart];
+      let x = part.x*(CELL_WIDTH+CELL_HGUTTER) + portWidthOffset;
+      let y = part.fromY*CELL_HEIGHT - CELL_HEIGHT;
+      textNode = <text x={x} y={y} className="label">
+        {this.props.data.driverName}
+      </text>;
+    }
 
     return [
       <Layer key="text" name="text">
         {textNode}
       </Layer>,
       <Layer key="portBodies" name="portBodies">
-        <g onMouseEnter={this.onMouseEnter} onMouseLeave={this.onMouseLeave}>{parts}</g>
+        <g>{parts}</g>
       </Layer>
     ];
   }
@@ -623,8 +629,8 @@ class ScenarioView extends React.Component {
     let width = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
     let height = this.props.tree.height*CELL_HEIGHT;
 // <g>{this.renderGrid()}</g>
-    return <div>
-      <SvgView className="ScenarioView" padding={100} paddingLeft={SOURCE_PANEL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
+    return <div className="ScenarioView">
+      <SvgView padding={100} paddingLeft={SOURCE_PANEL_WIDTH+100} paddedWidth={width} paddedHeight={height}>
         
 
         {/* layers where dom is actually rendered */}
@@ -656,6 +662,7 @@ class ScenarioView extends React.Component {
         </g>
 
       </SvgView>
+      <Link to="/" id="back-button">Back to list</Link>
       <SourcePanel width={SOURCE_PANEL_WIDTH} contexts={this.props.tree.contexts} selectedContext={this.props.selectedContext}
         events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput}
         highlightRange={this.highlightRange} />
