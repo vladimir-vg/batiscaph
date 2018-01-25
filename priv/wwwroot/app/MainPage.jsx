@@ -5,12 +5,15 @@ class MainPage extends React.Component {
     super();
     this.state = {
       items: [],
-      selectedIndex: null
+      selectedIndex: null,
+      nodeName: ''
     };
 
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
     this.onBlockLeave = this.onBlockLeave.bind(this);
+    this.editNodeName = this.editNodeName.bind(this);
+    this.onConnectClick = this.onConnectClick.bind(this);
   }
 
   componentDidMount() {
@@ -31,6 +34,14 @@ class MainPage extends React.Component {
 
   onBlockLeave() {
     this.setState({selectedIndex: null});
+  }
+
+  editNodeName(e) {
+    this.setState({nodeName: e.target.value});
+  }
+
+  onConnectClick() {
+    this.props.connectToNode(this.state.nodeName);
   }
 
   renderRecursiveTree(path, tree) {
@@ -78,10 +89,14 @@ class MainPage extends React.Component {
       );
     }
 
+    const connectButtonEnabled = this.state.nodeName && this.state.nodeName.indexOf("@") != -1;
+
     return <div id="MainPage" className="content-page">
       <div className="head-block">
         <p><button className="button" onClick={this.props.startNewShell}>Start new shell</button></p>
-        <p>or connect to already running node: <input /> <button className="button">connect</button></p>
+        <p>or connect to already running node:
+        <input value={this.state.nodeName} onChange={this.editNodeName} />
+         &nbsp; <button disabled={!connectButtonEnabled} onClick={this.onConnectClick} className="button">connect</button></p>
       </div>
       <br />
       <h1>Previous sessions:</h1>

@@ -27,6 +27,9 @@ websocket_init(_TransportName, Req, _Opts) ->
 websocket_handle({text, <<"start_shell">>}, Req, #ws_state{scenario_id = undefined} = State) ->
   {ok, Reply, State1} = start_shell(State),
   {reply, Reply, Req, State1};
+websocket_handle({text, <<"start_shell_on_node ", Node/binary>>}, Req, #ws_state{scenario_id = undefined} = State) ->
+  {ok, Reply, State1} = start_shell(Node, State),
+  {reply, Reply, Req, State1};
 
 websocket_handle({text, <<"connect_to_shell ", Rest/binary>>}, Req, #ws_state{scenario_id = undefined} = State) ->
   {ok, Reply, State1} = case binary:split(Rest, <<" ">>) of
@@ -93,8 +96,25 @@ websocket_terminate(_Reason, _Req, _State) ->
 
 
 start_shell(State) ->
+  start_shell(undefined, State).
+
+  % Id = batiscaph:binary_to_hex(crypto:strong_rand_bytes(10)),
+  % {ok, Pid} = remote_ctl:ensure_started(Id),
+  % ok = gen_server:call(Pid, {subscribe_websocket, self(), #{}}),
+  % {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
+  % State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},
+  % {ok, {text, <<"shell_connected ", Id/binary>>}, State1}.
+
+start_shell(Node, State) when is_binary(Node) ->
+  start_shell(binary_to_atom(Node, latin1), State);
+
+start_shell(Node, State) ->
+  Opts = case Node of
+    undefined -> #{};
+    _ when is_atom(Node) -> #{node => Node}
+  end,
   Id = batiscaph:binary_to_hex(crypto:strong_rand_bytes(10)),
-  {ok, Pid} = remote_ctl:ensure_started(Id),
+  {ok, Pid} = remote_ctl:ensure_started(Id, Opts),
   ok = gen_server:call(Pid, {subscribe_websocket, self(), #{}}),
   {ok, ScenarioPid} = gen_server:call(Pid, get_scenario_pid),
   State1 = State#ws_state{scenario_id = Id, remote_scenario_pid = ScenarioPid},

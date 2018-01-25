@@ -18,6 +18,7 @@ class App extends React.Component {
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
     this.startNewShell = this.startNewShell.bind(this);
+    this.connectToNode = this.connectToNode.bind(this);
     this.onInstanceRoute = this.onInstanceRoute.bind(this);
     this.onWSMessage = this.onWSMessage.bind(this);
     this.submitShellInput = this.submitShellInput.bind(this);
@@ -88,7 +89,7 @@ class App extends React.Component {
     this.setState({tree: tree, shellEvents: shellEvents});
   }
 
-  startNewShell(id) {
+  startNewShell() {
     if (V.socket) { console.error("Unexpected opened socket"); return; }
     this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null});
 
@@ -96,6 +97,17 @@ class App extends React.Component {
     V.socket.addEventListener('message', this.onWSMessage);
     V.socket.addEventListener('open', (function () {
       V.socket.send('start_shell');
+    }).bind(this));
+  }
+
+  connectToNode(node) {
+    if (V.socket) { console.error("Unexpected opened socket"); return; }
+    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null});
+
+    V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
+    V.socket.addEventListener('message', this.onWSMessage);
+    V.socket.addEventListener('open', (function () {
+      V.socket.send('start_shell_on_node ' + node);
     }).bind(this));
   }
 
@@ -133,7 +145,9 @@ class App extends React.Component {
     return <div>
       {scenarioRedirect}
 
-      <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
+      <Route path="/" exact={true} render={(props) =>
+        <MainPage startNewShell={this.startNewShell} connectToNode={this.connectToNode} />
+      } />
       <Route path="/scenarios/:id/:context*" render={(props) =>
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
             submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
