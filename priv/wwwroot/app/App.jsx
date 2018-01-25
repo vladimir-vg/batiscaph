@@ -1,5 +1,6 @@
 const Route = ReactRouterDOM.Route;
 const Redirect = ReactRouterDOM.Redirect;
+const Switch = ReactRouterDOM.Switch;
 
 
 
@@ -7,7 +8,6 @@ class App extends React.Component {
   constructor() {
     super();
     this.state = {
-      instanceId: undefined,
       tree: undefined,
       shellPrompt: undefined,
       shellEvents: [],
@@ -48,7 +48,7 @@ class App extends React.Component {
   onWSMessage(event) {
     if (event.data.indexOf("shell_connected ") == 0) {
       let id = event.data.slice("shell_connected ".length);
-      this.setState({instanceId: id});
+      this.props.history.push("/scenarios/" + id)
     } else if (event.data.indexOf("delta ") == 0) {
       let delta = JSON.parse(event.data.slice("delta ".length));
       console.log("delta", delta);
@@ -137,24 +137,21 @@ class App extends React.Component {
   }
 
   render() {
-    let scenarioRedirect = null;
-    if (this.state.instanceId) {
-      scenarioRedirect = <Redirect to={"/scenarios/" + this.state.instanceId} />;
-    }
-
     return <div>
-      {scenarioRedirect}
-
-      <Route path="/" exact={true} render={(props) =>
-        <MainPage startNewShell={this.startNewShell} connectToNode={this.connectToNode} />
-      } />
-      <Route path="/scenarios/:id/:context*" render={(props) =>
+      <Switch>
+        <Route exact path="/scenarios/:id/:context*" render={(props) =>
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
-            submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
-            tracePid={this.tracePid} selectContext={this.selectContext}
-            selectedContext={this.state.selectedContext}
-            {...props} />
-      } />
+          submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
+          tracePid={this.tracePid} selectContext={this.selectContext}
+          selectedContext={this.state.selectedContext}
+          {...props} />
+        } />
+
+        <Route exact path="/" render={(props) =>
+          <MainPage startNewShell={this.startNewShell} connectToNode={this.connectToNode} />
+        } />
+
+      </Switch>
     </div>;
   }
 };
