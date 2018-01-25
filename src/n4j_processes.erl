@@ -145,8 +145,11 @@ where_at_within(#{}, _Key) ->
 
 where_start_stop_within(#{from := _, to := _}, StartKey, StopKey) ->
   "((("++StartKey++" IS NULL) OR {fromAt} < "++StartKey++") AND (("++StopKey++" IS NULL) OR "++StopKey++" < {toAt}))";
-where_start_stop_within(#{from := _}, StartKey, _StopKey) ->
-  "(("++StartKey++" IS NULL) OR {fromAt} < "++StartKey++")";
+where_start_stop_within(#{from := _}, StartKey, StopKey) ->
+  % TODO: these comparisons do not work properly
+  % had to add this StopKey IS NOT NULL to check disappearedAt correctly
+  % this code should be revised, proper tests written
+  "(("++StartKey++" IS NULL) OR {fromAt} < "++StartKey++") OR (("++StopKey++" IS NOT NULL) AND {fromAt} < "++StopKey++")";
 where_start_stop_within(#{to := _}, _StartKey, StopKey) ->
   "(("++StopKey++" IS NULL) OR "++StopKey++" < {toAt})";
 where_start_stop_within(#{}, _StartKey, _StopKey) ->
