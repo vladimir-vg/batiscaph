@@ -528,7 +528,7 @@ class ScenarioView extends React.Component {
     if (this.props.match.params.context) {
       context = this.props.match.params.context.split('/').join(' ');
     }
-    this.props.onInstanceIdChange(this.props.match.params.id, context);
+    this.props.onInstanceRoute(this.props.match.params.id, context);
   }
 
   componentWillReceiveProps(props) {
@@ -540,8 +540,12 @@ class ScenarioView extends React.Component {
       if (this.props.match.params.context) {
         context = this.props.match.params.context.split('/').join(' ');
       }
-      this.props.onInstanceIdChange(props.match.params.id, context);
+      this.props.onInstanceRoute(props.match.params.id, context);
     }
+  }
+
+  componentWillUnmount() {
+    this.props.onInstanceRoute(null, null);
   }
 
   getChildContext() {

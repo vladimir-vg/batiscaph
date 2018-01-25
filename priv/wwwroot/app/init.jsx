@@ -222,7 +222,12 @@ V.walkInfoText = (text, onText, onPid) => {
 
 
 document.addEventListener("DOMContentLoaded", function(event) {
-  ReactDOM.render(<ReactRouterDOM.BrowserRouter><App /></ReactRouterDOM.BrowserRouter>, document.getElementById('react-app'));
+  const element = (
+    <ReactRouterDOM.BrowserRouter>
+      <App />
+    </ReactRouterDOM.BrowserRouter>
+  );
+  ReactDOM.render(element, document.getElementById('react-app'));
 });
 
 

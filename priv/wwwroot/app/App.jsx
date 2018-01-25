@@ -18,32 +18,35 @@ class App extends React.Component {
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
     this.startNewShell = this.startNewShell.bind(this);
-    this.onInstanceIdChange = this.onInstanceIdChange.bind(this);
+    this.onInstanceRoute = this.onInstanceRoute.bind(this);
     this.onWSMessage = this.onWSMessage.bind(this);
     this.submitShellInput = this.submitShellInput.bind(this);
     this.tracePid = this.tracePid.bind(this);
     this.selectContext = this.selectContext.bind(this);
   }
 
-  onInstanceIdChange(id, context) {
-    if (V.socket && id == this._id && context == this._context) { return; }
-
-    this._layout = {};
-    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: []});
-    if (V.socket) {
-      V.socket.close();
-      V.socket = null;
+  onInstanceRoute(id, context) {
+    if (!id) {
+      // just closed scenario, close websocket
+      if (V.socket) {
+        V.socket.close();
+        V.socket = null;
+        return;
+      }
     }
 
-    this._id = id;
-    this._context = context;
+    // must be freshly created shell, do nothing
+    if (V.socket) { return; }
+
+    this._layout = {};
+    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null});
+
     this.connectToExistingShell(id, context);
   }
 
   onWSMessage(event) {
     if (event.data.indexOf("shell_connected ") == 0) {
       let id = event.data.slice("shell_connected ".length);
-      this._id = id;
       this.setState({instanceId: id});
     } else if (event.data.indexOf("delta ") == 0) {
       let delta = JSON.parse(event.data.slice("delta ".length));
@@ -86,12 +89,8 @@ class App extends React.Component {
   }
 
   startNewShell(id) {
-    if (V.socket) {
-      V.socket.close();
-      delete V.socket;
-      delete this._id;
-      delete this._context;
-    }
+    if (V.socket) { console.error("Unexpected opened socket"); return; }
+    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null});
 
     V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
     V.socket.addEventListener('message', this.onWSMessage);
@@ -132,15 +131,16 @@ class App extends React.Component {
     }
 
     return <div>
+      {scenarioRedirect}
+
       <Route path="/" exact={true} render={(props) => <MainPage startNewShell={this.startNewShell} />} />
       <Route path="/scenarios/:id/:context*" render={(props) =>
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
-            submitShellInput={this.submitShellInput} onInstanceIdChange={this.onInstanceIdChange}
+            submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
             tracePid={this.tracePid} selectContext={this.selectContext}
             selectedContext={this.state.selectedContext}
             {...props} />
       } />
-      {scenarioRedirect}
     </div>;
   }
 };
