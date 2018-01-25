@@ -90,10 +90,10 @@ handle_call({events, Events}, _From, #remote_ctl{} = State) ->
   {reply, ok, State1};
 
 % currently allow to subscribe only one websocket
-handle_call({subscribe_websocket, Pid, _QueryOpts}, _From, #remote_ctl{} = State) ->
+handle_call({subscribe_websocket, Pid, QueryOpts}, _From, #remote_ctl{} = State) ->
   % TODO: currently just ignore QueryOpts (like context)
   % need to implement it someday
-  {ok, State1} = subscribe_websocket(Pid, State),
+  {ok, State1} = subscribe_websocket(Pid, QueryOpts, State),
   {reply, ok, State1};
 
 handle_call(get_scenario_pid, _From, #remote_ctl{remote_scenario_pid = Pid} = State) ->
@@ -161,23 +161,23 @@ start_remote_shell(#remote_ctl{node = RemoteNode} = State) ->
 
 
 
-subscribe_websocket(Pid, #remote_ctl{id = Id, websockets = Websockets, shell_input = ShellInput} = State) ->
-  {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id}),
+subscribe_websocket(Pid, QueryOpts, #remote_ctl{id = Id, websockets = Websockets, shell_input = ShellInput} = State) ->
+  {ok, LastAt1, Delta} = produce_delta(QueryOpts#{instance_id => Id}),
   Pid ! {delta, Delta},
   Pid ! {shell_input, ShellInput},
-  Websockets1 = Websockets#{Pid => LastAt1},
+  Websockets1 = Websockets#{Pid => #{opts => QueryOpts, last_at => LastAt1}},
   State1 = State#remote_ctl{websockets = Websockets1},
   {ok, State1}.
 
 
 
 send_to_websockets(Message, #remote_ctl{websockets = Websockets} = State) ->
-  Websockets1 = maps:fold(fun (Pid, LastAt, Acc) ->
+  Websockets1 = maps:fold(fun (Pid, W, Acc) ->
     case erlang:is_process_alive(Pid) of
       false -> Acc;
       true ->
         Pid ! Message,
-        Acc#{Pid => LastAt}
+        Acc#{Pid => W}
     end
   end, #{}, Websockets),
   {ok, State#remote_ctl{websockets = Websockets1}}.
@@ -185,13 +185,13 @@ send_to_websockets(Message, #remote_ctl{websockets = Websockets} = State) ->
 
 
 send_delta_to_websockets(#remote_ctl{id = Id, websockets = Websockets} = State) ->
-  Websockets1 = maps:fold(fun (Pid, LastAt, Acc) ->
+  Websockets1 = maps:fold(fun (Pid, #{last_at := LastAt, opts := Opts} = W, Acc) ->
     case erlang:is_process_alive(Pid) of
       false -> Acc;
       true ->
-        {ok, LastAt1, Delta} = produce_delta(#{instance_id => Id, from => LastAt}),
+        {ok, LastAt1, Delta} = produce_delta(Opts#{instance_id => Id, from => LastAt}),
         Pid ! {delta, Delta},
-        Acc#{Pid => LastAt1}
+        Acc#{Pid => W#{last_at => LastAt1}}
     end
   end, #{}, Websockets),
   {ok, State#remote_ctl{websockets = Websockets1}}.

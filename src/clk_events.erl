@@ -137,7 +137,7 @@ where_cond(Opts) ->
       [Cond | Acc];
 
     (context, Context, Acc) when is_binary(Context) ->
-      [["(context = '", Context, "')"] | Acc];
+      [["(context == '", Context, "' OR position(context, '", Context, " ') == 1)"] | Acc];
 
     (Key, Val, _Acc) -> error({unknown_select_opt, Key, Val})
   end, [], Opts),
