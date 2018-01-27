@@ -81,8 +81,8 @@ class MainPage extends React.Component {
         className += " selected";
       }
       links.push(
-        <div key={i}>
-          <Link to={'/scenarios/'+id} onMouseEnter={this.onLinkEnter.bind(this, i)} className={className}>
+        <div key={id} className={className} onMouseEnter={this.onLinkEnter.bind(this, i)}>
+          <Link to={'/scenarios/'+id}>
             {id}
           </Link>
         </div>

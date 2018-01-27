@@ -2,6 +2,10 @@ html, body { margin: 0; padding: 0; font-family: sans-serif;}
 
 code { font-family: 'Ubuntu Mono', monospace; }
 
+a {
+  color: #2F80ED;
+}
+
 /* utilities */
 
 .unselectable {
@@ -48,10 +52,19 @@ code { font-family: 'Ubuntu Mono', monospace; }
 }
 
 #MainPage .scenario-item {
+  padding: 5px;
   white-space: nowrap;
 }
+#MainPage .scenario-item a {
+  color: #2F80ED;
+  text-decoration: none;
+}
 #MainPage .scenario-item.selected {
-  font-weight: bold;
+  background-color: #2F80ED;
+}
+#MainPage .scenario-item.selected a {
+  /*font-weight: bold;*/
+  color: white;
 }
 
 /* Scenario View */
@@ -116,7 +129,7 @@ code { font-family: 'Ubuntu Mono', monospace; }
   font-size: 16px;
 }
 .SourcePanel .item code {
-  white-space: pre;
+  white-space: pre-wrap;
 }
 
 .SourcePanel .item.active.underline {
