@@ -1,5 +1,6 @@
 -module(batiscaph_steps).
 -export([exec_steps/6]).
+-export([var_mention_events/5]). % for shell bindings events
 
 
 
@@ -253,30 +254,33 @@ trace_binded_pids(Value) when is_map(Value) ->
 %
 % TODO: display pid expr with record syntax, when it possible
 var_mention_events(Timestamp, Var, Value, Context) ->
-  var_mention_events0(Timestamp, {<<>>, atom_to_binary(Var, latin1), <<>>}, Value, Context).
+  var_mention_events(Timestamp, self(), Var, Value, Context).
 
-var_mention_events0(_, _, Value, _) when is_number(Value) -> [];
-var_mention_events0(_, _, Value, _) when is_binary(Value) -> [];
-var_mention_events0(_, _, Value, _) when is_bitstring(Value) -> [];
-var_mention_events0(_, _, Value, _) when is_atom(Value) -> [];
-var_mention_events0(_, _, Value, _) when is_reference(Value) -> [];
-var_mention_events0(_, _, Value, _) when is_port(Value) -> [];
-var_mention_events0(_, _, Value, _) when is_function(Value) -> [];
+var_mention_events(Timestamp, Self, Var, Value, Context) ->
+  var_mention_events0(Timestamp, Self, {<<>>, atom_to_binary(Var, latin1), <<>>}, Value, Context).
 
-var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_pid(Value) ->
+var_mention_events0(_, _, _, Value, _) when is_number(Value) -> [];
+var_mention_events0(_, _, _, Value, _) when is_binary(Value) -> [];
+var_mention_events0(_, _, _, Value, _) when is_bitstring(Value) -> [];
+var_mention_events0(_, _, _, Value, _) when is_atom(Value) -> [];
+var_mention_events0(_, _, _, Value, _) when is_reference(Value) -> [];
+var_mention_events0(_, _, _, Value, _) when is_port(Value) -> [];
+var_mention_events0(_, _, _, Value, _) when is_function(Value) -> [];
+
+var_mention_events0(Timestamp, SelfSelf, {Prefix, Var, Suffix}, Value, Context) when is_pid(Value) ->
   Expr = <<Prefix/binary, Var/binary, Suffix/binary>>,
-  [var_mention_event1(Timestamp, Expr, Value, Context)];
+  [var_mention_event1(Timestamp, SelfSelf, Expr, Value, Context)];
 
-var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_tuple(Value) ->
+var_mention_events0(Timestamp, SelfSelf, {Prefix, Var, Suffix}, Value, Context) when is_tuple(Value) ->
   Indexes = lists:seq(1, tuple_size(Value)),
   lists:map(fun (I) ->
     Prefix1 = <<"element(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
     Suffix1 = <<Suffix/binary, ")">>,
     Value1 = element(I, Value),
-    var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
+    var_mention_events0(Timestamp, SelfSelf, {Prefix1, Var, Suffix1}, Value1, Context)
   end, Indexes);
 
-var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_list(Value) ->
+var_mention_events0(Timestamp, SelfSelf, {Prefix, Var, Suffix}, Value, Context) when is_list(Value) ->
   Indexes = lists:seq(1, length(Value)),
   lists:map(fun
     ({I, {Key, Value1}}) ->
@@ -284,28 +288,28 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_li
         Value1 ->
           Prefix1 = <<"proplists:get_value(", (z__client_scenario:format_term(Key))/binary, ",", Prefix/binary>>,
           Suffix1 = <<Suffix/binary, ")">>,
-          var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context);
+          var_mention_events0(Timestamp, SelfSelf, {Prefix1, Var, Suffix1}, Value1, Context);
 
         % undefined or single-atom value like: proplists:get_value(key, [key])
         _ ->
           Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
           Suffix1 = <<Suffix/binary, ")">>,
-          var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
+          var_mention_events0(Timestamp, SelfSelf, {Prefix1, Var, Suffix1}, Value1, Context)
       end;
 
     ({I, Value1}) ->
       Prefix1 = <<"lists:nth(", (integer_to_binary(I))/binary, ",", Prefix/binary>>,
       Suffix1 = <<Suffix/binary, ")">>,
-      var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
+      var_mention_events0(Timestamp, SelfSelf, {Prefix1, Var, Suffix1}, Value1, Context)
   end, lists:zip(Indexes, Value));
 
-var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_map(Value) ->
+var_mention_events0(Timestamp, SelfSelf, {Prefix, Var, Suffix}, Value, Context) when is_map(Value) ->
   Keys = maps:keys(Value),
   lists:map(fun (Key) ->
     Value1 = maps:get(Key, Value),
     Prefix1 = <<"maps:get(", (z__client_scenario:format_term(Key))/binary, ",", Prefix/binary>>,
     Suffix1 = <<Suffix/binary, ")">>,
-    var_mention_events0(Timestamp, {Prefix1, Var, Suffix1}, Value1, Context)
+    var_mention_events0(Timestamp, SelfSelf, {Prefix1, Var, Suffix1}, Value1, Context)
   end, Keys).
 
 
@@ -319,9 +323,9 @@ var_mention_events0(Timestamp, {Prefix, Var, Suffix}, Value, Context) when is_ma
 
 
 
-var_mention_event1(Timestamp, Expr, Pid, Context) when is_binary(Expr) ->
+var_mention_event1(Timestamp, Self, Expr, Pid, Context) when is_binary(Expr) ->
   z__client_collector:event_with_timestamp(Timestamp, #{
-    <<"pid">> => z__client_scenario:format_term(self()),
+    <<"pid">> => z__client_scenario:format_term(Self),
     <<"type">> => <<"var_mention">>,
     % <<"atom">> => atom_to_binary(Var, latin1),
     <<"term">> => Expr, % this is not really a term, but an expression how this value was extracted

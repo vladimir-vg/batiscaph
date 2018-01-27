@@ -151,6 +151,8 @@ start_remote_shell(#remote_ctl{node = RemoteNode} = State) ->
   ok = remote_node:load_local_module(RemoteNode, z__client_scenario),
   ok = remote_node:load_local_module(RemoteNode, z__client_shell),
   ok = remote_node:load_local_module(RemoteNode, z__client_sup),
+  ok = remote_node:load_local_module(RemoteNode, batiscaph_steps), % temporary, just for sake of accessing var_mention_events function
+
   Opts = #{nodestop_on_disconnect => true, nodestop_on_scenario_shutdown => true},
   {ok, ScenarioPid} = rpc:call(RemoteNode, z__client_scenario, start_link, [node(), self(), Opts]),
   lager:info("Connected to remote shell on ~p", [RemoteNode]),
@@ -241,7 +243,6 @@ delta_json(Opts) ->
 
   ClkOpts = clickhouse_opts(Opts, Delta1),
   {ok, TableEvents} = clk_events:select(ClkOpts),
-
   Delta2 = delta_with_table_events(Delta1, TableEvents),
   {ok, Delta2}.
 
@@ -271,9 +272,12 @@ delta_with_table_events(Delta, TableEvents) ->
 
 
 delta_with_context_lines(#{<<"contexts">> := Contexts} = Delta, ContextLines) ->
-  Contexts1 = lists:foldl(fun (#{<<"context">> := C, <<"lines">> := L}, Acc) ->
-    Context = maps:get(C, Acc),
-    Acc#{C => Context#{<<"lines">> => erlang:binary_to_term(L)}}
+  Contexts1 = lists:foldl(fun
+    (#{<<"lines">> := <<>>}, Acc) -> Acc;
+
+    (#{<<"context">> := C, <<"lines">> := L}, Acc) ->
+      Context = maps:get(C, Acc),
+      Acc#{C => Context#{<<"lines">> => erlang:binary_to_term(L)}}
   end, Contexts, ContextLines),
   Delta#{<<"contexts">> => Contexts1}.
 

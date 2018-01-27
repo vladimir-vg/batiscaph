@@ -111,10 +111,14 @@ class SourcePanel extends React.Component {
     let maxHeight = this.state.viewportHeight - (40 + 60);
 
     if (this.props.selectedContext) {
-      let context = this.props.contexts[this.props.selectedContext];
-      return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">
+      const context = this.props.contexts[this.props.selectedContext];
+      if (context.lines) {
+        return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">
         {this.renderLines(context)}
-      </div>;
+        </div>;
+      }
+      // if context doesn't have source lines
+      // just display shell as usual
     }
 
     return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">

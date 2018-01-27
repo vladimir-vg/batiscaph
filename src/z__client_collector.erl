@@ -13,6 +13,11 @@
   events_flush_timer,
   acc_events = [],
 
+  % remember current shell pid
+  % to properly recognize shell specific trace events
+  shell_pid,
+  shell_bindings :: #{atom() => any()},
+
   % temporary state that needed for producing
   % one event from several trace events
   % TODO: from time to time need to cleanup this map, remove old failed attempts to change port owner
@@ -75,6 +80,10 @@ handle_call({ignore_pids_tracing, Pids1}, _From, #collector{ignored_pids = Pids}
 handle_call(sync, _From, #collector{} = State) ->
   {reply, ok, State};
 
+handle_call({set_shell_pid, Pid}, _From, #collector{} = State) ->
+  ok = setup_tracing_for_shell(Pid),
+  {reply, ok, State#collector{shell_pid = Pid}};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
@@ -99,6 +108,13 @@ setup_global_tracing() ->
   erlang:trace_pattern({erlang, port_connect, 2}, [PortConnectReturnTraceSpec], [global]),
 
   erlang:trace(ports, true, [ports, timestamp, {tracer, self()}]),
+  ok.
+
+
+
+setup_tracing_for_shell(Pid) ->
+  erlang:trace_pattern({shell, server_loop, 7}, true, [local]),
+  erlang:trace(Pid, true, [call]),
   ok.
 
 
@@ -129,6 +145,12 @@ handle_trace_message(Message, #collector{ignored_pids = _IgnoredPids} = State) -
   %   false ->
   % end.
   handle_trace_message0(Message, State).
+
+
+handle_trace_message0({trace_ts, Pid, call, {shell, server_loop, Args}, Timestamp}, #collector{shell_pid = Pid, shell_bindings = Map} = State) ->
+  [_, _, Bindings, _, _, _, _] = Args,
+  {ok, Events, Map1} = events_from_bindings(Timestamp, Pid, Bindings, Map),
+  {ok, Events, State#collector{shell_bindings = Map1}};
 
 handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}, State) when is_port(Port) -> {ok, [], State};
 handle_trace_message0({trace_ts, _Pid, getting_unlinked, Port, _Timestmap}, State) when is_port(Port) -> {ok, [], State};
@@ -301,6 +323,36 @@ handle_trace_message0({trace_ts, Pid, return_from, {erlang, port_connect, 2}, tr
 handle_trace_message0(Message, State) ->
   io:format("-----------------:~p~n", [Message]),
   {ok, [], State}.
+
+
+
+events_from_bindings(Timestamp, Pid, Bindings, Map) ->
+  events_from_bindings(Timestamp, Pid, Bindings, Map, #{}, []).
+
+events_from_bindings(_Timestamp, _Pid, [], _OldMap, NewMap, Acc) ->
+  {ok, lists:reverse(Acc), NewMap};
+
+events_from_bindings(Timestamp, Pid, [{Key, Value} | Bindings], OldMap, NewMap, Acc) ->
+  % Value might be anything, as well as 'to_avoid_exception' atom
+  % to ensure that key actually present, also call maps:is_key/2
+  case {maps:is_key(Key, OldMap), maps:get(Key, OldMap, to_avoid_exception)} of
+    % nothing changed, same value in place
+    {true, Value} -> events_from_bindings(Timestamp, Pid, Bindings, OldMap, NewMap#{Key => Value}, Acc);
+
+    % value has changed for same key, should be reported
+    {true, Value1} ->
+      Events = maybe_var_mention_events(Timestamp, Pid, Key, Value1),
+      events_from_bindings(Timestamp, Pid, Bindings, OldMap, NewMap#{Key => Value1}, Events ++ Acc);
+
+    % new binding
+    {false, _} ->
+      Events = maybe_var_mention_events(Timestamp, Pid, Key, Value),
+      events_from_bindings(Timestamp, Pid, Bindings, OldMap, NewMap#{Key => Value}, Events ++ Acc)
+  end.
+
+maybe_var_mention_events(Timestamp, Pid, Var, Value) ->
+  Context = z__client_shell:shell_context(Pid),
+  lists:flatten(batiscaph_steps:var_mention_events(Timestamp, Pid, Var, Value, Context)).
 
 
 
