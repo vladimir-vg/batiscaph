@@ -89,10 +89,7 @@ handle_call({events, Events}, _From, #remote_ctl{} = State) ->
   {noreply, State1} = handle_info({events, Events}, State),
   {reply, ok, State1};
 
-% currently allow to subscribe only one websocket
 handle_call({subscribe_websocket, Pid, QueryOpts}, _From, #remote_ctl{} = State) ->
-  % TODO: currently just ignore QueryOpts (like context)
-  % need to implement it someday
   {ok, State1} = subscribe_websocket(Pid, QueryOpts, State),
   {reply, ok, State1};
 

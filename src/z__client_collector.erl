@@ -72,6 +72,9 @@ handle_call({ignore_pids_tracing, Pids1}, _From, #collector{ignored_pids = Pids}
   Pids2 = [P || P <- Pids1 ++ Pids, erlang:is_process_alive(P)],
   {reply, ok, State#collector{ignored_pids = Pids2}};
 
+handle_call(sync, _From, #collector{} = State) ->
+  {reply, ok, State};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 

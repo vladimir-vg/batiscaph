@@ -83,6 +83,11 @@ handle_info(Msg, State) ->
 handle_call(get_remote_receiver_pid, _From, #scenario{receiver_pid = ReceiverPid} = State) ->
   {reply, {ok, ReceiverPid}, State};
 
+handle_call(sync, _From, #scenario{} = State) ->
+  ok = gen_server:call(z__client_io_server, sync),
+  ok = gen_server:call(z__client_collector, sync),
+  {reply, ok, State};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 

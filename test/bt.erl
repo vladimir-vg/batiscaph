@@ -28,7 +28,8 @@ g(pid) ->
 
 g(instance_id, Atom) ->
   iolist_to_binary([
-    atom_to_binary(Atom, latin1), "/",
+    integer_to_list(erlang:system_time(micro_seconds)), "-",
+    atom_to_binary(Atom, latin1), "-",
     batiscaph:binary_to_hex(crypto:strong_rand_bytes(5))
   ]).
 

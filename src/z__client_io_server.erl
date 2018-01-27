@@ -66,6 +66,9 @@ handle_call(clear_pending, _From, #shell_io{pending_get_until = #pending_read{ha
   State1 = State#shell_io{pending_get_until = undefined, input_string = Scanned ++ Input},
   {reply, ok, State1};
 
+handle_call(sync, _From, #shell_io{} = State) ->
+  {reply, ok, State};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
