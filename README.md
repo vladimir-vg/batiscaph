@@ -1,6 +1,4 @@
-# batiscaph
-
-[![Join the chat at https://gitter.im/batiscaph/Lobby](https://badges.gitter.im/batiscaph/Lobby.svg)](https://gitter.im/batiscaph/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# batiscaph [![Join the chat at https://gitter.im/batiscaph/Lobby](https://badges.gitter.im/batiscaph/Lobby.svg)](https://gitter.im/batiscaph/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ![batiscaph display example](https://github.com/vladimir-vg/batiscaph/raw/demo-01-2018/open_port_and_change_owner.gif)
 
