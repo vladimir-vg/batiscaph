@@ -4,24 +4,46 @@ let shortPrompt = function (prompt) {
 
 
 
+const trimLastNewline = (str) => {
+  if (str[str.length-1] == "\n") {
+    return str.slice(0,str.length-1);
+  }
+  return str;
+};
+
+
+
 class SourcePanel extends React.Component {
   constructor() {
     super();
     this.state = {
       viewportHeight: Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
       text: "",
+
+      // currently selected line from history
+      // indicates just index from props.events array
+      historyIndex: null,
       lineHover: null // mouse currently over this line
     }
 
     // because new EcmaScript standard is poorly designed
     // we have to do bindings like that
     this.onKeyPress = this.onKeyPress.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
     this.onTextChange = this.onTextChange.bind(this);
   }
 
   onTextChange(e) {
     let text = e.target.value;
-    this.setState({text: text});
+    if (this.state.text === '' && text === "\n") {
+      // do not make newline when input is empty
+      // also it solves problem of race of events (keyPress and change)
+      // after hitting Enter
+      return;
+    }
+    // change of the text immediately resets current position
+    // in history selection
+    this.setState({text: text, historyIndex: null});
   }
 
   onKeyPress(e) {
@@ -29,13 +51,60 @@ class SourcePanel extends React.Component {
     // Shift + Enter sends input to remote shell
     if (e.key === 'Enter' && !e.shiftKey && this.state.text) {
       console.log("---\nshell input: ", this.state.text);
-      this.submitInput()
+      this.props.submitInput(this.state.text);
+      this.setState({text: ""});
     }
   }
 
-  submitInput() {
-    this.props.submitInput(this.state.text);
-    this.setState({text: ""});
+  onKeyDown(e) {
+    const canNavigateInHistory = (this.state.text === '') || this.state.historyIndex;
+
+    if (e.key === "ArrowUp" && canNavigateInHistory) {
+      this.moveHistoryBack();
+    } else if (e.key === "ArrowDown" && canNavigateInHistory) {
+      this.moveHistoryForward();
+    }
+  }
+
+  moveHistoryBack() {
+    // if index is not present, we're not in selecting history mode
+    // then just take last shell input in events
+
+    let index = this.state.historyIndex;
+    if (index === null) {
+      index = this.props.events.length;
+    }
+
+    for (let i = index-1; i--; i >= 0) {
+      const e = this.props.events[i];
+      if (e.type == 'shell_input') {
+        // okay, found a closest one
+        // set text to it, keep index in case
+        // if user wants to continue to move in history
+        this.setState({historyIndex: i, text: trimLastNewline(e.message)});
+        return;
+      }
+    }
+
+    // if we ran out of available history, then do nothing
+  }
+
+  moveHistoryForward() {
+    // move forward only makes sense if we already moved backward
+    if (this.state.historyIndex === null) { return; }
+
+    for (let i = this.state.historyIndex+1; i < this.props.events.length; i++) {
+      const e = this.props.events[i];
+      if (e.type == 'shell_input') {
+        // okay, found a closest one
+        // set text to it, keep index in case
+        // if user wants to continue to move in history
+        this.setState({historyIndex: i, text: trimLastNewline(e.message)});
+        return;
+      }
+    }
+
+    // if we ran out of available history, then do nothing
   }
 
   setLineHover(line) {
@@ -81,7 +150,8 @@ class SourcePanel extends React.Component {
       return <div>
         <div className="item active underline">
           <code className="prompt unselectable">{shortPrompt(this.props.prompt)}</code>
-          <textarea value={this.state.text} rows={3} onChange={this.onTextChange.bind(this)} onKeyPress={this.onKeyPress.bind(this)} />
+          <textarea value={this.state.text} rows={3} ref={(ref) => { this.textareaRef = ref; }}
+            autoFocus onChange={this.onTextChange} onKeyPress={this.onKeyPress} onKeyDown={this.onKeyDown} />
         </div>
       </div>;
     }
