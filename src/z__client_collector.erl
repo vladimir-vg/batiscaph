@@ -103,7 +103,10 @@ setup_global_tracing() ->
   PortConnectSpec = {['$1', {'_', {connect, '_'}}], [{is_port, '$1'}], []},
   PortConnectedSpec = {['_', '_', {'$1', connected}], [{is_port, '$1'}], []},
   PortConnectReturnTraceSpec = {['$1', '$2'], [{'andalso', {is_port, '$1'}, {is_pid, '$2'}}], [{return_trace}]},
-  erlang:trace_pattern(send, [PortConnectSpec], []),
+
+  AllPidsSends = {['$1', '_'], [{is_pid, '$1'}], []},
+
+  erlang:trace_pattern(send, [AllPidsSends, PortConnectSpec], []),
   erlang:trace_pattern('receive', [PortConnectedSpec], []),
   erlang:trace_pattern({erlang, port_connect, 2}, [PortConnectReturnTraceSpec], [global]),
 
@@ -230,26 +233,6 @@ handle_trace_message0({trace_ts, Pid, unregister, Atom, Timestamp}, State) when 
 
 
 
-% handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) when is_pid(Pid) ->
-%   E = case To of
-%     _ when is_pid(To) -> #{<<"pid1">> => pid_to_list(To)};
-%     _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
-%   end,
-%   E1 = E#{<<"type">> => <<"send">>, <<"pid">> => pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
-%   E2 = event_with_timestamp(Timestamp, E1),
-%   {ok, [E2]};
-
-% handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) when is_pid(Pid) ->
-%   To1 = case To of
-%     _ when is_pid(To) -> pid_to_list(To);
-%     _ when is_atom(To) -> atom_to_binary(To, latin1)
-%   end,
-%   E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
-%   E1 = event_with_timestamp(Timestamp, E),
-%   {ok, [E1]};
-
-
-
 handle_trace_message0({trace_ts, Port, open, Pid, DriverName, Timestamp}, State) when is_port(Port) ->
   E = event_with_timestamp(Timestamp, #{
     <<"type">> => <<"port_open">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"port">> => z__client_scenario:format_term(Port),
@@ -292,6 +275,49 @@ when is_pid(Pid) andalso is_port(Port) ->
       State1 = State#collector{change_port_owner_map = Map1},
       {ok, [E], State1}
   end;
+
+
+
+handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}, State)
+when is_pid(Pid) andalso is_pid(To) ->
+  E1 = #{<<"type">> => <<"send">>, <<"pid">> => z__client_scenario:format_term(Pid), <<"pid1">> => z__client_scenario:format_term(To), <<"term">> => z__client_scenario:format_term(Msg)},
+  E2 = event_with_timestamp(Timestamp, E1),
+  {ok, [E2], State};
+
+handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}, State)
+when is_pid(Pid) andalso is_atom(To) ->
+  % ignore for now
+  {ok, [], State};
+
+handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}, State)
+when is_pid(Pid) andalso is_pid(To) ->
+  E1 = #{<<"type">> => <<"send">>, <<"pid">> => z__client_scenario:format_term(Pid), pid1 => z__client_scenario:format_term(To), <<"term">> => z__client_scenario:format_term(Msg)},
+  E2 = event_with_timestamp(Timestamp, E1),
+  {ok, [E2], State};
+
+handle_trace_message0({trace_ts, Port, send, Msg, To, Timestamp}, State) when is_port(Port) ->
+  {ok, [], State};
+
+handle_trace_message0({trace_ts, Port, send_to_non_existing_process, Msg, To, Timestamp}, State) when is_port(Port) ->
+  {ok, [], State};
+
+% handle_trace_message0({trace_ts, Pid, send, Msg, To, Timestamp}) when is_pid(Pid) ->
+%   E = case To of
+%     _ when is_pid(To) -> #{<<"pid1">> => pid_to_list(To)};
+%     _ when is_atom(To) -> #{<<"atom">> => atom_to_binary(To, latin1)}
+%   end,
+%   E1 = E#{<<"type">> => <<"send">>, <<"pid">> => pid_to_list(Pid), <<"term">> => io_lib:format("~p", [Msg])},
+%   E2 = event_with_timestamp(Timestamp, E1),
+%   {ok, [E2]};
+
+% handle_trace_message0({trace_ts, Pid, send_to_non_existing_process, Msg, To, Timestamp}) when is_pid(Pid) ->
+%   To1 = case To of
+%     _ when is_pid(To) -> pid_to_list(To);
+%     _ when is_atom(To) -> atom_to_binary(To, latin1)
+%   end,
+%   E = #{<<"type">> => <<"send_to_dead">>, <<"pid">> => pid_to_list(Pid), <<"pid1">> => To1, <<"term">> => io_lib:format("~p", [Msg])},
+%   E1 = event_with_timestamp(Timestamp, E),
+%   {ok, [E1]};
 
 
 

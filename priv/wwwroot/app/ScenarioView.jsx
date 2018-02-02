@@ -288,6 +288,23 @@ class PointElement extends React.Component {
 
 
 
+class SendElement extends React.Component {
+  render() {
+    let xs = [this.props.data.fromX, this.props.data.toX];
+    xs.sort((a,b) => a-b);
+    let x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.fromX + CELL_WIDTH/2;
+    let y = CELL_HEIGHT*this.props.data.y;
+    let x2 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.toX + CELL_WIDTH/2;
+    return [
+      <Layer key="sends" name="sends">
+        <line x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="send-line" />
+      </Layer>,
+    ];
+  }
+}
+
+
+
 const WPADDING = 0; // CELL_HGUTTER/2;
 const HPADDING = CELL_HEIGHT/2;
 
@@ -610,7 +627,7 @@ class ScenarioView extends React.Component {
   render() {
     if (!this.props.tree) { return <div />; }
 
-    let processes = [], spawns = [], links = [], mentions = [], points = [], contexts = [], ports = [];
+    let processes = [], spawns = [], links = [], mentions = [], points = [], contexts = [], ports = [], sends = [];
     for (let pid in this.props.tree.processes) {
       processes.push(<ProcessElement key={pid} data={this.props.tree.processes[pid]} tracePid={this.props.tracePid} />);
     }
@@ -631,6 +648,9 @@ class ScenarioView extends React.Component {
     }
     for (let key in this.props.tree.ports) {
       ports.push(<PortElement key={key} data={this.props.tree.ports[key]} />);
+    }
+    for (let key in this.props.tree.sends) {
+      sends.push(<SendElement key={key} data={this.props.tree.sends[key]} />);
     }
 
     let width = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
@@ -653,6 +673,7 @@ class ScenarioView extends React.Component {
         <g ref="spawnsOnProcesses"></g>
         <g ref="points"></g>
         <g ref="activeContexts"></g>
+        <g ref="sends"></g>
         <g ref="text"></g>
         <g ref="selection"></g>
 
@@ -665,6 +686,7 @@ class ScenarioView extends React.Component {
           {points}
           {contexts}
           {ports}
+          {sends}
           {this.renderHighlightRange()}
         </g>
 

@@ -43,6 +43,17 @@ a {
   color: #ccc;
 }
 
+
+
+circle.marker-send-start {
+  stroke: none;
+  fill: #8C8C8C;
+}
+
+path.marker-send-end {
+  fill: #8C8C8C;
+}
+
 /* Main Page */
 
 #MainPage.content-page {
@@ -186,6 +197,12 @@ a {
 .ScenarioView svg line.link-line {
   stroke: #F2994A;
   stroke-width: 2px;
+}
+.ScenarioView svg line.send-line {
+  stroke: #8C8C8C;
+  stroke-width: 1px;
+  marker-start: url(#markerSendStart);
+  marker-end: url(#markerSendEnd);
 }
 
 .ScenarioView svg rect.port-body {

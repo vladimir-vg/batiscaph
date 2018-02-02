@@ -280,7 +280,7 @@ V.produceTree = (layout) => {
   // only then processes
   // TODO: implemented collapsing
 
-  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}, contexts: {}, ports: {}};
+  let tree = {processes: {}, links: {}, spawns: {}, mentions: {}, messages: {}, points: {}, contexts: {}, ports: {}, sends: {}};
 
   let xFromPid = function (pid) {
     let columnId = layout.processes[pid].columnId;
@@ -381,6 +381,15 @@ V.produceTree = (layout) => {
       saveMention(event.at, event.pid);
       key = 'shell-output-' + event.at + '-' + event.pid;
       tree.points[key] = {y: y, x: xFromPid(event.pid)};
+      break;
+
+    case 'send':
+      // only pid receivers supported for now
+      // no atom-registered receivers yet
+      saveMention(event.at, event.pid);
+      saveMention(event.at, event.pid1);
+      key = 'shed-' + event.at + '-' + event.pid + '-' + event.pid1;
+      tree.sends[key] = {y: y, fromX: xFromPid(event.pid), toX: xFromPid(event.pid1), term: event.term};
       break;
     }
   });
