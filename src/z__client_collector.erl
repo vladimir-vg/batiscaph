@@ -104,9 +104,22 @@ setup_global_tracing() ->
   PortConnectedSpec = {['_', '_', {'$1', connected}], [{is_port, '$1'}], []},
   PortConnectReturnTraceSpec = {['$1', '$2'], [{'andalso', {is_port, '$1'}, {is_pid, '$2'}}], [{return_trace}]},
 
-  AllPidsSends = {['$1', '_'], [{is_pid, '$1'}], []},
+  % do not trace messages from and to collector
+  % because they would generate traces about trace messages
+  CollectorPid = self(),
+  AllPidsExceptCollector = {
+    ['$1', '_'],
+    [{'andalso',
+        {is_pid, '$1'},
+        {'andalso',
+          {'=/=', '$1', CollectorPid},
+          {'=/=', self, CollectorPid}
+        }
+     }],
+    []
+  },
 
-  erlang:trace_pattern(send, [AllPidsSends, PortConnectSpec], []),
+  erlang:trace_pattern(send, [AllPidsExceptCollector, PortConnectSpec], []),
   erlang:trace_pattern('receive', [PortConnectedSpec], []),
   erlang:trace_pattern({erlang, port_connect, 2}, [PortConnectReturnTraceSpec], [global]),
 

@@ -139,8 +139,9 @@ class ProcessElement extends React.Component {
 
   renderConnectingLine() {
     if (this.props.data.parts.length < 2) return null;
-    let startY = this.props.data.startY;
+    let firstPart = this.props.data.parts[0];
     let lastPart = this.props.data.parts[this.props.data.parts.length-1];
+    let startY = firstPart.y || firstPart.fromY;
     let stopY = lastPart.y || lastPart.toY;
 
     let x = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.x + CELL_WIDTH/2;
