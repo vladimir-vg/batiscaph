@@ -123,17 +123,15 @@ open_port_and_change_owner(_) ->
 
   % now Pid is owner of the Port
   true = erlang:port_connect(Port, Pid),
-  % Port ! {self(), {connect, Pid}},
-  % receive {Port, connected} -> ok
-  % after 1000 -> error(expected_to_change_owner)
-  % end,
+
   Pid ! {self(), close_port},
 
   receive
     {Pid, done} -> ok
   after 1000 ->
     error(timeout_port_close)
-  end.
+  end,
+  ok.
 
 
 

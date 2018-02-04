@@ -1,4 +1,6 @@
-# batiscaph [![become a patron](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/VladimirVG)
+# batiscaph
+
+[![become a patron](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/VladimirVG)
 
 ![batiscaph display example](https://github.com/vladimir-vg/batiscaph/raw/demo-01-2018/open_port_and_change_owner.gif)
 
@@ -22,6 +24,11 @@ Haven't tested on other versions, but likely gonna work just fine.
     Run: `batiscaph:create_tables().`, `batiscaph:prepare_graph_schema().`
  8. after that you should be able to access http://localhost:HTTP_PORT with port you previously specified
 
+# How to run sample test suite
+
+ 9. just run `make ct`
+ 10. open web UI at http://localhost:HTTP_PORT, hover on last session url
+
 # How to visualize Common Test runs locally
 
  9. run `./rebar3 path --app batiscaph` and copy path to beam files of Batiscaph, gonna need that later
@@ -36,7 +43,7 @@ Haven't tested on other versions, but likely gonna work just fine.
      Specifying parse_transform through ct_run args may not work,
      it doesn't guarantee that this transform gonna run last,
      and may conflict with others (like ms_transform).
-  13. finally run your ct_run, but also specify `BATISCAPH_NODE=batiscaph@(hostname)` env variable
+  13. finally run your ct_run, but also specify `BATISCAPH_NODE=batiscaph@$(hostname)` env variable
   14. after run you would see your test run displayed on http://localhost:HTTP_PORT
 
 # How to connect to node and start visual shell there
