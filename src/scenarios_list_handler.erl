@@ -43,29 +43,32 @@ get_items_list(MaxItems) ->
     "FORMAT TabSeparatedWithNamesAndTypes\n"
   ]),
   {ok, Body1} = clickhouse:execute(SQL1),
-  {ok, Ids} = clickhouse:parse_rows(one_column_list, Body1),
+  case clickhouse:parse_rows(one_column_list, Body1) of
+    {ok, []} -> {ok, []};
+    {ok, Ids} ->
+      SQL2 = iolist_to_binary([
+      "SELECT instance_id, context\n"
+      "FROM `", DBName, "`.events\n"
+      "WHERE ", clickhouse:id_in_values_sql(<<"instance_id">>, Ids), "\n"
+      "\tAND context != ''\n"
+      "\tAND position(context, ' init_per_suite') == 0\n"
+      "\tAND position(context, ' end_per_suite') == 0\n"
+      "\tAND position(context, ' init_per_group') == 0\n"
+      "\tAND position(context, ' end_per_group') == 0\n"
+      "\tAND position(context, ' init_per_testcase') == 0\n"
+      "\tAND position(context, ' end_per_testcase') == 0\n"
+      "GROUP BY instance_id, context\n"
+      "ORDER BY min(at_s) DESC\n"
+      "FORMAT TabSeparatedWithNamesAndTypes\n"
+      ]),
 
-  SQL2 = iolist_to_binary([
-    "SELECT instance_id, context\n"
-    "FROM `", DBName, "`.events\n"
-    "WHERE ", clickhouse:id_in_values_sql(<<"instance_id">>, Ids), "\n"
-    "\tAND context != ''\n"
-    "\tAND position(context, ' init_per_suite') == 0\n"
-    "\tAND position(context, ' end_per_suite') == 0\n"
-    "\tAND position(context, ' init_per_group') == 0\n"
-    "\tAND position(context, ' end_per_group') == 0\n"
-    "\tAND position(context, ' init_per_testcase') == 0\n"
-    "\tAND position(context, ' end_per_testcase') == 0\n"
-    "GROUP BY instance_id, context\n"
-    "ORDER BY min(at_s) DESC\n"
-    "FORMAT TabSeparatedWithNamesAndTypes\n"
-  ]),
+      {ok, Body2} = clickhouse:execute(SQL2),
+      {ok, Contexts} = clickhouse:parse_rows({lists_prop, <<"instance_id">>}, Body2),
+      Scenarios = turn_context_lines_into_trees(Ids, maps:from_list(Contexts)),
 
-  {ok, Body2} = clickhouse:execute(SQL2),
-  {ok, Contexts} = clickhouse:parse_rows({lists_prop, <<"instance_id">>}, Body2),
-  Scenarios = turn_context_lines_into_trees(Ids, maps:from_list(Contexts)),
+      {ok, Scenarios}
+  end.
 
-  {ok, Scenarios}.
 
 
 

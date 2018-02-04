@@ -136,8 +136,9 @@ where_cond(Opts) ->
       Cond = ["(", clickhouse:id_in_values_sql(<<"pid">>, Pids), ")"],
       [Cond | Acc];
 
-    (context, Context, Acc) when is_binary(Context) ->
-      [["(context == '", Context, "' OR position(context, '", Context, " ') == 1)"] | Acc];
+    % currently not really used:
+    % (context, Context, Acc) when is_binary(Context) ->
+    %   [["(context == '", Context, "' OR position(context, '", Context, " ') == 1)"] | Acc];
 
     (Key, Val, _Acc) -> error({unknown_select_opt, Key, Val})
   end, [], Opts),

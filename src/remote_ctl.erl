@@ -311,9 +311,13 @@ delta_with_expr_evals(Delta, [#{<<"type">> := <<"expr_eval_start">>} = Start, #{
 table_events_types() ->
   [<<"shell_input">>,<<"shell_output">>,<<"context_start">>,<<"var_bind">>,<<"expr_eval_start">>,<<"expr_eval_stop">>,<<"send">>].
 
-clickhouse_opts(#{context := _} = Opts, _Delta) ->
-  Opts0 = maps:with([instance_id, from, to, context], Opts),
-  Opts0#{type_in => table_events_types()};
+% if we fetching only processes in specific context,
+% then we should limit what events we are interested in
+% TODO: straighten up this delta query code, must be a better way
+clickhouse_opts(#{context := _} = Opts, #{<<"processes">> := Processes}) ->
+  Pids = maps:keys(Processes),
+  Opts0 = maps:with([instance_id, from, to], Opts),
+  Opts0#{type_in => table_events_types(), only_pids => Pids};
 
 clickhouse_opts(#{} = Opts, #{}) ->
   Opts0 = maps:with([instance_id, from, to], Opts),
