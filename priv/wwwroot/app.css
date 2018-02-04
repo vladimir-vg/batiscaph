@@ -54,6 +54,15 @@ path.marker-send-end {
   fill: #8C8C8C;
 }
 
+circle.marker-send-start.active {
+  stroke: none;
+  fill: #2F80ED;;
+}
+
+path.marker-send-end.active {
+  fill: #2F80ED;
+}
+
 /* Main Page */
 
 #MainPage.content-page {
@@ -120,11 +129,11 @@ path.marker-send-end {
   display: flex;
   border: 1px solid transparent;
 }
-.SourcePanel .item.input,
-.SourcePanel .item.active {
+.SourcePanel .item.top-padded,
+.SourcePanel .item.top-padded {
   margin-top: 20px;
 }
-.SourcePanel .item.output {
+.SourcePanel .item.muted {
   color: #828282;
 }
 
@@ -201,8 +210,14 @@ path.marker-send-end {
 .ScenarioView svg line.send-line {
   stroke: #8C8C8C;
   stroke-width: 1px;
-  marker-start: url(#markerSendStart);
-  marker-end: url(#markerSendEnd);
+  marker-start: url(#marker-send-start);
+  marker-end: url(#marker-send-end);
+}
+.ScenarioView svg line.send-line.active {
+  stroke: #2F80ED;
+  /*stroke-width: 2px;*/
+  marker-start: url(#marker-send-start-active);
+  marker-end: url(#marker-send-end-active);
 }
 
 .ScenarioView svg rect.port-body {

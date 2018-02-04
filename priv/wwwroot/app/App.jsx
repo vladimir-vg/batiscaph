@@ -11,7 +11,8 @@ class App extends React.Component {
       tree: undefined,
       shellPrompt: undefined,
       shellEvents: [],
-      selectedContext: null
+      selectedContext: null,
+      selectedSend: null,
     };
     this._layout = {};
 
@@ -24,6 +25,7 @@ class App extends React.Component {
     this.submitShellInput = this.submitShellInput.bind(this);
     this.tracePid = this.tracePid.bind(this);
     this.selectContext = this.selectContext.bind(this);
+    this.selectSend = this.selectSend.bind(this);
   }
 
   onInstanceRoute(id, context) {
@@ -40,7 +42,7 @@ class App extends React.Component {
     if (V.socket) { return; }
 
     this._layout = {};
-    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null});
+    this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null, selectedSend: null});
 
     this.connectToExistingShell(id, context);
   }
@@ -133,7 +135,19 @@ class App extends React.Component {
   }
 
   selectContext(key) {
-    this.setState({selectedContext: key});
+    if (this.state.selectedContext == key) {
+      this.setState({selectedContext: null, selectedSend: null});
+      return;
+    }
+    this.setState({selectedContext: key, selectedSend: null});
+  }
+
+  selectSend(key) {
+    if (this.state.selectedSend == key) {
+      this.setState({selectedContext: null, selectedSend: null});
+      return;
+    }
+    this.setState({selectedContext: null, selectedSend: key});
   }
 
   render() {
@@ -142,8 +156,9 @@ class App extends React.Component {
         <Route exact path="/scenarios/:id/:context*" render={(props) =>
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
           submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
-          tracePid={this.tracePid} selectContext={this.selectContext}
-          selectedContext={this.state.selectedContext}
+          tracePid={this.tracePid}
+          selectContext={this.selectContext} selectedContext={this.state.selectedContext}
+          selectSend={this.selectSend} selectedSend={this.state.selectedSend}
           {...props} />
         } />
 

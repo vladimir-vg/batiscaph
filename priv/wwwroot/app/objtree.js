@@ -89,6 +89,10 @@ V.updateLayout = (delta, layout) => {
 
   layout.events = layout.events || [];
   delta.events.forEach(function (event) {
+    // skip link events for now
+    // currently they only pollute view
+    if (event.type == 'LINK') return;
+
     insertTimestampIntoOrder(event.at, layout);
     layout.events.push(event);
 
@@ -388,8 +392,13 @@ V.produceTree = (layout) => {
       // no atom-registered receivers yet
       saveMention(event.at, event.pid);
       saveMention(event.at, event.pid1);
-      key = 'shed-' + event.at + '-' + event.pid + '-' + event.pid1;
-      tree.sends[key] = {y: y, fromX: xFromPid(event.pid), toX: xFromPid(event.pid1), term: event.term};
+      key = 'send-' + event.at + '-' + event.pid + '-' + event.pid1;
+      tree.sends[key] = {
+        key: key, y: y,
+        fromX: xFromPid(event.pid), toX: xFromPid(event.pid1),
+        fromPid: event.pid, toPid: event.pid1,
+        term: event.term,
+      };
       break;
     }
   });

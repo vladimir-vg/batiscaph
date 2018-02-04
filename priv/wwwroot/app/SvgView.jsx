@@ -123,20 +123,20 @@ class SvgView extends React.Component {
         width={this.props.paddedWidth + this.props.padding*2} height={this.props.paddedHeight + this.props.padding*2}>
 
       <defs>
-        <marker id="markerSendStart" markerWidth="8" markerHeight="8" refX="5" refY="5">
+        <marker id="marker-send-start" markerWidth="8" markerHeight="8" refX="5" refY="5">
           <circle cx="5" cy="5" r="2" className="marker-send-start" />
         </marker>
 
-        <marker id="markerSendEnd" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
+        <marker id="marker-send-end" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
           <path d="M0,2 L0,7 L6,4 L0,2" className="marker-send-end" />
         </marker>
 
-        <marker id="muted-markerSendStart" markerWidth="8" markerHeight="8" refX="5" refY="5">
-          <circle cx="5" cy="5" r="2" className="muted marker-send-start" />
+        <marker id="marker-send-start-active" markerWidth="8" markerHeight="8" refX="5" refY="5">
+          <circle cx="5" cy="5" r="2" className="marker-send-start active" />
         </marker>
 
-        <marker id="muted-markerSendEnd" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
-          <path d="M0,2 L0,7 L6,4 L0,2" className="muted marker-send-end" />
+        <marker id="marker-send-end-active" markerWidth="11" markerHeight="11" refX="6" refY="4.5" orient="auto">
+          <path d="M0,2 L0,7 L6,4 L0,2" className="marker-send-end active" />
         </marker>
       </defs>
 

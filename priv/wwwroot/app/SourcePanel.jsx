@@ -119,14 +119,14 @@ class SourcePanel extends React.Component {
   }
 
   renderInputItem(e) {
-    return <div key={e.at} className="item input">
+    return <div key={e.at} className="item input top-padded">
       <code className="prompt unselectable">{shortPrompt(e.prompt)}</code>
       <code className="message">{e.message}</code>
     </div>;
   }
 
   renderOutputItem(e) {
-    return <div key={e.at} className="item output">
+    return <div key={e.at} className="item muted">
       <code className="prompt unselectable"></code>
       <code className="message">{e.message}</code>
     </div>;
@@ -148,7 +148,7 @@ class SourcePanel extends React.Component {
   renderPrompt() {
     if (this.props.prompt) {
       return <div>
-        <div className="item active underline">
+        <div className="item active underline top-padded">
           <code className="prompt unselectable">{shortPrompt(this.props.prompt)}</code>
           <textarea value={this.state.text} rows={3} ref={(ref) => { this.textareaRef = ref; }}
             autoFocus onChange={this.onTextChange} onKeyPress={this.onKeyPress} onKeyDown={this.onKeyDown} />
@@ -177,6 +177,19 @@ class SourcePanel extends React.Component {
     return nodes;
   }
 
+  renderSend(send) {
+    return <div>
+      <div className="item muted">
+        <code className="prompt unselectable">&nbsp;</code>
+        <code className="message unselectable">{send.fromPid} &rarr; {send.toPid}</code>
+      </div>
+      <div className="item top-padded">
+        <code className="prompt unselectable">&nbsp;</code>
+        <code className="message">{send.term}</code>
+      </div>
+    </div>;
+  }
+
   render() {
     let maxHeight = this.state.viewportHeight - (40 + 60);
 
@@ -189,6 +202,13 @@ class SourcePanel extends React.Component {
       }
       // if context doesn't have source lines
       // just display shell as usual
+    }
+
+    if (this.props.selectedSend) {
+      const send = this.props.sends[this.props.selectedSend];
+      return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">
+      {this.renderSend(send)}
+      </div>;
     }
 
     return <div style={{width: this.props.width, maxHeight: maxHeight}} className="SourcePanel">

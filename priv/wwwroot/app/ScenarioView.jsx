@@ -290,15 +290,32 @@ class PointElement extends React.Component {
 
 
 class SendElement extends React.Component {
+  constructor() {
+    super();
+
+    this.onSelectClick = this.onSelectClick.bind(this);
+  }
+
+  onSelectClick() {
+    this.props.selectSend(this.props.data.key);
+  }
+
   render() {
     let xs = [this.props.data.fromX, this.props.data.toX];
     xs.sort((a,b) => a-b);
     let x1 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.fromX + CELL_WIDTH/2;
     let y = CELL_HEIGHT*this.props.data.y;
     let x2 = (CELL_WIDTH+CELL_HGUTTER)*this.props.data.toX + CELL_WIDTH/2;
+
+    let className = "send-line";
+    if (this.props.selectedSend === this.props.data.key) {
+      className += " active";
+    }
+
     return [
       <Layer key="sends" name="sends">
-        <line x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className="send-line" />
+        <line x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className={className}
+          onClick={this.onSelectClick} />
       </Layer>,
     ];
   }
@@ -323,11 +340,7 @@ class ContextElement extends React.Component {
   }
 
   onSelectClick() {
-    if (this.props.selectedContext == this.props.data.key) {
-      this.props.selectContext(null);
-    } else {
-      this.props.selectContext(this.props.data.key);
-    }
+    this.props.selectContext(this.props.data.key);
   }
 
   onMouseEnterMention(key) {
@@ -651,7 +664,7 @@ class ScenarioView extends React.Component {
       ports.push(<PortElement key={key} data={this.props.tree.ports[key]} />);
     }
     for (let key in this.props.tree.sends) {
-      sends.push(<SendElement key={key} data={this.props.tree.sends[key]} />);
+      sends.push(<SendElement key={key} data={this.props.tree.sends[key]} selectedSend={this.props.selectedSend} selectSend={this.props.selectSend} />);
     }
 
     let width = this.props.tree.width*(CELL_WIDTH+CELL_HGUTTER);
@@ -693,7 +706,9 @@ class ScenarioView extends React.Component {
 
       </SvgView>
       <Link to="/" className="button" id="back-button">Back to list</Link>
-      <SourcePanel width={SOURCE_PANEL_WIDTH} contexts={this.props.tree.contexts} selectedContext={this.props.selectedContext}
+      <SourcePanel width={SOURCE_PANEL_WIDTH}
+        contexts={this.props.tree.contexts} selectedContext={this.props.selectedContext}
+        sends={this.props.tree.sends} selectedSend={this.props.selectedSend}
         events={this.props.shellEvents} prompt={this.props.shellPrompt} submitInput={this.props.submitShellInput}
         highlightRange={this.highlightRange} />
     </div>;
