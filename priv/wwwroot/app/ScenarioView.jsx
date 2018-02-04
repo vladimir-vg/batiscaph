@@ -312,11 +312,18 @@ class SendElement extends React.Component {
       className += " active";
     }
 
+    const SELECT_HEIGHT = 5;
+    const SELECT_X_PADDING = 2;
+
     return [
       <Layer key="sends" name="sends">
         <line x1={x1} y1={y-0.5} x2={x2} y2={y-0.5} className={className}
           onClick={this.onSelectClick} />
       </Layer>,
+      <Layer key="selection" name="selection">
+        <rect x={Math.min(x1,x2)-SELECT_X_PADDING} y={y-SELECT_HEIGHT/2} width={Math.abs(x2-x1)+SELECT_X_PADDING} height={SELECT_HEIGHT}
+          onClick={this.onSelectClick} style={{fill: 'transparent'}} />
+      </Layer>
     ];
   }
 }
