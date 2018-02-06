@@ -16,6 +16,8 @@
 %  * pid -- mandatory
 %  * appearedAt -- equals to spawnedAt or timestamp of first mention. Mandatory
 %  * spawnedAt -- May be missing, present only if such event was actually collected.
+%  * lastTraceStartedAt -- this allows to select processes that recently changed
+%  * lastTraceStoppedAt -- these attrs should be removed when better delta query is designed
 %  * exitedAt -- same
 %  * exitReason -- same
 %  * disappearedAt -- equals to exitedAt or timestamp of discovering that process is dead
@@ -68,8 +70,9 @@ delta_json(#{instance_id := Id} = Opts) ->
     % but got rid of this null value by using COLLECT, and then map it by EXTRACT
 
     { "MATCH (p1:Process {instanceId: {id}})\n"
-      "WHERE "++where_start_stop_within(Opts, "p1.appearedAt", "p1.disappearedAt")++"\n"
-      "  AND "++where_id_in_values("p1.pid", ContextPidsKey)++"\n"
+      "WHERE "++where_id_in_values("p1.pid", ContextPidsKey)++"\n"
+      "  AND ("++where_start_stop_within(Opts, "p1.appearedAt", "p1.disappearedAt")++"\n"
+      "   OR "++where_start_stop_within(Opts, "p1.lastTraceStartedAt", "p1.lastTraceStoppedAt")++")\n"
       % "WHERE ((p1.disappearedAt IS NULL) OR "++where_start_stop_within(Opts, "p1.disappearedAt", "p1.appearedAt")++"\n"
       "OPTIONAL MATCH (p1:Process)-[rel]-(p1:Process)\n"
       "WHERE TYPE(rel) IN ['TRACE_STARTED', 'TRACE_STOPPED', 'FOUND_DEAD'] AND "++where_at_within(Opts, "rel.at")++"\n"
@@ -342,7 +345,8 @@ process_events(Id, [#{<<"type">> := <<"trace_started">>} = E | Events], Acc) ->
   Statements = [
     % create process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}, proc.application = {application}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.lastTraceStartedAt = {at}, proc.key = {key}, proc.application = {application}\n"
+      "ON MATCH SET proc.lastTraceStartedAt = {at}\n"
       "CREATE (proc)-[:TRACE_STARTED { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, at => At, key => Key, application => App} }
   ],
@@ -356,7 +360,8 @@ process_events(Id, [#{<<"type">> := <<"trace_stopped">>} = E | Events], Acc) ->
   Statements = [
     % create parent process if not existed before
     { "MERGE (proc:Process { pid: {pid}, instanceId: {id} })\n"
-      "ON CREATE SET proc.appearedAt = {at}, proc.key = {key}\n"
+      "ON CREATE SET proc.appearedAt = {at}, proc.lastTraceStoppedAt = {at}, proc.key = {key}\n"
+      "ON MATCH SET proc.lastTraceStoppedAt = {at}\n"
       "CREATE (proc)-[:TRACE_STOPPED { at: {at} }]->(proc)\n"
     , #{id => Id, pid => Pid, at => At, key => Key} }
   ],
