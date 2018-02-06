@@ -94,6 +94,7 @@ class App extends React.Component {
   startNewShell() {
     if (V.socket) { console.error("Unexpected opened socket"); return; }
     this.setState({tree: undefined, shellPrompt: undefined, shellEvents: [], selectedContext: null});
+    this._layout = {};
 
     V.socket = new WebSocket("ws://"+window.location.host+"/websocket");
     V.socket.addEventListener('message', this.onWSMessage);
@@ -153,14 +154,14 @@ class App extends React.Component {
   render() {
     return <div>
       <Switch>
-        <Route exact path="/scenarios/:id/:context*" render={(props) =>
+        <Route exact path="/scenarios/:id/:context*" render={(props) => (
           <ScenarioView tree={this.state.tree} shellPrompt={this.state.shellPrompt} shellEvents={this.state.shellEvents}
-          submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
-          tracePid={this.tracePid}
-          selectContext={this.selectContext} selectedContext={this.state.selectedContext}
-          selectSend={this.selectSend} selectedSend={this.state.selectedSend}
-          {...props} />
-        } />
+            submitShellInput={this.submitShellInput} onInstanceRoute={this.onInstanceRoute}
+            tracePid={this.tracePid}
+            selectContext={this.selectContext} selectedContext={this.state.selectedContext}
+            selectSend={this.selectSend} selectedSend={this.state.selectedSend}
+            {...props}
+          /> )} />
 
         <Route exact path="/" render={(props) =>
           <MainPage startNewShell={this.startNewShell} connectToNode={this.connectToNode} />
