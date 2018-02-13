@@ -165,7 +165,9 @@ handle_trace_message(Message, #collector{ignored_pids = _IgnoredPids} = State) -
 
 handle_trace_message0({trace_ts, Pid, call, {shell, server_loop, Args}, Timestamp}, #collector{shell_pid = Pid, shell_bindings = Map} = State) ->
   [_, _, Bindings, _, _, _, _] = Args,
-  {ok, Events, Map1} = events_from_bindings(Timestamp, Pid, Bindings, Map),
+  {ok, Pids, Events, Map1} = walk_bindings(Timestamp, Pid, Bindings, Map),
+  % all mentioned processes are automatically traced
+  [z__client_scenario:trace_pid(P) || P <- Pids],
   {ok, Events, State#collector{shell_bindings = Map1}};
 
 handle_trace_message0({trace_ts, _Pid, getting_linked, Port, _Timestmap}, State) when is_port(Port) -> {ok, [], State};
@@ -365,34 +367,59 @@ handle_trace_message0(Message, State) ->
 
 
 
-events_from_bindings(Timestamp, Pid, Bindings, Map) ->
-  events_from_bindings(Timestamp, Pid, Bindings, Map, #{}, []).
+walk_bindings(Timestamp, Pid, Bindings, Map) ->
+  Acc = {#{}, sets:new(), []},
+  walk_bindings(Timestamp, Pid, Bindings, Map, Acc).
 
-events_from_bindings(_Timestamp, _Pid, [], _OldMap, NewMap, Acc) ->
-  {ok, lists:reverse(Acc), NewMap};
+walk_bindings(_Timestamp, _Pid, [], _OldMap, Acc) ->
+  {NewMap, PidsSet, AccEvents} = Acc,
+  {ok, sets:to_list(PidsSet), lists:reverse(AccEvents), NewMap};
 
-events_from_bindings(Timestamp, Pid, [{Key, Value} | Bindings], OldMap, NewMap, Acc) ->
+walk_bindings(Timestamp, Pid, [{Key, Value} | Bindings], OldMap, Acc) ->
+  {NewMap, PidsSet, AccEvents} = Acc,
   % Value might be anything, as well as 'to_avoid_exception' atom
   % to ensure that key actually present, also call maps:is_key/2
   case {maps:is_key(Key, OldMap), maps:get(Key, OldMap, to_avoid_exception)} of
     % nothing changed, same value in place
-    {true, Value} -> events_from_bindings(Timestamp, Pid, Bindings, OldMap, NewMap#{Key => Value}, Acc);
+    {true, Value} ->
+      Acc1 = {NewMap#{Key => Value}, PidsSet, AccEvents},
+      walk_bindings(Timestamp, Pid, Bindings, OldMap, Acc1);
 
     % value has changed for same key, should be reported
     {true, Value1} ->
       Events = maybe_var_mention_events(Timestamp, Pid, Key, Value1),
-      events_from_bindings(Timestamp, Pid, Bindings, OldMap, NewMap#{Key => Value1}, Events ++ Acc);
+      PidsSet1 = collect_pids_from_term(Value1, PidsSet),
+      Acc1 = {NewMap#{Key => Value1}, PidsSet1, Events ++ AccEvents},
+      walk_bindings(Timestamp, Pid, Bindings, OldMap, Acc1);
 
     % new binding
     {false, _} ->
       Events = maybe_var_mention_events(Timestamp, Pid, Key, Value),
-      events_from_bindings(Timestamp, Pid, Bindings, OldMap, NewMap#{Key => Value}, Events ++ Acc)
+      PidsSet1 = collect_pids_from_term(Value, PidsSet),
+      Acc1 = {NewMap#{Key => Value}, PidsSet1, Events ++ AccEvents},
+      walk_bindings(Timestamp, Pid, Bindings, OldMap, Acc1)
   end.
 
 maybe_var_mention_events(Timestamp, Pid, Var, Value) ->
   Context = z__client_shell:shell_context(Pid),
   lists:flatten(batiscaph_steps:var_mention_events(Timestamp, Pid, Var, Value, Context)).
 
+
+
+collect_pids_from_term(Term, Set) when is_pid(Term) ->
+  sets:add_element(Term, Set);
+
+collect_pids_from_term(Term, Set) when is_list(Term) ->
+  lists:foldl(fun collect_pids_from_term/2, Set, Term);
+
+collect_pids_from_term(Term, Set) when is_tuple(Term) ->
+  Size = erlang:tuple_size(Term),
+  lists:foldl(fun (I, Set1) ->
+    collect_pids_from_term(element(I, Term), Set1)
+  end, Set, lists:seq(1, Size));
+
+collect_pids_from_term(_Term, Set) ->
+  Set.
 
 
 
