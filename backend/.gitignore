@@ -1,0 +1,23 @@
+.rebar3
+.eunit
+*.o
+*.beam
+*.plt
+*.swp
+*.swo
+.erlang.cookie
+ebin
+log
+erl_crash.dump
+.rebar
+logs
+_build
+.idea
+rebar3.crashdump
+
+node_modules
+
+# generated during run
+priv/scenarios
+priv/batiscaph_drv.so
+

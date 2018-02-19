@@ -1,0 +1,15 @@
+{application, example_app1,
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {example_app1_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    vision_probe
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {links, []}
+ ]}.
