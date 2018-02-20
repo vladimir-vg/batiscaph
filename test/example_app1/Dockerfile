@@ -1,5 +1,4 @@
 FROM erlang:17
-
 WORKDIR /root
 
 # adding local version of vision probe
