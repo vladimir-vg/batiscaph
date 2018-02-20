@@ -15,7 +15,7 @@ start(DockerPath, Args, NodeName) ->
   Parent = self(),
   % starting unlinked process that going to last forever
   % port dies if spawner dies, so just start something
-  io:format("~s~n", [iolist_to_binary(lists:join(" ", [DockerPath | Args]))]),
+  ct:pal("~s~n", [iolist_to_binary(lists:join(" ", [DockerPath | Args]))]),
   PortOwner = proc_lib:spawn(fun () ->
     Port = erlang:open_port({spawn_executable, DockerPath}, [{args, Args}, binary, {line, 256}]),
     {ok, Ip} = read_node_ip_address(Port),

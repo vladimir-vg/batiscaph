@@ -28,10 +28,10 @@ end_per_suite(Config) ->
 
 
 start_endpoint(Port, Config) ->
-  Opts = #{bind_ports => [Port], <<"VISION_ENDPOINT_PORT">> => Port},
+  Opts = #{<<"VISION_ENDPOINT_PORT">> => Port},
   {ok, EndpointContainer} = vt:start_docker_container(<<"endpoint1">>, <<"vision/endpoint:latest">>, Opts),
-  ProbeOpts = #{endpoint_url => endpoint_url(vt_container:node(EndpointContainer), Port)},
-  [{endpoint_container, EndpointContainer}, {probe_opts, ProbeOpts} | Config].
+  EndpointUrl = endpoint_url(vt_container:node(EndpointContainer), Port),
+  [{endpoint_container, EndpointContainer}, {endpoint_url, EndpointUrl} | Config].
 
 endpoint_url(EndpointNode, Port) ->
   [_Name, Host] = binary:split(atom_to_binary(EndpointNode,latin1), <<"@">>),
@@ -45,19 +45,30 @@ stop_endpoint(Config) ->
 
 
 init_per_group(example_app1, Config) ->
-  % start docker container with example_app1
-  Config;
-init_per_group(_Group, Config) -> Config.
+  EndpointUrl = proplists:get_value(endpoint_url, Config),
+  Opts = #{<<"VISION_ENDPOINT_URL">> => EndpointUrl},
+  {ok, AppContainer} = vt:start_docker_container(<<"example_app1">>, <<"vision-test/example_app1:latest">>, Opts),
+  [{app_container, AppContainer} | Config];
+
+init_per_group(_Group, Config) ->
+  Config.
 
 
 
 end_per_group(example_app1, Config) ->
-  % terminate container
+  AppContainer = proplists:get_value(app_container, Config),
+  ok = vt:stop_docker_container(AppContainer),
   Config;
-end_per_group(_, Config) -> Config.
+
+end_per_group(_, Config) ->
+  Config.
 
 
 
 test1(Config) ->
-  timer:sleep(10000),
+  AppNode = vt_container:node(proplists:get_value(app_container, Config)),
+  EndpointNode = vt_container:node(proplists:get_value(endpoint_container, Config)),
+  AppResp = rpc:call(AppNode, example_app1_app, module_info, []),
+  EndResp = rpc:call(EndpointNode, batiscaph_app, module_info, []),
+  ct:pal("responses ~p~n~p~n", [AppResp, EndResp]),
   ok.

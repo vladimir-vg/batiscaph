@@ -27,7 +27,7 @@ find_docker_executable() ->
 % all binary keys treated as ENV variables
 docker_cmd_args_env(Image, Opts) ->
   Args1 = maps:fold(fun
-    (bind_ports, Ports, Args) -> bind_ports_args(Ports) ++ Args;
+    % (bind_ports, Ports, Args) -> bind_ports_args(Ports) ++ Args;
     (Key, Value, Args) when is_binary(Key) -> env_args(Key, Value) ++ Args
   end, [], Opts),
   Args2 = ["run", "-i"]++Args1++[Image, "/bin/bash"],
