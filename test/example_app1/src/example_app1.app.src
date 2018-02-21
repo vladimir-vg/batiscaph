@@ -1,6 +1,6 @@
 {application, example_app1,
  [{description, "An OTP application"},
-  {vsn, "0.1.0"},
+  {vsn, "1.2.3-test1"},
   {registered, []},
   {mod, {example_app1_app, []}},
   {applications,

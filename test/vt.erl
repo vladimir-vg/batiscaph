@@ -13,7 +13,8 @@ start_docker_container(NodeName, Image, Opts) ->
   {ok, Args} = docker_cmd_args_env(Image, Opts),
   {ok, DockerPath} = find_docker_executable(),
 
-  {ok, DockerContainer} = vt_container:start(DockerPath, Args, NodeName),
+  Opts1 = maps:with([autostart], Opts),
+  {ok, DockerContainer} = vt_container:start(DockerPath, Args, NodeName, Opts1),
   {ok, DockerContainer}.
 
 
@@ -27,14 +28,13 @@ find_docker_executable() ->
 % all binary keys treated as ENV variables
 docker_cmd_args_env(Image, Opts) ->
   Args1 = maps:fold(fun
-    % (bind_ports, Ports, Args) -> bind_ports_args(Ports) ++ Args;
+    % these opts do not change command arguments, just skip
+    (autostart, _, Args) -> Args;
+
     (Key, Value, Args) when is_binary(Key) -> env_args(Key, Value) ++ Args
   end, [], Opts),
   Args2 = ["run", "-i"]++Args1++[Image, "/bin/bash"],
   {ok, Args2}.
-
-bind_ports_args(Ports) ->
-  lists:concat([["-p", to_binary(P)] || P <- Ports]).
 
 env_args(Key, Value) ->
   ["--env", iolist_to_binary([Key, "=", to_binary(Value)])].

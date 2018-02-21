@@ -1,17 +1,23 @@
 -module(vt_container).
--export([start/3, node/1, stop/1]).
+-export([start/4, node/1, start_node/1, stop/1]).
 -export([loop/1]).
 
--record(docker_node, {
+-record(docker_container, {
   node,
   port_owner_pid
 }).
 
+-record(container_state, {
+  node,
+  port,
+  started = false
+}).
 
 
-node(#docker_node{node = Node}) -> Node.
 
-start(DockerPath, Args, NodeName) ->
+node(#docker_container{node = Node}) -> Node.
+
+start(DockerPath, Args, NodeName, Opts) ->
   Parent = self(),
   % starting unlinked process that going to last forever
   % port dies if spawner dies, so just start something
@@ -20,36 +26,65 @@ start(DockerPath, Args, NodeName) ->
     Port = erlang:open_port({spawn_executable, DockerPath}, [{args, Args}, binary, {line, 256}]),
     {ok, Ip} = read_node_ip_address(Port),
     Node = <<NodeName/binary, "@", Ip/binary>>,
-    X = (catch start_node(Node, Port)),
-    io:format("start was: ~p~n", [X]),
-    Parent ! #docker_node{node = binary_to_atom(Node, latin1), port_owner_pid = self()},
-    ?MODULE:loop(Port)
+    Handle = #docker_container{node = binary_to_atom(Node, latin1), port_owner_pid = self()},
+
+    case maps:get(autostart, Opts, true) of
+      false ->
+        Parent ! Handle,
+        ?MODULE:loop(#container_state{node = Node, port = Port});
+      true ->
+        ok = start_node(Node, Port),
+        Parent ! Handle,
+        ?MODULE:loop(#container_state{started = true, node = Node, port = Port})
+    end
   end),
 
-  receive #docker_node{} = DockerNode -> {ok, DockerNode}
+  receive #docker_container{} = DockerNode -> {ok, DockerNode}
   after 5000 ->
     io:format("port owner info: ~p~n", [erlang:process_info(PortOwner)]),
-    error(unable_to_start_docker_node)
+    error(unable_to_start_docker_container)
   end.
 
 
 
-stop(#docker_node{port_owner_pid = Pid}) ->
+stop(#docker_container{port_owner_pid = Pid}) ->
   Pid ! {stop, self()},
   receive {stopped, Pid} -> ok
-  after 1000 -> error(no_response_from_port_owner)
+  after 5000 -> error(no_response_from_port_owner)
   end.
 
 
 
-loop(Port) ->
+start_node(#docker_container{port_owner_pid = Pid}) ->
+  Pid ! {start_node, self()},
+  receive {started_node, Pid} -> ok
+  after 5000 -> error(no_response_from_port_owner)
+  end.
+
+
+
+%
+% Private code below
+%
+
+
+
+loop(#container_state{port = Port, node = Node, started = Started} = State) ->
   receive
+    {start_node, From} when Started =:= false ->
+      ok = start_node(Node, Port),
+      From ! {started_node, self()},
+      ?MODULE:loop(State#container_state{started = true});
+
     {stop, From} ->
-      erlang:port_command(Port, <<"init:stop().\n">>),
+      if Started -> erlang:port_command(Port, <<"init:stop().\n">>);
+        true -> ok
+      end,
       erlang:port_command(Port, <<"exit\n">>),
       erlang:port_close(Port),
       From ! {stopped, self()},
       ok
+
   after 5000 ->
     % didn't found how to turn off output from Port without closing
     % simply receive all output and discard it from time to time
