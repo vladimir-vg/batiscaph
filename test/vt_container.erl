@@ -1,5 +1,5 @@
 -module(vt_container).
--export([start/4, node/1, start_node/1, stop/1]).
+-export([start/4, node/1, owner_pid/1, start_node/1, stop/1]).
 -export([loop/1]).
 
 -record(docker_container, {
@@ -19,15 +19,31 @@
 
 node(#docker_container{node = Node}) -> Node.
 
+owner_pid(#docker_container{port_owner_pid = Pid}) -> Pid.
+
 start(DockerPath, Args, NodeName, Opts) ->
   #{logdir := LogDir} = Opts,
 
   Parent = self(),
+
+  Args1 = case maps:get(detached, Opts, false) of
+    false -> Args;
+    true ->
+      % in detached mode docker run commands retuns only id
+      % need to attach to container separately
+      %
+      % os:cmd returns output with newline
+      Id = string:trim(os:cmd(binary_to_list(iolist_to_binary(lists:join(" ", [DockerPath | Args]))))),
+      ["attach", Id]
+  end,
+  
+
   % starting unlinked process that going to last forever
   % port dies if spawner dies, so just start something
   ct:pal("~s~n", [iolist_to_binary(lists:join(" ", [DockerPath | Args]))]),
   PortOwner = proc_lib:spawn(fun () ->
-    Port = erlang:open_port({spawn_executable, DockerPath}, [{args, Args}, binary, {line, 256}]),
+    
+    Port = erlang:open_port({spawn_executable, DockerPath}, [{args, Args1}, binary, {line, 256}]),
     {ok, Ip} = read_node_ip_address(Port),
     Node = <<NodeName/binary, "@", Ip/binary>>,
 

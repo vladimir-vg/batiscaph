@@ -19,7 +19,7 @@ handle(Req, State) ->
     {bad, Req1} -> {ok, Req1, State};
     {ok, Req1} ->
       case what_kind_of_request(Req1) of
-        {guest_info, Ip, Info, Req2} ->
+        {guest_info, _Ip, Info, Req2} ->
           ok = vision_test:notify_guest_info_subscriber(Info),
           {ok, Req3} = cowboy_req:reply(200, Req2),
           {ok, Req3, State}
