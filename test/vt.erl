@@ -13,7 +13,7 @@ start_docker_container(NodeName, Image, Opts) ->
   {ok, Args} = docker_cmd_args_env(Image, Opts),
   {ok, DockerPath} = find_docker_executable(),
 
-  Opts1 = maps:with([autostart], Opts),
+  Opts1 = maps:with([autostart, logdir, before_start], Opts),
   {ok, DockerContainer} = vt_container:start(DockerPath, Args, NodeName, Opts1),
   {ok, DockerContainer}.
 
@@ -30,6 +30,8 @@ docker_cmd_args_env(Image, Opts) ->
   Args1 = maps:fold(fun
     % these opts do not change command arguments, just skip
     (autostart, _, Args) -> Args;
+    (logdir, _, Args) -> Args;
+    (host_network, true, Args) -> ["--net=host" | Args];
 
     (Key, Value, Args) when is_binary(Key) -> env_args(Key, Value) ++ Args
   end, [], Opts),

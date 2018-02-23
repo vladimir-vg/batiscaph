@@ -28,14 +28,30 @@ end_per_suite(Config) ->
 
 
 start_endpoint(Port, Config) ->
-  Opts = #{<<"VISION_ENDPOINT_PORT">> => Port},
+  PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
+  Opts = #{
+    <<"VISION_ENDPOINT_HTTP_PORT">> => Port,
+    host_network => true,
+    logdir => PrivDir
+  },
   {ok, EndpointContainer} = vt:start_docker_container(<<"endpoint1">>, <<"vision/endpoint:latest">>, Opts),
   EndpointUrl = endpoint_url(vt_container:node(EndpointContainer), Port),
+
+  ok = wait_for_application(vt_container:node(EndpointContainer), batiscaph, 5000),
+
   [{endpoint_container, EndpointContainer}, {endpoint_url, EndpointUrl} | Config].
 
 endpoint_url(EndpointNode, Port) ->
   Host = hostname_from_node(EndpointNode),
   iolist_to_binary(["http://", Host, ":", integer_to_binary(Port), "/probe"]).
+
+wait_for_application(_, _, Timeout) when Timeout =< 0 -> {error, timeout};
+wait_for_application(Node, App, Timeout) ->
+  Apps = rpc:call(Node, application, which_applications, []),
+  case lists:keyfind(App, 1, Apps) of
+    false -> timer:sleep(100), wait_for_application(Node, App, Timeout-100);
+    {App, _Version, _Desc} -> ok
+  end.
 
 stop_endpoint(Config) ->
   EndpointContainer = proplists:get_value(endpoint_container, Config),
@@ -50,8 +66,9 @@ hostname_from_node(Node) ->
 
 init_per_group(guest_app_run, Config) ->
   EndpointUrl = proplists:get_value(endpoint_url, Config),
+  PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   % do not start app immediately
-  Opts = #{autostart => false, <<"VISION_ENDPOINT_URL">> => EndpointUrl},
+  Opts = #{autostart => false, host_network => true, <<"VISION_PROBE_ENDPOINT_URL">> => EndpointUrl, logdir => PrivDir},
   {ok, AppContainer} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/example_app1:latest">>, Opts),
   [{app_container, AppContainer} | Config];
 
@@ -72,12 +89,10 @@ end_per_group(_, Config) ->
 
 receive_version(Config) ->
   AppContainer = proplists:get_value(app_container, Config),
-  AppNode = vt_container:node(AppContainer),
   EndpointNode = vt_container:node(proplists:get_value(endpoint_container, Config)),
 
   % subscribe for communication
-  AppHostname = hostname_from_node(AppNode),
-  ok = rpc:call(EndpointNode, vi_receiver, subscribe_to_first_guest_from_ip, [self(), AppHostname]),
+  ok = rpc:call(EndpointNode, vision_test, subscribe_to_first_guest, [self()]),
 
   % now when we subscribed for communication
   % we can start node, listen and match
@@ -85,14 +100,14 @@ receive_version(Config) ->
 
   receive
     {from_probe, Message} ->
-      {probe_guest_info, Info} = Message,
       #{
         probe_version := <<"0.1.0">>,
-        dependency := {<<"example_app1">>, <<"1.2.3-test1">>},
+        dependency_in := [{<<"example_app1">>, <<"1.2.3-test1">>}],
         instance_id := <<_/binary>>
-      } = Info,
+      } = Message,
       ok
   after 5000 ->
+    ct:pal("messages: ~p", [process_info(self(), messages)]),
     error(bad_message_match)
   end,
 

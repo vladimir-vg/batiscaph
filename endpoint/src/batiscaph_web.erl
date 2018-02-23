@@ -9,6 +9,7 @@ restart_cowboy() ->
   {ok, Port} = application:get_env(batiscaph, http_port),
   Dispatch = cowboy_router:compile([
     {'_', [
+      {"/probe", vision_probe_handler, []},
       {"/websocket", batiscaph_ws_handler, []},
       {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},

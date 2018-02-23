@@ -10,7 +10,9 @@
 -record(container_state, {
   node,
   port,
-  started = false
+  started = false,
+  logfile,
+  stdout_buffer = <<>>
 }).
 
 
@@ -18,6 +20,8 @@
 node(#docker_container{node = Node}) -> Node.
 
 start(DockerPath, Args, NodeName, Opts) ->
+  #{logdir := LogDir} = Opts,
+
   Parent = self(),
   % starting unlinked process that going to last forever
   % port dies if spawner dies, so just start something
@@ -26,22 +30,28 @@ start(DockerPath, Args, NodeName, Opts) ->
     Port = erlang:open_port({spawn_executable, DockerPath}, [{args, Args}, binary, {line, 256}]),
     {ok, Ip} = read_node_ip_address(Port),
     Node = <<NodeName/binary, "@", Ip/binary>>,
+
     Handle = #docker_container{node = binary_to_atom(Node, latin1), port_owner_pid = self()},
+    Parent ! Handle,
 
-    case maps:get(autostart, Opts, true) of
-      false ->
-        Parent ! Handle,
-        ?MODULE:loop(#container_state{node = Node, port = Port});
-      true ->
-        ok = start_node(Node, Port),
-        Parent ! Handle,
-        ?MODULE:loop(#container_state{started = true, node = Node, port = Port})
-    end
+    {ok, LogFile} = file:open(<<LogDir/binary, Node/binary, ".log">>, [write]),
+    State = #container_state{node = Node, port = Port, logfile = LogFile},
+    ?MODULE:loop(State)
   end),
+  erlang:monitor(process, PortOwner),
 
-  receive #docker_container{} = DockerNode -> {ok, DockerNode}
-  after 5000 ->
-    io:format("port owner info: ~p~n", [erlang:process_info(PortOwner)]),
+  receive #docker_container{} = DockerNode ->
+    case maps:get(autostart, Opts, true) of
+      false -> {ok, DockerNode};
+      true ->
+        % starting neo4j and clickhouse in container might be really slow
+        ok = start_node(DockerNode, 30000),
+        {ok, DockerNode}
+    end
+
+  after 10000 ->
+    ct:pal("port owner info: ~p~n", [erlang:process_info(PortOwner)]),
+    ct:pal("messages: ~p~n", [erlang:process_info(self(), messages)]),
     error(unable_to_start_docker_container)
   end.
 
@@ -55,10 +65,13 @@ stop(#docker_container{port_owner_pid = Pid}) ->
 
 
 
-start_node(#docker_container{port_owner_pid = Pid}) ->
+start_node(State) ->
+  start_node(State, 5000).
+
+start_node(#docker_container{port_owner_pid = Pid}, Timeout) ->
   Pid ! {start_node, self()},
   receive {started_node, Pid} -> ok
-  after 5000 -> error(no_response_from_port_owner)
+  after Timeout -> error(no_response_from_port_owner)
   end.
 
 
@@ -69,10 +82,10 @@ start_node(#docker_container{port_owner_pid = Pid}) ->
 
 
 
-loop(#container_state{port = Port, node = Node, started = Started} = State) ->
+loop(#container_state{port = Port, node = Node, started = Started, stdout_buffer = Buffer, logfile = LogFile} = State) ->
   receive
     {start_node, From} when Started =:= false ->
-      ok = start_node(Node, Port),
+      ok = start_node1(Node, Port),
       From ! {started_node, self()},
       ?MODULE:loop(State#container_state{started = true});
 
@@ -83,13 +96,18 @@ loop(#container_state{port = Port, node = Node, started = Started} = State) ->
       erlang:port_command(Port, <<"exit\n">>),
       erlang:port_close(Port),
       From ! {stopped, self()},
-      ok
+      ok;
+
+    % collect stdout and print it
+    {Port, {data, {noeol, Data}}} ->
+      ?MODULE:loop(State#container_state{stdout_buffer = <<Buffer/binary, Data/binary>>});
+    {Port, {data, {eol, Data}}} ->
+      ok = file:write(LogFile, <<Buffer/binary, Data/binary, "\n">>),
+      % ct:pal("~s:\t~s", [Node, ]),
+      ?MODULE:loop(State#container_state{stdout_buffer = <<>>})
 
   after 5000 ->
-    % didn't found how to turn off output from Port without closing
-    % simply receive all output and discard it from time to time
-    clear_port_output(Port),
-    ?MODULE:loop(Port)
+    ?MODULE:loop(State)
   end.
 
 
@@ -110,7 +128,7 @@ loop(#container_state{port = Port, node = Node, started = Started} = State) ->
 %            {#Port<0.52242>,
 %             {data,{eol,<<"       valid_lft forever preferred_lft forever">>}}}]}
 read_node_ip_address(Port) ->
-  Port ! {self(), {command, <<"ip addr show dev eth0\n">>}},
+  Port ! {self(), {command, <<"ip addr show dev docker0\n">>}},
 
   % skip two lines, take third one
   receive {Port, {data, {eol, _}}} -> ok after 1000 -> error(no_output_from_node) end,
@@ -129,7 +147,7 @@ read_node_ip_address(Port) ->
 
 
 
-start_node(Node, Port) ->
+start_node1(Node, Port) ->
   Port ! {self(), {command, <<"./rebar3 shell --name ", Node/binary, " --setcookie vision-test\n">>}},
   % wait until common test Erlang node would successfully connects to just started node
   ok = wait_for_node(binary_to_atom(Node, latin1), 2000),

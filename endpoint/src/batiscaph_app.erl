@@ -25,21 +25,17 @@ start(_StartType, _StartArgs) ->
 
   % useful to cache babel output
   web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
+  test_subscriptions = ets:new(test_subscriptions, [public, named_table, set]),
 
   batiscaph_sup:start_link().
 
 
 
 read_config() ->
-  application:set_env(batiscaph, clickhouse_dbname, list_to_binary(os:getenv("BATISCAPH_CLICKHOUSE_DB"))),
-  application:set_env(batiscaph, clickhouse_url, list_to_binary(os:getenv("BATISCAPH_CLICKHOUSE_URL"))),
-  application:set_env(batiscaph, neo4j_url, list_to_binary(os:getenv("BATISCAPH_NEO4J_HTTP_URL"))),
-
-  % starting webserver is optional
-  case os:getenv("BATISCAPH_HTTP_PORT") of
-    false -> ok;
-    Port -> application:set_env(batiscaph, http_port, list_to_integer(Port))
-  end,
+  application:set_env(batiscaph, http_port, list_to_integer(os:getenv("VISION_ENDPOINT_HTTP_PORT"))),
+  application:set_env(batiscaph, clickhouse_dbname, list_to_binary(os:getenv("VISION_ENDPOINT_CLICKHOUSE_DB"))),
+  application:set_env(batiscaph, clickhouse_url, list_to_binary(os:getenv("VISION_ENDPOINT_CLICKHOUSE_URL"))),
+  application:set_env(batiscaph, neo4j_url, list_to_binary(os:getenv("VISION_ENDPOINT_NEO4J_HTTP_URL"))),
 
   ok.
 
