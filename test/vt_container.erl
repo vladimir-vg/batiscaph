@@ -2,6 +2,9 @@
 -export([start/4, node/1, owner_pid/1, start_node/1, stop/1]).
 -export([loop/1]).
 
+% TODO: turn this worker into gen_server,
+% make it more robust, get rid of Handle, use pid for referencing container
+
 -record(docker_container, {
   node,
   port_owner_pid
@@ -12,7 +15,8 @@
   port,
   started = false,
   logfile,
-  stdout_buffer = <<>>
+  stdout_buffer = <<>>,
+  runtype :: erlang | elixir
 }).
 
 
@@ -23,6 +27,7 @@ owner_pid(#docker_container{port_owner_pid = Pid}) -> Pid.
 
 start(DockerPath, Args, NodeName, Opts) ->
   #{logdir := LogDir} = Opts,
+  RunType = maps:get(runtype, Opts, erlang),
 
   Parent = self(),
 
@@ -47,11 +52,14 @@ start(DockerPath, Args, NodeName, Opts) ->
     {ok, Ip} = read_node_ip_address(Port),
     Node = <<NodeName/binary, "@", Ip/binary>>,
 
+    % try to execute if present
+    ct:pal("~s", [unicode:characters_to_binary(os:cmd("bash ./before-test-run.sh"))]),
+
     Handle = #docker_container{node = binary_to_atom(Node, latin1), port_owner_pid = self()},
     Parent ! Handle,
 
     {ok, LogFile} = file:open(<<LogDir/binary, Node/binary, ".log">>, [write]),
-    State = #container_state{node = Node, port = Port, logfile = LogFile},
+    State = #container_state{node = Node, port = Port, logfile = LogFile, runtype = RunType},
     ?MODULE:loop(State)
   end),
   erlang:monitor(process, PortOwner),
@@ -98,10 +106,10 @@ start_node(#docker_container{port_owner_pid = Pid}, Timeout) ->
 
 
 
-loop(#container_state{port = Port, node = Node, started = Started, stdout_buffer = Buffer, logfile = LogFile} = State) ->
+loop(#container_state{port = Port, node = Node, started = Started, stdout_buffer = Buffer, logfile = LogFile, runtype = Runtype} = State) ->
   receive
     {start_node, From} when Started =:= false ->
-      ok = start_node1(Node, Port),
+      ok = start_node1(Runtype, Node, Port),
       From ! {started_node, self()},
       ?MODULE:loop(State#container_state{started = true});
 
@@ -163,8 +171,13 @@ read_node_ip_address(Port) ->
 
 
 
-start_node1(Node, Port) ->
-  Port ! {self(), {command, <<"./rebar3 shell --name ", Node/binary, " --setcookie vision-test\n">>}},
+start_node1(Runtype, Node, Port) ->
+  Cmd = case Runtype of
+    erlang -> <<"./rebar3 shell --name ", Node/binary, " --setcookie vision-test\n">>;
+    elixir -> <<"iex --name ", Node/binary, " --cookie vision-test -S mix phx.server\n">>
+  end,
+
+  Port ! {self(), {command, Cmd}},
   % wait until common test Erlang node would successfully connects to just started node
   ok = wait_for_node(binary_to_atom(Node, latin1), 2000),
   ok = clear_port_output(Port),

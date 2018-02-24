@@ -1,25 +1,19 @@
 -module(guest_SUITE).
 -export([
-  all/0, groups/0, init_per_suite/1, end_per_suite/1,
-  init_per_group/2, end_per_group/2
+  all/0, init_per_suite/1, end_per_suite/1
 ]).
 -export([receive_version/1]).
 
 
 
 all() ->
-  [{group, guest_app_run}].
-
-groups() ->
-  [{guest_app_run, [], [
-    receive_version
-  ]}].
+  [receive_version].
 
 
 
 init_per_suite(Config) ->
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  ok = vt:ensure_endpoint_running(#{logdir => PrivDir}),
+  ok = vt:ensure_fresh_endpoint_running(#{logdir => PrivDir}),
   Config.
 
 end_per_suite(Config) ->
@@ -27,36 +21,17 @@ end_per_suite(Config) ->
 
 
 
-init_per_group(guest_app_run, Config) ->
-  PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  % do not start app immediately
-  Opts = #{
-    autostart => false, host_network => true, logdir => PrivDir,
-    <<"VISION_PROBE_ENDPOINT_URL">> => vt:endpoint_url()
-  },
-  {ok, AppContainer} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/example_app1:latest">>, Opts),
-  [{app_container, AppContainer} | Config];
-
-init_per_group(_Group, Config) ->
-  Config.
-
-
-
-end_per_group(_, Config) ->
-  Config.
-
-
-
 receive_version(Config) ->
-  AppContainer = proplists:get_value(app_container, Config),
   EndpointNode = vt:endpoint_node(),
 
   % subscribe for communication
   ok = rpc:call(EndpointNode, vision_test, subscribe_to_first_guest, [self()]),
 
-  % now when we subscribed for communication
-  % we can start node, listen and match
-  ok = vt_container:start_node(AppContainer),
+  PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
+  {ok, AppContainer} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/example_app1:latest">>, #{
+    host_network => true, logdir => PrivDir,
+    <<"VISION_PROBE_ENDPOINT_URL">> => vt:endpoint_url()
+  }),
 
   receive
     {from_probe, Message} ->

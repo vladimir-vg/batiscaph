@@ -1,7 +1,8 @@
 -module(vt).
 -export([
   start_docker_container/3, stop_docker_container/1,
-  ensure_endpoint_running/1, endpoint_url/0, endpoint_node/0
+  ensure_fresh_endpoint_running/1, endpoint_url/0, endpoint_node/0,
+  ensure_fresh_webapp_running/1
 ]).
 
 
@@ -12,8 +13,8 @@
 
 
 
-ensure_endpoint_running(#{logdir := LogDir}) ->
-  Port = 8080,
+ensure_fresh_endpoint_running(#{logdir := LogDir}) ->
+  Port = 8081,
   NodeName = endpoint1,
   DockerName = endpoint1,
 
@@ -87,11 +88,44 @@ endpoint_node() ->
 
 
 
+ensure_fresh_webapp_running(#{logdir := LogDir}) ->
+  Port = 8082,
+  NodeName = web1,
+  DockerName = web1,
+
+  case whereis(webapp_container) of
+    % already started current endpoint
+    Pid when is_pid(Pid) -> ok;
+
+    % not started yet, probably old version still running
+    undefined ->
+      % kill endpoint that still alive from previous test run
+      ok = kill_docker_container_with_name(to_binary(DockerName)),
+      Opts = #{
+        <<"VISION_WEB_POSTGRES_URL">> => <<"postgres://postgres:postgres@127.0.0.1/vision_test">>,
+        <<"VISION_WEB_HTTP_PORT">> => Port,
+        host_network => true,
+        logdir => LogDir,
+        docker_name => to_binary(DockerName),
+        detached => true,
+        runtype => elixir
+      },
+      {ok, WebContainer} = start_docker_container(to_binary(NodeName), <<"vision/web:latest">>, Opts),
+
+      ok = wait_for_application(vt_container:node(WebContainer), vision, 5000),
+
+      Pid = vt_container:owner_pid(WebContainer),
+      register(webapp_container, Pid),
+      ok
+  end.
+
+
+
 start_docker_container(NodeName, Image, Opts) ->
   {ok, Args} = docker_cmd_args_env(Image, Opts),
   {ok, DockerPath} = find_docker_executable(),
 
-  Opts1 = maps:with([autostart, logdir, before_start, detached], Opts),
+  Opts1 = maps:with([autostart, logdir, before_start, detached, runtype], Opts),
   {ok, DockerContainer} = vt_container:start(DockerPath, Args, NodeName, Opts1),
   {ok, DockerContainer}.
 
@@ -109,6 +143,7 @@ docker_cmd_args_env(Image, Opts) ->
     % these opts do not change command arguments, just skip
     (autostart, _, Args) -> Args;
     (logdir, _, Args) -> Args;
+    (runtype, _, Args) -> Args;
     (detached, true, Args) -> ["-d" | Args];
     (host_network, true, Args) -> ["--net=host" | Args];
     (docker_name, Name, Args) -> ["--name", Name | Args];
