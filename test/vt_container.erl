@@ -53,7 +53,10 @@ start(DockerPath, Args, NodeName, Opts) ->
     Node = <<NodeName/binary, "@", Ip/binary>>,
 
     % try to execute if present
-    ct:pal("~s", [unicode:characters_to_binary(os:cmd("bash ./before-test-run.sh"))]),
+    erlang:port_command(Port, <<"bash ./before-test-run.sh && echo 'before-test-run finished'\n">>),
+    receive {Port, {data, {eol, <<"before-test-run finished", _/binary>>}}} -> ok
+    after 5000 -> error(before_test_run_script_failed)
+    end,
 
     Handle = #docker_container{node = binary_to_atom(Node, latin1), port_owner_pid = self()},
     Parent ! Handle,
@@ -64,16 +67,15 @@ start(DockerPath, Args, NodeName, Opts) ->
   end),
   erlang:monitor(process, PortOwner),
 
-  receive #docker_container{} = DockerNode ->
+  receive #docker_container{} = DockerContainer ->
     case maps:get(autostart, Opts, true) of
-      false -> {ok, DockerNode};
+      false -> {ok, DockerContainer};
       true ->
-        % starting neo4j and clickhouse in container might be really slow
-        ok = start_node(DockerNode, 30000),
-        {ok, DockerNode}
+        ok = start_node(DockerContainer, 20000),
+        {ok, DockerContainer}
     end
 
-  after 10000 ->
+  after 20000 ->
     ct:pal("port owner info: ~p~n", [erlang:process_info(PortOwner)]),
     ct:pal("messages: ~p~n", [erlang:process_info(self(), messages)]),
     error(unable_to_start_docker_container)
@@ -95,7 +97,10 @@ start_node(State) ->
 start_node(#docker_container{port_owner_pid = Pid}, Timeout) ->
   Pid ! {start_node, self()},
   receive {started_node, Pid} -> ok
-  after Timeout -> error(no_response_from_port_owner)
+  after Timeout ->
+    ct:pal("port owner info: ~p~n", [erlang:process_info(Pid)]),
+    ct:pal("messages: ~p~n", [erlang:process_info(self(), messages)]),
+    error(no_response_from_port_owner)
   end.
 
 
@@ -106,10 +111,18 @@ start_node(#docker_container{port_owner_pid = Pid}, Timeout) ->
 
 
 
-loop(#container_state{port = Port, node = Node, started = Started, stdout_buffer = Buffer, logfile = LogFile, runtype = Runtype} = State) ->
+loop(#container_state{port = Port, started = Started, stdout_buffer = Buffer, logfile = LogFile} = State) ->
   receive
+    % collect stdout and print it
+    {Port, {data, {noeol, Data}}} ->
+      ?MODULE:loop(State#container_state{stdout_buffer = <<Buffer/binary, Data/binary>>});
+    {Port, {data, {eol, Data}}} ->
+      ok = file:write(LogFile, <<Buffer/binary, Data/binary, "\n">>),
+      % ct:pal("~s:\t~s", [Node, ]),
+      ?MODULE:loop(State#container_state{stdout_buffer = <<>>});
+
     {start_node, From} when Started =:= false ->
-      ok = start_node1(Runtype, Node, Port),
+      ok = start_node1(State),
       From ! {started_node, self()},
       ?MODULE:loop(State#container_state{started = true});
 
@@ -120,15 +133,7 @@ loop(#container_state{port = Port, node = Node, started = Started, stdout_buffer
       erlang:port_command(Port, <<"exit\n">>),
       erlang:port_close(Port),
       From ! {stopped, self()},
-      ok;
-
-    % collect stdout and print it
-    {Port, {data, {noeol, Data}}} ->
-      ?MODULE:loop(State#container_state{stdout_buffer = <<Buffer/binary, Data/binary>>});
-    {Port, {data, {eol, Data}}} ->
-      ok = file:write(LogFile, <<Buffer/binary, Data/binary, "\n">>),
-      % ct:pal("~s:\t~s", [Node, ]),
-      ?MODULE:loop(State#container_state{stdout_buffer = <<>>})
+      ok
 
   after 5000 ->
     ?MODULE:loop(State)
@@ -152,7 +157,7 @@ loop(#container_state{port = Port, node = Node, started = Started, stdout_buffer
 %            {#Port<0.52242>,
 %             {data,{eol,<<"       valid_lft forever preferred_lft forever">>}}}]}
 read_node_ip_address(Port) ->
-  Port ! {self(), {command, <<"ip addr show dev docker0\n">>}},
+  erlang:port_command(Port, <<"ip addr show dev docker0\n">>),
 
   % skip two lines, take third one
   receive {Port, {data, {eol, _}}} -> ok after 1000 -> error(no_output_from_node) end,
@@ -171,16 +176,17 @@ read_node_ip_address(Port) ->
 
 
 
-start_node1(Runtype, Node, Port) ->
+start_node1(#container_state{port = Port, node = Node, logfile = LogFile, runtype = Runtype}) ->
   Cmd = case Runtype of
     erlang -> <<"./rebar3 shell --name ", Node/binary, " --setcookie vision-test\n">>;
-    elixir -> <<"iex --name ", Node/binary, " --cookie vision-test -S mix phx.server\n">>
+    elixir -> <<"elixir --name ", Node/binary, " --cookie vision-test -S mix phx.server\n">>
   end,
 
-  Port ! {self(), {command, Cmd}},
+  ok = file:write(LogFile, Cmd),
+  erlang:port_command(Port, Cmd),
+
   % wait until common test Erlang node would successfully connects to just started node
-  ok = wait_for_node(binary_to_atom(Node, latin1), 2000),
-  ok = clear_port_output(Port),
+  ok = wait_for_node(binary_to_atom(Node, latin1), 20000),
   ok.
 
 % just read out all output messages for this port
@@ -195,6 +201,6 @@ wait_for_node(Node, Timeout) ->
   case net_adm:ping(Node) of
     pong -> ok;
     pang ->
-      timer:sleep(10),
-      wait_for_node(Node, Timeout-10)
+      timer:sleep(100),
+      wait_for_node(Node, Timeout-100)
   end.

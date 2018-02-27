@@ -1,5 +1,3 @@
 #!/bin/bash
 
-mix ecto.drop --force
-mix ecto.create --force
-mix ecto.migrate --force
+mix do ecto.drop --force, ecto.create --force, ecto.migrate --force

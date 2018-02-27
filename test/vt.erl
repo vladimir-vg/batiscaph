@@ -2,7 +2,9 @@
 -export([
   start_docker_container/3, stop_docker_container/1,
   ensure_fresh_endpoint_running/1, endpoint_url/0, endpoint_node/0,
-  ensure_fresh_webapp_running/1
+  ensure_fresh_webapp_running/1, webapp_node/0,
+
+  received_from_probe/0, received_from_probe/1, sent_to_probe/0, sent_to_probe/1
 ]).
 
 
@@ -112,12 +114,19 @@ ensure_fresh_webapp_running(#{logdir := LogDir}) ->
       },
       {ok, WebContainer} = start_docker_container(to_binary(NodeName), <<"vision/web:latest">>, Opts),
 
+      WebappNode = vt_container:node(WebContainer),
+      application:set_env(vision_test, webapp_node, WebappNode),
+
       ok = wait_for_application(vt_container:node(WebContainer), vision, 5000),
 
       Pid = vt_container:owner_pid(WebContainer),
       register(webapp_container, Pid),
       ok
   end.
+
+webapp_node() ->
+  {ok, WebappNode} = application:get_env(vision_test, webapp_node),
+  WebappNode.
 
 
 
@@ -169,3 +178,17 @@ to_binary(Value) when is_binary(Value) -> Value;
 to_binary(Value) when is_list(Value) -> list_to_binary(Value);
 to_binary(Value) when is_atom(Value) -> atom_to_binary(Value, latin1);
 to_binary(Value) when is_integer(Value) -> integer_to_binary(Value).
+
+
+
+received_from_probe() -> received_from_probe(5000).
+received_from_probe(Timeout) ->
+  receive {from_probe, Message} -> Message
+  after Timeout -> error(from_probe_message_timeout)
+  end.
+
+sent_to_probe() -> sent_to_probe(5000).
+sent_to_probe(Timeout) ->
+  receive {to_probe, Message} -> Message
+  after Timeout -> error(to_probe_message_timeout)
+  end.

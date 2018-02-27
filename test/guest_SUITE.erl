@@ -28,22 +28,15 @@ receive_version(Config) ->
   ok = rpc:call(EndpointNode, vision_test, subscribe_to_first_guest, [self()]),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  {ok, AppContainer} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/example_app1:latest">>, #{
+  {ok, _} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/example_app1:latest">>, #{
     host_network => true, logdir => PrivDir,
     <<"VISION_PROBE_ENDPOINT_URL">> => vt:endpoint_url()
   }),
 
-  receive
-    {from_probe, Message} ->
-      #{
-        probe_version := <<"0.1.0">>,
-        dependency_in := [{<<"example_app1">>, <<"1.2.3-test1">>}],
-        instance_id := <<_/binary>>
-      } = Message,
-      ok
-  after 5000 ->
-    ct:pal("messages: ~p", [process_info(self(), messages)]),
-    error(bad_message_match)
-  end,
+  {summary_info, #{
+    probe_version := <<"0.1.0">>,
+    dependency_in := [{<<"example_app1">>, <<"1.2.3-test1">>}],
+    instance_id := <<_/binary>>
+  }} = vt:received_from_probe(),
 
   ok.
