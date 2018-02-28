@@ -105,6 +105,11 @@ handle_data_from_probe(Data, #persistent{test_subscriber = Pid} = State) ->
 
 
 
+handle_message_from_probe({request, ReqId, Method, Arg}, State) ->
+  {ok, Result, State1} = handle_request(Method, Arg, State),
+  {ok, State2} = send_to_probe({response, ReqId, Method, Result}, State1),
+  {ok, State2};
+
 handle_message_from_probe({summary_info, Info}, State) ->
   lager:info("got summary info: ~p", [Info]),
   {ok, State};
@@ -123,9 +128,27 @@ handle_message_from_probe(Message, State) ->
 
 check_test_subscribers(#persistent{user_id = UserId} = State) ->
   case vision_test:get_subscriber_for_user(UserId) of
-    none -> lager:info("no test subscr ~p", [ets:tab2list(test_subscriptions)]), {ok, State};
+    none -> {ok, State};
     {ok, Pid} ->
-      lager:info("got test subscriber: ~p", [Pid]),
       State1 = State#persistent{test_subscriber = Pid},
       {ok, State1}
   end.
+
+
+
+send_to_probe(Term, #persistent{test_subscriber = Pid, transport = Transport, socket = Socket} = State) ->
+  if is_pid(Pid) -> Pid ! {to_probe, Term}, ok;
+    true -> ok
+  end,
+
+  ok = Transport:send(Socket, erlang:term_to_binary(Term)),
+  {ok, State}.
+
+
+
+handle_request(get_trace_opts, _Arg, State) ->
+  % for now just return empty map
+  {ok, #{}, State};
+
+handle_request(Method, Arg, _State) ->
+  error({unknown_request_from_probe, Method, Arg}).

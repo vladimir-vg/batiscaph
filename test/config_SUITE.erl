@@ -43,7 +43,7 @@ authenticate_and_ask_for_config(Config) ->
     instance_id := <<_/binary>>
   }} = vt:received_from_probe(),
 
-  {request, ReqId, get_config, #{}} = vt:received_from_probe(),
-  {response, ReqId, get_config, #{}} = vt:sent_to_probe(),
+  {request, ReqId, get_trace_opts, #{}} = vt:received_from_probe(),
+  {response, ReqId, get_trace_opts, #{}} = vt:sent_to_probe(),
 
   ok.
