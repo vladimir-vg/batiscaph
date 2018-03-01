@@ -16,7 +16,7 @@
   started = false,
   logfile,
   stdout_buffer = <<>>,
-  runtype :: erlang | elixir
+  runtype :: erlang | phoenix
 }).
 
 
@@ -179,7 +179,7 @@ read_node_ip_address(Port) ->
 start_node1(#container_state{port = Port, node = Node, logfile = LogFile, runtype = Runtype}) ->
   Cmd = case Runtype of
     erlang -> <<"./rebar3 shell --name ", Node/binary, " --setcookie vision-test\n">>;
-    elixir -> <<"elixir --name ", Node/binary, " --cookie vision-test -S mix phx.server\n">>
+    phoenix -> <<"elixir --name ", Node/binary, " --cookie vision-test -S mix phx.server\n">>
   end,
 
   ok = file:write(LogFile, Cmd),

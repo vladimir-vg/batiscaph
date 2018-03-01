@@ -19,4 +19,5 @@ build_test_apps:
 	# and feed it into docker build as a context.
 	# Found solution here: https://superuser.com/a/842705
 	tar --create --dereference --directory=test/erlang_app1 . | docker build -t vision-test/erlang_app1:latest -
+	tar --create --dereference --directory=test/phoenix_app1 . | docker build -t vision-test/phoenix_app1:latest -
 	@printf "\n\n"

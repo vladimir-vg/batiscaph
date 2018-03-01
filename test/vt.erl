@@ -4,7 +4,9 @@
   ensure_fresh_endpoint_running/1, endpoint_url/0, endpoint_node/0,
   ensure_fresh_webapp_running/1, webapp_node/0,
 
-  received_from_probe/0, received_from_probe/1, sent_to_probe/0, sent_to_probe/1
+  base_url/2,
+
+  received_from_probe/1, received_from_probe/2, sent_to_probe/1, sent_to_probe/2
 ]).
 
 
@@ -17,7 +19,7 @@
 
 ensure_fresh_endpoint_running(#{logdir := LogDir}) ->
   Port = 8081,
-  NodeName = endpoint1,
+  NodeName = '_endpoint1', % added underscore just to appear on top when sorted by name
   DockerName = endpoint1,
 
   case whereis(endpoint_container) of
@@ -35,10 +37,10 @@ ensure_fresh_endpoint_running(#{logdir := LogDir}) ->
         docker_name => to_binary(DockerName),
         detached => true
       },
-      {ok, EndpointContainer} = start_docker_container(to_binary(NodeName), <<"vision/endpoint:latest">>, Opts),
+      {ok, EndpointContainer} = start_docker_container(NodeName, <<"vision/endpoint:latest">>, Opts),
 
+      EndpointUrl = generate_endpoint_url(EndpointContainer, Port),
       EndpointNode = vt_container:node(EndpointContainer),
-      EndpointUrl = generate_endpoint_url(EndpointNode, Port),
       application:set_env(vision_test, endpoint_url, EndpointUrl),
       application:set_env(vision_test, endpoint_node, EndpointNode),
 
@@ -62,13 +64,21 @@ kill_docker_container_with_name(Name) when is_list(Name) ->
   ct:pal("~s", [os:cmd("docker rm "++OldName)]),
   ok.
 
-generate_endpoint_url(EndpointNode, Port) ->
-  Host = hostname_from_node(EndpointNode),
-  iolist_to_binary(["http://", Host, ":", integer_to_binary(Port), "/probe"]).
 
-hostname_from_node(Node) ->
+
+generate_endpoint_url(EndpointContainer, Port) ->
+  <<(base_url(EndpointContainer, Port))/binary, "/probe">>.
+
+host_from_node(Node) ->
   [_Name, Host] = binary:split(atom_to_binary(Node,latin1), <<"@">>),
   Host.
+
+base_url(Container, Port) ->
+  Node = vt_container:node(Container),
+  Host = host_from_node(Node),
+  iolist_to_binary(["http://", Host, ":", integer_to_binary(Port)]).
+
+
 
 wait_for_application(_, _, Timeout) when Timeout =< 0 -> {error, timeout};
 wait_for_application(Node, App, Timeout) ->
@@ -92,7 +102,7 @@ endpoint_node() ->
 
 ensure_fresh_webapp_running(#{logdir := LogDir}) ->
   Port = 8082,
-  NodeName = web1,
+  NodeName = '_web1',
   DockerName = web1,
 
   case whereis(webapp_container) of
@@ -110,9 +120,9 @@ ensure_fresh_webapp_running(#{logdir := LogDir}) ->
         logdir => LogDir,
         docker_name => to_binary(DockerName),
         detached => true,
-        runtype => elixir
+        runtype => phoenix
       },
-      {ok, WebContainer} = start_docker_container(to_binary(NodeName), <<"vision/web:latest">>, Opts),
+      {ok, WebContainer} = start_docker_container(NodeName, <<"vision/web:latest">>, Opts),
 
       WebappNode = vt_container:node(WebContainer),
       application:set_env(vision_test, webapp_node, WebappNode),
@@ -130,13 +140,22 @@ webapp_node() ->
 
 
 
-start_docker_container(NodeName, Image, Opts) ->
+start_docker_container(NodeName, Image, Opts) when is_atom(NodeName) ->
+  start_docker_container(atom_to_binary(NodeName, latin1), Image, Opts);
+
+start_docker_container(NodeName, Image, Opts) when is_binary(NodeName) ->
   {ok, Args} = docker_cmd_args_env(Image, Opts),
   {ok, DockerPath} = find_docker_executable(),
 
   Opts1 = maps:with([autostart, logdir, before_start, detached, runtype], Opts),
   {ok, DockerContainer} = vt_container:start(DockerPath, Args, NodeName, Opts1),
-  {ok, DockerContainer}.
+
+  case maps:get(wait_for_application, Opts, undefined) of
+    undefined -> {ok, DockerContainer};
+    AppAtom ->
+      ok = wait_for_application(vt_container:node(DockerContainer), AppAtom, 5000),
+      {ok, DockerContainer}
+  end.
 
 
 
@@ -153,6 +172,7 @@ docker_cmd_args_env(Image, Opts) ->
     (autostart, _, Args) -> Args;
     (logdir, _, Args) -> Args;
     (runtype, _, Args) -> Args;
+    (wait_for_application, _, Args) -> Args;
     (detached, true, Args) -> ["-d" | Args];
     (host_network, true, Args) -> ["--net=host" | Args];
     (docker_name, Name, Args) -> ["--name", Name | Args];
@@ -181,14 +201,22 @@ to_binary(Value) when is_integer(Value) -> integer_to_binary(Value).
 
 
 
-received_from_probe() -> received_from_probe(5000).
-received_from_probe(Timeout) ->
-  receive {from_probe, Message} -> Message
-  after Timeout -> error(from_probe_message_timeout)
+received_from_probe(Atom) -> received_from_probe(Atom, 5000).
+received_from_probe(Atom, Timeout) ->
+  receive
+    {from_probe, {Atom, _} = Message} -> Message;
+    {from_probe, {request, _, Atom, _} = Message} -> Message;
+    {from_probe, {response, _, Atom, _} = Message} -> Message
+  after Timeout ->
+    error(from_probe_message_timeout)
   end.
 
-sent_to_probe() -> sent_to_probe(5000).
-sent_to_probe(Timeout) ->
-  receive {to_probe, Message} -> Message
-  after Timeout -> error(to_probe_message_timeout)
+sent_to_probe(Atom) -> sent_to_probe(Atom, 5000).
+sent_to_probe(Atom, Timeout) ->
+  receive
+    {to_probe, {Atom, _} = Message} -> Message;
+    {to_probe, {request, _, Atom, _} = Message} -> Message;
+    {to_probe, {response, _, Atom, _} = Message} -> Message
+  after Timeout ->
+    error(to_probe_message_timeout)
   end.
