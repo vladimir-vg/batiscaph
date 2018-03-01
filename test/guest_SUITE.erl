@@ -28,14 +28,14 @@ receive_version(Config) ->
   ok = rpc:call(EndpointNode, vision_test, subscribe_to_first_guest, [self()]),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  {ok, _} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/example_app1:latest">>, #{
+  {ok, _} = vt:start_docker_container(<<"guest_app_run">>, <<"vision-test/erlang_app1:latest">>, #{
     host_network => true, logdir => PrivDir,
     <<"VISION_PROBE_ENDPOINT_URL">> => vt:endpoint_url()
   }),
 
   {summary_info, #{
     probe_version := <<"0.1.0">>,
-    dependency_in := [{<<"example_app1">>, <<"1.2.3-test1">>}],
+    dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
     instance_id := <<_/binary>>
   }} = vt:received_from_probe(),
 
