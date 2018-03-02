@@ -28,7 +28,7 @@ authenticate_and_ask_for_config(Config) ->
   {ok, UserId, AccessKey} = rpc:call(WebappNode, 'Elixir.Vision.Test', create_user_and_return_access_key, []),
 
   % subscribe for communication
-  ok = rpc:call(EndpointNode, vision_test, subscribe_to_first_session, [self(), #{user_id => UserId}]),
+  ok = rpc:call(EndpointNode, vision_test, subscribe_to_session, [self(), #{user_id => UserId}]),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   {ok, _AppContainer} = vt:start_docker_container(?MODULE, <<"vision-test/erlang_app1:latest">>, #{
@@ -43,7 +43,10 @@ authenticate_and_ask_for_config(Config) ->
     instance_id := <<_/binary>>
   }} = vt:received_from_probe(summary_info),
 
-  {request, ReqId, get_trace_opts, #{}} = vt:received_from_probe(get_trace_opts),
-  {response, ReqId, get_trace_opts, #{}} = vt:sent_to_probe(get_trace_opts),
+  {request, ReqId1, get_user_config, _} = vt:sent_to_probe(get_user_config),
+  {response, ReqId1, get_user_config, #{}} = vt:received_from_probe(get_user_config),
+
+  {request, ReqId2, apply_config, #{}} = vt:sent_to_probe(apply_config),
+  {response, ReqId2, apply_config, ok} = vt:received_from_probe(apply_config),
 
   ok.

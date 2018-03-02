@@ -29,7 +29,7 @@ handle(Req, bad_request) ->
   {ok, Req, bad_request};
 
 handle(Req, {guest_info, _Ip, Info} = State) ->
-  ok = vision_test:notify_guest_info_subscriber(Info),
+  ok = vision_test:notify_guest_info_subscribers(Info),
   {ok, Req1} = cowboy_req:reply(200, Req),
   {ok, Req1, State}.
 

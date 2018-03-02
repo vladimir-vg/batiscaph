@@ -208,6 +208,7 @@ received_from_probe(Atom, Timeout) ->
     {from_probe, {request, _, Atom, _} = Message} -> Message;
     {from_probe, {response, _, Atom, _} = Message} -> Message
   after Timeout ->
+    ct:pal("messages ~p", [erlang:process_info(self(), messages)]),
     error(from_probe_message_timeout)
   end.
 
@@ -218,5 +219,6 @@ sent_to_probe(Atom, Timeout) ->
     {to_probe, {request, _, Atom, _} = Message} -> Message;
     {to_probe, {response, _, Atom, _} = Message} -> Message
   after Timeout ->
+    ct:pal("messages ~p", [erlang:process_info(self(), messages)]),
     error(to_probe_message_timeout)
   end.

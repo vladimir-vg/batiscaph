@@ -25,7 +25,7 @@ start(_StartType, _StartArgs) ->
 
   % useful to cache babel output
   web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
-  test_subscriptions = ets:new(test_subscriptions, [public, named_table, set]),
+  test_subscriptions = ets:new(test_subscriptions, [public, named_table, bag]),
 
   batiscaph_sup:start_link().
 

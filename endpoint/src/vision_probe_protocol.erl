@@ -8,8 +8,11 @@
 -record(persistent, {
   socket,
   transport,
+  sent_requests = #{}, % non_neg_integer() => atom()
+  last_req_num = 0,
+
   user_id,
-  test_subscriber
+  test_subscribers = []
 }).
 
 
@@ -32,7 +35,7 @@ authorize_by_token(Token) ->
 
 
 start_persistent_loop(Env, UserId, Req) ->
-  self() ! check_test_subscribers,
+  self() ! {probe_request, get_user_config, []},
 
   % take this socket out of pool
   % more details in ranch official documentation
@@ -50,12 +53,15 @@ start_persistent_loop(Env, UserId, Req) ->
   after 1000 -> error(failed_cowboy_upgrade_reply)
   end,
 
+  lager:info("Socket ~p open", [Socket]),
 
   % now we turning this process into gen_server
   % add necessary dict values to make it happy
   put('$ancestors', [self()]),
   State = #persistent{socket = Socket, transport = Transport, user_id = UserId},
-  gen_server:enter_loop(?MODULE, [], State).
+
+  {ok, State1} = check_test_subscribers(State),
+  gen_server:enter_loop(?MODULE, [], State1).
 
 
 
@@ -70,9 +76,14 @@ init(_) ->
 
 
 
-handle_info(check_test_subscribers, State) ->
-  {ok, State1} = check_test_subscribers(State),
+% request by this process itself
+handle_info({probe_request, Method, Arg}, State) ->
+  {ok, State1} = request_probe(probe_request, Method, Arg, State),
   {noreply, State1};
+
+handle_info({tcp_closed, Socket}, #persistent{socket = Socket} = State) ->
+  lager:info("Socket ~p closed", [Socket]),
+  {stop, normal, State};
 
 handle_info({tcp, Socket, Data}, #persistent{socket = Socket, transport = Transport} = State) ->
   Transport:setopts(Socket, [{active,once}]),
@@ -84,6 +95,10 @@ handle_info(Msg, State) ->
 
 
 
+handle_call({request, Method, Arg}, From, #persistent{} = State) ->
+  {ok, State1} = request_probe(From, Method, Arg, State),
+  {noreply, State1};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
@@ -94,24 +109,29 @@ handle_cast(Cast, State) ->
 
 
 
-handle_data_from_probe(Data, #persistent{test_subscriber = Pid} = State) ->
-  Term = erlang:binary_to_term(Data),
-  if is_pid(Pid) -> Pid ! {from_probe, Term}, ok;
-    true -> ok
-  end,
-
-  {ok, State1} = handle_message_from_probe(Term, State),
-  {ok, State1}.
+handle_data_from_probe(Data, #persistent{} = State) ->
+  Term = erlang:binary_to_term(Data, [safe]),
+  % check subsribers just right before receiving/sending for now
+  % rework later to receive subscribe requests
+  {ok, State1} = check_test_subscribers(State),
+  [Pid ! {from_probe, Term} || Pid <- State1#persistent.test_subscribers],
+  {ok, State2} = handle_message_from_probe(Term, State1),
+  {ok, State2}.
 
 
 
 handle_message_from_probe({request, ReqId, Method, Arg}, State) ->
   {ok, Result, State1} = handle_request(Method, Arg, State),
+  lager:info("probe request ~p ~p ~p -> ~p", [ReqId, Method, Arg, Result]),
   {ok, State2} = send_to_probe({response, ReqId, Method, Result}, State1),
   {ok, State2};
 
+handle_message_from_probe({response, ReqId, Method, Result}, State) ->
+  {ok, State1} = response_from_probe(ReqId, Method, Result, State),
+  {ok, State1};
+
 handle_message_from_probe({summary_info, Info}, State) ->
-  lager:info("got summary info: ~p", [Info]),
+  #{dependency_in := _, instance_id := _, probe_version := _} = Info,
   {ok, State};
 
 handle_message_from_probe(Message, State) ->
@@ -126,29 +146,71 @@ handle_message_from_probe(Message, State) ->
 
 
 
-check_test_subscribers(#persistent{user_id = UserId} = State) ->
-  case vision_test:get_subscriber_for_user(UserId) of
-    none -> {ok, State};
-    {ok, Pid} ->
-      State1 = State#persistent{test_subscriber = Pid},
+request_probe(From, Method, Arg, #persistent{sent_requests = Reqs, last_req_num = N, socket = Socket, transport = Transport} = State) ->
+  ReqId = N+1,
+  Reqs1 = maps:put(ReqId, {Method, From}, Reqs),
+  {ok, State1} = send_to_probe({request, ReqId, Method, Arg}, State),
+  State2 = State1#persistent{sent_requests = Reqs1, last_req_num = ReqId},
+  {ok, State2}.
+
+response_from_probe(ReqId, Method, Result, #persistent{sent_requests = Reqs} = State) ->
+  case maps:get(ReqId, Reqs, undefined) of
+    undefined -> error({unexpected_response_reqid, ReqId, Method, Result, Reqs});
+
+    % was requested via from protocol module
+    {Method, probe_request} ->
+      {ok, State1} = handle_own_request_response(Method, Result, State),
+
+      Reqs1 = maps:remove(ReqId, Reqs),
+      State2 = State1#persistent{sent_requests = Reqs1},
+      {ok, State2};
+
+    % was requested via gen_server:call
+    {Method, From} ->
+      gen_server:reply(From, {ok, Result}),
+      Reqs1 = maps:remove(ReqId, Reqs),
+      State1 = State#persistent{sent_requests = Reqs1},
       {ok, State1}
   end.
 
 
 
-send_to_probe(Term, #persistent{test_subscriber = Pid, transport = Transport, socket = Socket} = State) ->
-  if is_pid(Pid) -> Pid ! {to_probe, Term}, ok;
-    true -> ok
-  end,
+handle_own_request_response(get_user_config, _Result, State) ->
+  Config = #{phoenix => [http_requests]},
+  self() ! {probe_request, apply_config, Config},
+  {ok, State};
 
+handle_own_request_response(apply_config, ok, State) ->
+  {ok, State};
+
+handle_own_request_response(Method, Result, _State) ->
+  error({unknown_probe_response, Method, Result}).
+
+
+
+check_test_subscribers(#persistent{user_id = UserId, test_subscribers = Pids} = State) ->
+  case vision_test:get_subscribers_for_user(UserId) of
+    none -> {ok, State};
+    {ok, Pids1} ->
+      State1 = State#persistent{test_subscribers = Pids1 ++ Pids},
+      {ok, State1}
+  end.
+
+
+
+send_to_probe(Term, #persistent{transport = Transport, socket = Socket} = State) ->
+  % check subsribers just right before receiving/sending for now
+  % rework later to receive subscribe requests
+  {ok, State1} = check_test_subscribers(State),
+  [Pid ! {to_probe, Term} || Pid <- State1#persistent.test_subscribers],
   ok = Transport:send(Socket, erlang:term_to_binary(Term)),
-  {ok, State}.
+  {ok, State1}.
 
 
 
 handle_request(get_trace_opts, _Arg, State) ->
-  % for now just return empty map
-  {ok, #{}, State};
+  Opts = #{phoenix => [http_requests]},
+  {ok, Opts, State};
 
 handle_request(Method, Arg, _State) ->
   error({unknown_request_from_probe, Method, Arg}).
