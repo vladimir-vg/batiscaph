@@ -1,4 +1,4 @@
--module(batiscaph_ws_handler).
+-module(old_batiscaph_ws_handler).
 -behaviour(cowboy_websocket_handler).
 
 -export([init/3]).

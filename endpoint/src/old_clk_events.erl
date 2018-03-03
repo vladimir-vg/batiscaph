@@ -1,4 +1,4 @@
--module(clk_events).
+-module(old_clk_events).
 -export([columns/0, create_table/0, drop_table/0, store/2, select/1]).
 
 

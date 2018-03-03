@@ -1,4 +1,4 @@
--module(batiscaph_sup).
+-module(vision_sup).
 -behaviour(supervisor).
 
 -export([start_link/0]).
@@ -13,6 +13,6 @@ start_link() ->
 
 init([]) ->
   Children = [
-    #{id => remote_sup, start => {remote_sup, start_link, []}, type => supervisor, shutdown => infinity}
+    % #{id => remote_sup, start => {remote_sup, start_link, []}, type => supervisor, shutdown => infinity}
   ],
   {ok, {{one_for_all, 5, 1}, Children}}.

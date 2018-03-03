@@ -1,4 +1,4 @@
--module(scenarios_list_handler).
+-module(old_scenarios_list_handler).
 -include_lib("kernel/include/file.hrl").
 
 -export([init/3]).

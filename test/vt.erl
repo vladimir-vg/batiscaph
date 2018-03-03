@@ -44,7 +44,7 @@ ensure_fresh_endpoint_running(#{logdir := LogDir}) ->
       application:set_env(vision_test, endpoint_url, EndpointUrl),
       application:set_env(vision_test, endpoint_node, EndpointNode),
 
-      ok = wait_for_application(vt_container:node(EndpointContainer), batiscaph, 5000),
+      ok = wait_for_application(vt_container:node(EndpointContainer), vision, 5000),
 
       Pid = vt_container:owner_pid(EndpointContainer),
       register(endpoint_container, Pid),

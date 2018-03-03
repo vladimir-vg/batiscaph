@@ -1,4 +1,4 @@
--module(batiscaph).
+-module(old_batiscaph).
 -export([get_prop/1, create_tables/0, drop_tables/0, prepare_graph_schema/0, delete_graphs/0]).
 -export([binary_to_hex/1]).
 

@@ -1,4 +1,4 @@
--module(batiscaph_receiver).
+-module(old_batiscaph_receiver).
 -behaviour(gen_server).
 -export([start/1]).
 -export([start_link/1]).

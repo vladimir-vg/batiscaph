@@ -1,4 +1,4 @@
--module(batiscaph_steps).
+-module(old_batiscaph_steps).
 -export([exec_steps/6]).
 -export([var_mention_events/5]). % for shell bindings events
 

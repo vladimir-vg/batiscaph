@@ -1,4 +1,4 @@
--module(scenarios_csv_handler).
+-module(old_scenarios_csv_handler).
 
 -export([init/3]).
 -export([handle/2]).

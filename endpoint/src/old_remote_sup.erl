@@ -1,4 +1,4 @@
--module(remote_sup).
+-module(old_remote_sup).
 -behaviour(supervisor).
 
 -export([start_link/0]).

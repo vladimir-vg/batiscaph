@@ -1,4 +1,4 @@
--module(remote_ctl).
+-module(old_remote_ctl).
 -behaviour(gen_server).
 -export([ensure_started/1, ensure_started/2, currently_running/1, delta_json/1]).
 
