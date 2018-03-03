@@ -62,6 +62,8 @@ receive_http_request_event(Config) ->
   {ok, 200, _RespHeaders, ClientRef} = hackney:request(get, BaseUrl, [], <<>>, []),
   ok = hackney:skip_body(ClientRef),
 
-  {events, _Events} = vt:received_from_probe(events),
+  {events, Events} = vt:received_from_probe(events),
+  Events1 = lists:sort(fun (A, B) -> maps:get(at, A) < maps:get(at, B) end, Events),
+  [<<"plug-request p1 start">>, <<"plug-request p1 stop">>] = [T || #{type := T} <- Events1],
 
   ok.
