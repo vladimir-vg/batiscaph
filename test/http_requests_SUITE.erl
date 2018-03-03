@@ -52,7 +52,7 @@ start_webapp(PrivDir, AccessKey, Port) ->
 
 
 receive_http_request_event(Config) ->
-  UserId = proplists:get_value(user_id, Config),
+  UserId = proplists:get_value(app_user_id, Config),
   EndpointNode = vt:endpoint_node(),
 
   ok = rpc:call(EndpointNode, vision_test, subscribe_to_session, [self(), #{user_id => UserId}]),

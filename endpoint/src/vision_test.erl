@@ -23,7 +23,7 @@ notify_guest_info_subscribers(Info) ->
 
 
 
-subscribe_to_session(Pid, #{user_id := UserId}) ->
+subscribe_to_session(Pid, #{user_id := UserId}) when is_integer(UserId) ->
   ets:insert(test_subscriptions, {{user_id, UserId}, Pid}),
   ok.
 

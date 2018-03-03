@@ -10,6 +10,8 @@ stop(_State) ->
 
 
 start(_StartType, _StartArgs) ->
+  [_ | _] = vision_probe_protocol:mention_used_atoms(),
+
   case node() of
     'nonode@nohost' ->
       io:format("Erlang node started in non distributed mode, name must be specified\n"),

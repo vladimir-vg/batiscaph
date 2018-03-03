@@ -2,6 +2,7 @@
 -behaviour(gen_server).
 -export([upgrade/4]). % cowboy callback
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
+-export([mention_used_atoms/0]).
 
 
 
@@ -146,7 +147,7 @@ handle_message_from_probe(Message, State) ->
 
 
 
-request_probe(From, Method, Arg, #persistent{sent_requests = Reqs, last_req_num = N, socket = Socket, transport = Transport} = State) ->
+request_probe(From, Method, Arg, #persistent{sent_requests = Reqs, last_req_num = N} = State) ->
   ReqId = N+1,
   Reqs1 = maps:put(ReqId, {Method, From}, Reqs),
   {ok, State1} = send_to_probe({request, ReqId, Method, Arg}, State),
@@ -214,3 +215,16 @@ handle_request(get_trace_opts, _Arg, State) ->
 
 handle_request(Method, Arg, _State) ->
   error({unknown_request_from_probe, Method, Arg}).
+
+
+
+% in order to be able to do binary_to_existing_atom
+% and binary_to_term(_, [safe]), we need to mention
+% all atoms that could possible received from client
+% here we go:
+mention_used_atoms() ->
+  [
+    events,at,type,pid1,pid2,
+    host,method,path,port,request_id,
+    req_headers,resp_headers,resp_code
+  ].
