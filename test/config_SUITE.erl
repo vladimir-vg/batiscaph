@@ -12,6 +12,9 @@ all() ->
 
 
 init_per_suite(Config) ->
+  % gonna need this for making requests to test app
+  application:ensure_all_started(hackney),
+
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   ok = vt:ensure_fresh_endpoint_running(#{logdir => PrivDir}),
   ok = vt:ensure_fresh_webapp_running(#{logdir => PrivDir}),
@@ -48,5 +51,7 @@ authenticate_and_ask_for_config(Config) ->
 
   {request, ReqId2, apply_config, #{}} = vt:sent_to_probe(apply_config),
   {response, ReqId2, apply_config, ok} = vt:received_from_probe(apply_config),
+
+  {ok, [#{instanceId := _, startedAt := _}]} = vt:api_request(get, instances, #{user_id => UserId}),
 
   ok.

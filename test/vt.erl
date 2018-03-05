@@ -5,6 +5,7 @@
   ensure_fresh_webapp_running/1, webapp_node/0,
 
   base_url/2,
+  api_request/3,
 
   received_from_probe/1, received_from_probe/2, sent_to_probe/1, sent_to_probe/2
 ]).
@@ -40,8 +41,10 @@ ensure_fresh_endpoint_running(#{logdir := LogDir}) ->
       {ok, EndpointContainer} = start_docker_container(NodeName, <<"vision/endpoint:latest">>, Opts),
 
       EndpointUrl = generate_endpoint_url(EndpointContainer, Port),
+      EndpointBaseUrl = base_url(EndpointContainer, Port),
       EndpointNode = vt_container:node(EndpointContainer),
       application:set_env(vision_test, endpoint_url, EndpointUrl),
+      application:set_env(vision_test, endpoint_base_url, EndpointBaseUrl),
       application:set_env(vision_test, endpoint_node, EndpointNode),
 
       ok = wait_for_application(vt_container:node(EndpointContainer), vision, 5000),
@@ -191,6 +194,14 @@ env_args(Key, Value) ->
 stop_docker_container(Container) ->
   ok = vt_container:stop(Container),
   ok.
+
+
+
+api_request(get, FunName, Arg) ->
+  {ok, Url} = application:get_env(vision_test, endpoint_base_url),
+  Url1 = iolist_to_binary([Url, "/api/", atom_to_binary(FunName,latin1)]),
+  {ok, 200, _RespHeaders, Body} = hackney:request(get, Url1, [], <<>>, [with_body]),
+  {ok, jsx:decode(Body)}.
 
 
 
