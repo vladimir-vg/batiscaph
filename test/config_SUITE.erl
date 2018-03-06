@@ -16,8 +16,8 @@ init_per_suite(Config) ->
   application:ensure_all_started(hackney),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  ok = vt:ensure_fresh_endpoint_running(#{logdir => PrivDir}),
-  ok = vt:ensure_fresh_webapp_running(#{logdir => PrivDir}),
+  ok = vt:ensure_started(#{logdir => PrivDir}),
+
   Config.
 
 end_per_suite(Config) ->
@@ -43,7 +43,7 @@ authenticate_and_ask_for_config(Config) ->
   {summary_info, #{
     probe_version := <<"0.1.0">>,
     dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
-    instance_id := <<_/binary>>
+    instance_id := <<InstanceId/binary>>
   }} = vt:received_from_probe(summary_info),
 
   {request, ReqId1, get_user_config, _} = vt:sent_to_probe(get_user_config),
@@ -52,6 +52,6 @@ authenticate_and_ask_for_config(Config) ->
   {request, ReqId2, apply_config, #{}} = vt:sent_to_probe(apply_config),
   {response, ReqId2, apply_config, ok} = vt:received_from_probe(apply_config),
 
-  {ok, [#{instanceId := _, startedAt := _}]} = vt:api_request(get, instances, #{user_id => UserId}),
+  {ok, [#{<<"instanceId">> := InstanceId}]} = vt:api_request(get, instances, [{user_id, UserId}]),
 
   ok.

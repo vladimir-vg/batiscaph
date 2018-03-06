@@ -55,7 +55,9 @@ start(DockerPath, Args, NodeName, Opts) ->
     % try to execute if present
     erlang:port_command(Port, <<"bash ./before-test-run.sh && echo 'before-test-run finished'\n">>),
     receive {Port, {data, {eol, <<"before-test-run finished", _/binary>>}}} -> ok
-    after 5000 -> error(before_test_run_script_failed)
+    after 10000 ->
+      ct:pal("messages: ~p", [erlang:process_info(self(), messages)]),
+      error(before_test_run_script_failed)
     end,
 
     Handle = #docker_container{node = binary_to_atom(Node, latin1), port_owner_pid = self()},

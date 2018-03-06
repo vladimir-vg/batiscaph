@@ -36,8 +36,6 @@ authorize_by_token(Token) ->
 
 
 start_persistent_loop(Env, UserId, Req) ->
-  self() ! {probe_request, get_user_config, []},
-
   % take this socket out of pool
   % more details in ranch official documentation
   Ref = proplists:get_value(listener, Env),
@@ -132,8 +130,15 @@ handle_message_from_probe({response, ReqId, Method, Result}, State) ->
   {ok, State1};
 
 handle_message_from_probe({summary_info, Info}, State) ->
-  #{dependency_in := _, instance_id := _, probe_version := _} = Info,
-  {ok, State};
+  #{dependency_in := _, instance_id := InstanceId, probe_version := _} = Info,
+  {ok, State1} = insert_new_instance_into_db(InstanceId, State),
+
+  % once successfully received summary
+  % and inserted info about new instance
+  % request config to start trace
+  self() ! {probe_request, get_user_config, []},
+
+  {ok, State1};
 
 handle_message_from_probe(Message, State) ->
   lager:info("got unknown message from probe: ~p", [Message]),
@@ -144,6 +149,16 @@ handle_message_from_probe(Message, State) ->
 %
 %
 %
+
+
+
+insert_new_instance_into_db(InstanceId, #persistent{user_id = UserId} = State) ->
+  {ok, Q} = application:get_env(vision, queries),
+  SQL = eql:get_query(insert_new_instance, Q),
+  epgpool:with(fun(C) ->
+    {ok, 1} = epgpool:equery(C, SQL, [InstanceId, UserId])
+  end),
+  {ok, State}.
 
 
 

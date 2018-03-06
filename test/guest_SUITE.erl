@@ -13,7 +13,7 @@ all() ->
 
 init_per_suite(Config) ->
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  ok = vt:ensure_fresh_endpoint_running(#{logdir => PrivDir}),
+  ok = vt:ensure_started(#{logdir => PrivDir}),
   Config.
 
 end_per_suite(Config) ->

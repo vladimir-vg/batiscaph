@@ -1,8 +1,10 @@
 -module(vt).
 -export([
+  ensure_started/1,
+
   start_docker_container/3, stop_docker_container/1,
-  ensure_fresh_endpoint_running/1, endpoint_url/0, endpoint_node/0,
-  ensure_fresh_webapp_running/1, webapp_node/0,
+  endpoint_url/0, endpoint_node/0,
+  webapp_node/0,
 
   base_url/2,
   api_request/3,
@@ -17,42 +19,52 @@
 % Some info here: http://erlang.org/pipermail/erlang-questions/2016-May/089259.html
 
 
+ensure_started(#{logdir := LogDir}) ->
+  case {whereis(webapp_container), whereis(endpoint_container)} of
+    % already started current endpoint
+    {Pid1, Pid2} when is_pid(Pid1) andalso is_pid(Pid2) -> ok;
+    _ ->
+      % postgresql databases are not possble to drop
+      % if someone still connected to it
+      % that's why we should stop all containers first
+      % and only then start them (and run migrations)
+      ok = kill_docker_container_with_name(<<"endpoint1">>),
+      ok = kill_docker_container_with_name(<<"web1">>),
 
-ensure_fresh_endpoint_running(#{logdir := LogDir}) ->
+      % webapp runs first, because it does database reset and migration
+      % endpoint uses same database
+      ok = run_fresh_webapp(<<"web1">>, LogDir),
+      ok = run_fresh_endpoint(<<"endpoint1">>, LogDir)
+  end,
+  ok.
+
+
+
+run_fresh_endpoint(DockerName, LogDir) ->
   Port = 8081,
   NodeName = '_endpoint1', % added underscore just to appear on top when sorted by name
-  DockerName = endpoint1,
+  Opts = #{
+    <<"VISION_ENDPOINT_HTTP_PORT">> => Port,
+    <<"VISION_ENDPOINT_POSTGRES_URL">> => <<"postgres://postgres:postgres@127.0.0.1/vision_test">>,
+    host_network => true,
+    logdir => LogDir,
+    docker_name => DockerName,
+    detached => true
+  },
+  {ok, EndpointContainer} = start_docker_container(NodeName, <<"vision/endpoint:latest">>, Opts),
 
-  case whereis(endpoint_container) of
-    % already started current endpoint
-    Pid when is_pid(Pid) -> ok;
+  EndpointUrl = generate_endpoint_url(EndpointContainer, Port),
+  EndpointBaseUrl = base_url(EndpointContainer, Port),
+  EndpointNode = vt_container:node(EndpointContainer),
+  application:set_env(vision_test, endpoint_url, EndpointUrl),
+  application:set_env(vision_test, endpoint_base_url, EndpointBaseUrl),
+  application:set_env(vision_test, endpoint_node, EndpointNode),
 
-    % not started yet, probably old version still running
-    undefined ->
-      % kill endpoint that still alive from previous test run
-      ok = kill_docker_container_with_name(to_binary(DockerName)),
-      Opts = #{
-        <<"VISION_ENDPOINT_HTTP_PORT">> => Port,
-        host_network => true,
-        logdir => LogDir,
-        docker_name => to_binary(DockerName),
-        detached => true
-      },
-      {ok, EndpointContainer} = start_docker_container(NodeName, <<"vision/endpoint:latest">>, Opts),
+  ok = wait_for_application(vt_container:node(EndpointContainer), vision, 5000),
 
-      EndpointUrl = generate_endpoint_url(EndpointContainer, Port),
-      EndpointBaseUrl = base_url(EndpointContainer, Port),
-      EndpointNode = vt_container:node(EndpointContainer),
-      application:set_env(vision_test, endpoint_url, EndpointUrl),
-      application:set_env(vision_test, endpoint_base_url, EndpointBaseUrl),
-      application:set_env(vision_test, endpoint_node, EndpointNode),
-
-      ok = wait_for_application(vt_container:node(EndpointContainer), vision, 5000),
-
-      Pid = vt_container:owner_pid(EndpointContainer),
-      register(endpoint_container, Pid),
-      ok
-  end.
+  Pid = vt_container:owner_pid(EndpointContainer),
+  register(endpoint_container, Pid),
+  ok.
 
 kill_docker_container_with_name(Name) when is_binary(Name) ->
   kill_docker_container_with_name(binary_to_list(Name));
@@ -103,39 +115,28 @@ endpoint_node() ->
 
 
 
-ensure_fresh_webapp_running(#{logdir := LogDir}) ->
+run_fresh_webapp(DockerName, LogDir) ->
   Port = 8082,
   NodeName = '_web1',
-  DockerName = web1,
+  Opts = #{
+    <<"VISION_WEB_POSTGRES_URL">> => <<"postgres://postgres:postgres@127.0.0.1/vision_test">>,
+    <<"VISION_WEB_HTTP_PORT">> => Port,
+    host_network => true,
+    logdir => LogDir,
+    docker_name => DockerName,
+    detached => true,
+    runtype => phoenix
+  },
+  {ok, WebContainer} = start_docker_container(NodeName, <<"vision/web:latest">>, Opts),
 
-  case whereis(webapp_container) of
-    % already started current endpoint
-    Pid when is_pid(Pid) -> ok;
+  WebappNode = vt_container:node(WebContainer),
+  application:set_env(vision_test, webapp_node, WebappNode),
 
-    % not started yet, probably old version still running
-    undefined ->
-      % kill endpoint that still alive from previous test run
-      ok = kill_docker_container_with_name(to_binary(DockerName)),
-      Opts = #{
-        <<"VISION_WEB_POSTGRES_URL">> => <<"postgres://postgres:postgres@127.0.0.1/vision_test">>,
-        <<"VISION_WEB_HTTP_PORT">> => Port,
-        host_network => true,
-        logdir => LogDir,
-        docker_name => to_binary(DockerName),
-        detached => true,
-        runtype => phoenix
-      },
-      {ok, WebContainer} = start_docker_container(NodeName, <<"vision/web:latest">>, Opts),
+  ok = wait_for_application(vt_container:node(WebContainer), vision, 5000),
 
-      WebappNode = vt_container:node(WebContainer),
-      application:set_env(vision_test, webapp_node, WebappNode),
-
-      ok = wait_for_application(vt_container:node(WebContainer), vision, 5000),
-
-      Pid = vt_container:owner_pid(WebContainer),
-      register(webapp_container, Pid),
-      ok
-  end.
+  Pid = vt_container:owner_pid(WebContainer),
+  register(webapp_container, Pid),
+  ok.
 
 webapp_node() ->
   {ok, WebappNode} = application:get_env(vision_test, webapp_node),
@@ -197,11 +198,18 @@ stop_docker_container(Container) ->
 
 
 
-api_request(get, FunName, Arg) ->
-  {ok, Url} = application:get_env(vision_test, endpoint_base_url),
-  Url1 = iolist_to_binary([Url, "/api/", atom_to_binary(FunName,latin1)]),
+api_request(Method, Resource, Arg) when is_atom(Resource) ->
+  api_request(Method, atom_to_binary(Resource,latin1), Arg);
+
+api_request(get, Resource, Arg) when is_binary(Resource) andalso is_list(Arg) ->
+  {ok, BaseUrl} = application:get_env(vision_test, endpoint_base_url),
+  Url1 = hackney_url:make_url(BaseUrl, [<<"api">>, Resource], to_qs_vals(Arg)),
   {ok, 200, _RespHeaders, Body} = hackney:request(get, Url1, [], <<>>, [with_body]),
-  {ok, jsx:decode(Body)}.
+  {ok, jsx:decode(Body, [return_maps])}.
+
+to_qs_vals([]) -> [];
+to_qs_vals([{K,V} | Rest]) ->
+  [{to_binary(K), to_binary(V)} | to_qs_vals(Rest)].
 
 
 

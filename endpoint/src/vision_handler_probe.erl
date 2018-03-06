@@ -1,4 +1,4 @@
--module(vision_probe_handler).
+-module(vision_handler_probe).
 
 -export([init/3]).
 -export([handle/2]).

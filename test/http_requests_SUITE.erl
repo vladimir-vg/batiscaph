@@ -14,8 +14,7 @@ init_per_suite(Config) ->
   application:ensure_all_started(hackney),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
-  ok = vt:ensure_fresh_endpoint_running(#{logdir => PrivDir}),
-  ok = vt:ensure_fresh_webapp_running(#{logdir => PrivDir}),
+  ok = vt:ensure_started(#{logdir => PrivDir}),
 
   % create user
   WebappNode = vt:webapp_node(),

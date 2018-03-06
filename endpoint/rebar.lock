@@ -8,6 +8,15 @@
   {git,"https://github.com/ninenines/cowlib",
        {ref,"45f750db410a4b08c68d142ad0af839f544c5d3d"}},
   1},
+ {<<"epgpool">>,
+  {git,"git://github.com/egobrain/epgpool.git",
+       {ref,"c60db540ab4efe1037218209a7152506bf103df1"}},
+  0},
+ {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.3.0">>},1},
+ {<<"eql">>,
+  {git,"git://github.com/artemeff/eql.git",
+       {ref,"013dd61eb3f601bc8869c3eb548e5f50f6de2793"}},
+  0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"gproc">>,
   {git,"git://github.com/uwiger/gproc.git",
@@ -28,6 +37,7 @@
   0},
  {<<"metrics">>,{pkg,<<"metrics">>,<<"1.0.1">>},1},
  {<<"mimerl">>,{pkg,<<"mimerl">>,<<"1.0.2">>},1},
+ {<<"poolboy">>,{pkg,<<"poolboy">>,<<"1.4.2">>},1},
  {<<"ranch">>,
   {git,"https://github.com/ninenines/ranch",
        {ref,"a004ad710eddd0c21aaccc30d5633a76b06164b5"}},
@@ -37,10 +47,12 @@
 [
 {pkg_hash,[
  {<<"certifi">>, <<"C3904F192BD5284E5B13F20DB3CEAC9626E14EEACFBB492E19583CF0E37B22BE">>},
+ {<<"epgsql">>, <<"974A578340E52012CBAB820CE756E7ED1DF1BAF0110C59A6753D8337A2CF9454">>},
  {<<"goldrush">>, <<"F06E5D5F1277DA5C413E84D5A2924174182FB108DABB39D5EC548B27424CD106">>},
  {<<"idna">>, <<"AC203208ADA855D95DC591A764B6E87259CB0E2A364218F215AD662DAA8CD6B4">>},
  {<<"metrics">>, <<"25F094DEA2CDA98213CECC3AEFF09E940299D950904393B2A29D191C346A8486">>},
  {<<"mimerl">>, <<"993F9B0E084083405ED8252B99460C4F0563E41729AB42D9074FD5E52439BE88">>},
+ {<<"poolboy">>, <<"619519C7708DD001CE9B61908218D03FF582C3BA44A1E129D694376C2B332D87">>},
  {<<"ssl_verify_fun">>, <<"28A4D65B7F59893BC2C7DE786DEC1E1555BD742D336043FE644AE956C3497FBE">>},
  {<<"unicode_util_compat">>, <<"DBBCCF6781821B1C0701845EAF966C9B6D83D7C3BFC65CA2B78B88B8678BFA35">>}]}
 ].

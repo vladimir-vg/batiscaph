@@ -30,6 +30,7 @@ COPY rebar3 rebar3
 RUN ./rebar3 get-deps
 RUN ./rebar3 compile
 
+COPY priv/queries.sql priv/queries.sql
 COPY src src
 RUN ./rebar3 compile
 

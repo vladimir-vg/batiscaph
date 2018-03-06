@@ -9,7 +9,8 @@ start_cowboy() ->
   {ok, Port} = application:get_env(vision, http_port),
   Dispatch = cowboy_router:compile([
     {'_', [
-      {"/probe", vision_probe_handler, []}
+      {"/probe", vision_handler_probe, []},
+      {"/api/instances", vision_res_instances, []}
       % {"/websocket", batiscaph_ws_handler, []},
       % {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       % {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
@@ -27,7 +28,7 @@ start_cowboy() ->
     {env, [{dispatch, Dispatch}]}
     % {onresponse, fun translate_jsx_if_precompiled_unavailable/4}
   ],
-  {ok, _} = cowboy:start_http(batiscaph_http, 5, [{port, Port}], Opts),
+  {ok, _} = cowboy:start_http(vision_http, 5, [{port, Port}], Opts),
   lager:info("Started http server on ~p port", [Port]),
 
   % % if webserver already running

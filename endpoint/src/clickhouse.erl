@@ -20,7 +20,7 @@ execute(SQL) ->
   execute(SQL, <<>>).
 
 execute(SQL, Suffix) ->
-  URL = batiscaph:get_prop(clickhouse_url),
+  {ok, URL} = application:get_env(vision, clickhouse_url),
   Body = <<SQL/binary, Suffix/binary>>,
   % suffix is usually terribly long (inserted rows, etc) and shouldn't be visible in logs
   lager:info("Clickhouse request:\n~s", [SQL]),
