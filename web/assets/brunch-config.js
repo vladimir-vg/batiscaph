@@ -47,7 +47,9 @@ exports.config = {
     babel: {
       presets: ['env', 'react'],
       // Do not use ES6 compiler in vendor code
-      ignore: [/vendor/]
+      ignore: [/vendor/],
+      // for decorators used by MobX
+      plugins: ["transform-decorators-legacy"]
     }
   },
 

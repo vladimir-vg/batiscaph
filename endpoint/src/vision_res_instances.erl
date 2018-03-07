@@ -18,7 +18,11 @@ init(_Transport, _Req, []) ->
   {upgrade, protocol, cowboy_rest}.
 
 rest_init(Req, _Opts) ->
-  {ok, Req, no_state}.
+  Req1 = cowboy_req:set_resp_header(<<"access-control-max-age">>, <<"1728000">>, Req),
+  Req2 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"HEAD, GET">>, Req1),
+  Req3 = cowboy_req:set_resp_header(<<"access-control-allow-headers">>, <<"content-type, authorization">>, Req2),
+  Req4 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"http://0.0.0.0:4000">>, Req3),
+  {ok, Req4, no_state}.
 
 terminate(_Reason, _Req, _State) ->
   ok.
@@ -26,7 +30,7 @@ terminate(_Reason, _Req, _State) ->
 
 
 allowed_methods(Req, State) ->
-  {[<<"GET">>], Req, State}.
+  {[<<"GET">>, <<"HEAD">>, <<"OPTIONS">>], Req, State}.
 
 content_types_provided(Req, State) ->
   Types = [
@@ -39,9 +43,7 @@ content_types_provided(Req, State) ->
 get_json(Req, State) ->
   {UserId, Req1} = cowboy_req:qs_val(<<"user_id">>, Req),
 
-  {ok, Q} = application:get_env(vision, queries),
-  SQL = eql:get_query(select_instances_for_user_id, Q),
-  List = epgpool:with(fun(C) ->
+  List = vision_db:query(select_instances_for_user_id, fun (C, SQL) ->
     {ok, _Cols, Rows} = epgpool:equery(C, SQL, [binary_to_integer(UserId)]),
     [#{instanceId => Id} || {Id} <- Rows]
   end),

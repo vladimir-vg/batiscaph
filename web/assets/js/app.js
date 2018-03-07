@@ -26,14 +26,19 @@ import ReactDOM from 'react-dom';
 import React from 'react';
 import { BrowserRouter, Route } from 'react-router-dom';
 
+import Store from './Store';
 import InstancesPage from './InstancesPage';
 
 
 
 document.addEventListener("DOMContentLoaded", function() {
+  // assign to global var only for debug in console
+  // never refer to this global var in actual code
+  window.VisionStore = new Store();
+
   const routes = (
     <BrowserRouter>
-      <Route path="/" component={InstancesPage} />
+      <Route path="/" render={(props) => <InstancesPage store={window.VisionStore} {...props} />} />
     </BrowserRouter>
   );
 

@@ -10,6 +10,8 @@
   </head>
 
   <body>
+    <script>window.API_URL = '<%= @api_url %>'</script>
+
     <div id="container">
       <%= render @view_module, @view_template, assigns %>
     </div>

@@ -153,9 +153,7 @@ handle_message_from_probe(Message, State) ->
 
 
 insert_new_instance_into_db(InstanceId, #persistent{user_id = UserId} = State) ->
-  {ok, Q} = application:get_env(vision, queries),
-  SQL = eql:get_query(insert_new_instance, Q),
-  epgpool:with(fun(C) ->
+  vision_db:query(insert_new_instance, fun (C, SQL) ->
     {ok, 1} = epgpool:equery(C, SQL, [InstanceId, UserId])
   end),
   {ok, State}.

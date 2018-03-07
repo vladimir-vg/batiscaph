@@ -15,10 +15,6 @@ start(_StartType, _StartArgs) ->
   ok = read_config(),
   vision_web:start_cowboy(),
 
-  % since we already have read config
-  % and set env variables, start connection pool:
-  application:ensure_all_started(epgpool),
-
   % for now save it as env variable
   % later probably we need to move it into ETS
   % or even generate module at runtime, as Tristan suggested
@@ -47,6 +43,7 @@ read_config() ->
   ok = application:set_env(epgpool, database_name, DbName),
   ok = application:set_env(epgpool, database_user, Login),
   ok = application:set_env(epgpool, database_password, Password),
+  ok = application:set_env(epgpool, log_errors_verbose, true),
 
   ok.
 

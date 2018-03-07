@@ -31,10 +31,10 @@ ensure_started(#{logdir := LogDir}) ->
       ok = kill_docker_container_with_name(<<"endpoint1">>),
       ok = kill_docker_container_with_name(<<"web1">>),
 
-      % webapp runs first, because it does database reset and migration
-      % endpoint uses same database
-      ok = run_fresh_webapp(<<"web1">>, LogDir),
-      ok = run_fresh_endpoint(<<"endpoint1">>, LogDir)
+      % webapp takes url to endpoint as API url
+      % need to start endpoint first, to determine that url
+      ok = run_fresh_endpoint(<<"endpoint1">>, LogDir),
+      ok = run_fresh_webapp(<<"web1">>, LogDir)
   end,
   ok.
 
@@ -118,9 +118,13 @@ endpoint_node() ->
 run_fresh_webapp(DockerName, LogDir) ->
   Port = 8082,
   NodeName = '_web1',
+
+  {ok, EndpointBaseUrl} = application:get_env(vision_test, endpoint_base_url),
+
   Opts = #{
     <<"VISION_WEB_POSTGRES_URL">> => <<"postgres://postgres:postgres@127.0.0.1/vision_test">>,
     <<"VISION_WEB_HTTP_PORT">> => Port,
+    <<"VISION_WEB_API_URL">> => <<EndpointBaseUrl/binary, "/api">>,
     host_network => true,
     logdir => LogDir,
     docker_name => DockerName,
