@@ -18,6 +18,16 @@ build_test_apps:
 	# do a clever hack: pack app into an archive automatically dereferencing symlinks
 	# and feed it into docker build as a context.
 	# Found solution here: https://superuser.com/a/842705
-	tar --create --dereference --directory=test/erlang_app1 . | docker build -t vision-test/erlang_app1:latest -
-	tar --create --dereference --directory=test/phoenix_app1 . | docker build -t vision-test/phoenix_app1:latest -
+	#
+	# exclude git repo files and locally built files
+	tar --create --dereference \
+		--exclude=_checkouts/vision_probe/_build \
+		--exclude=_checkouts/vision_probe/.* \
+		--exclude=_checkouts/vision_probe/ebin \
+		--directory=test/erlang_app1 . | docker build -t vision-test/erlang_app1:latest -
+	tar --create --dereference \
+		--exclude=_checkouts/vision_probe/_build \
+		--exclude=_checkouts/vision_probe/.* \
+		--exclude=_checkouts/vision_probe/ebin \
+		--directory=test/phoenix_app1 . | docker build -t vision-test/phoenix_app1:latest -
 	@printf "\n\n"

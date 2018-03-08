@@ -32,14 +32,17 @@ defmodule PhoenixApp1.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    [
-      # make local dependency available only for prod
-      # this will allow to cache docker builds:
-      # first fetch rarely changing -dev deps
-      # then fetch vision_probe local dependency
-      # that do change often
-      {:vision_probe, path: "_checkouts/vision_probe", only: :prod},
+    # include and compile probe dep is it's already on disk
+    # helps to cache docker builds, first build withoit probe
+    # then on next stage with it
+    probe_dep =
+      if :filelib.is_dir("_checkouts/vision_probe") do
+        [{:vision_probe, path: "_checkouts/vision_probe"}]
+      else
+        []
+      end
 
+    probe_dep ++ [
       {:phoenix, "~> 1.3.0"},
       {:phoenix_pubsub, "~> 1.0"},
       {:phoenix_ecto, "~> 3.2"},

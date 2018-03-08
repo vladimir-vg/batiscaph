@@ -6,8 +6,8 @@ RUN mix local.hex --force
 RUN mix local.rebar --force
 
 COPY mix.* ./
-# vision_probe dependency is not included in dev
-RUN mix deps.get --only dev
+# vision_probe dependency is not included yet
+RUN mix deps.get --only prod
 RUN mix deps.compile
 
 # changes rarely
