@@ -79,8 +79,10 @@ init(_) ->
 % gen_tracker callback
 % executed when process is already dead,
 % but its attrs are not removed yet
-after_terminate(_InstanceId, _Attrs) ->
-  % TODO: insert event about stopping trace
+after_terminate(InstanceId, _Attrs) ->
+  ok = vision_clk_events:insert([
+    vision_clk_events:event(InstanceId, now, <<"vision 0 connection-stop">>)
+  ]),
   ok.
 
 
@@ -149,7 +151,9 @@ handle_message_from_probe({summary_info, Info}, State) ->
   ChildSpec = {InstanceId, {vision_probe_protocol, start_link, []}, temporary, 200, worker, []},
   gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
 
-  % TODO: insert event about starting trace
+  ok = vision_clk_events:insert([
+    vision_clk_events:event(InstanceId, now, <<"vision 0 connection-start">>)
+  ]),
 
   % once successfully received summary
   % and inserted info about new instance

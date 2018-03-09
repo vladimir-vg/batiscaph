@@ -1,6 +1,6 @@
 -module(clickhouse).
 -export([execute/1, insert/4, insert/5]).
--export([id_in_values_sql/2, parse_rows/2]).
+-export([id_in_values_sql/2, list_sql/1, parse_rows/2]).
 -define(TIMEOUT, 10000).
 
 
@@ -21,9 +21,9 @@ execute(SQL) ->
 
 execute(SQL, Suffix) ->
   {ok, URL} = application:get_env(vision, clickhouse_url),
-  Body = <<SQL/binary, Suffix/binary>>,
+  Body = [SQL, Suffix], % iolist
   % suffix is usually terribly long (inserted rows, etc) and shouldn't be visible in logs
-  lager:info("Clickhouse request:\n~s", [SQL]),
+  lager:info("Clickhouse request:\n~s", [iolist_to_binary(SQL)]),
   case hackney:post(URL, [], Body, [{timeout, ?TIMEOUT}]) of
     {ok, 500, _RespHeaders, ClientRef} ->
       case hackney:body(ClientRef) of
@@ -115,8 +115,15 @@ escape_string(<<A, Rest/binary>>, Acc) ->
 
 
 id_in_values_sql(Key, Values) ->
+  Values1 = list_sql(Values),
+  [Key, " IN ", Values1].
+
+% clickhouse doesn't eat x IN () expression
+% this should be worked out outside of query
+list_sql([]) -> error(got_empty_values_for_list);
+list_sql(Values) ->
   <<",", Values1/binary>> = iolist_to_binary([[",'", escape_string(V), "'"] || V <- Values]),
-  [Key, " IN (", Values1, ")"].
+  <<"(", Values1/binary, ")">>.
 
 
 

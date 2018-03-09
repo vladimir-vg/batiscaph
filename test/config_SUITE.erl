@@ -12,9 +12,6 @@ all() ->
 
 
 init_per_suite(Config) ->
-  % gonna need this for making requests to test app
-  application:ensure_all_started(hackney),
-
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   ok = vt:ensure_started(#{logdir => PrivDir}),
 
@@ -43,7 +40,7 @@ authenticate_and_ask_for_config(Config) ->
   {summary_info, #{
     probe_version := <<"0.1.0">>,
     dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
-    instance_id := <<InstanceId/binary>>
+    instance_id := <<_/binary>>
   }} = vt:received_from_probe(summary_info),
 
   {request, ReqId1, get_user_config, _} = vt:sent_to_probe(get_user_config),
@@ -51,7 +48,5 @@ authenticate_and_ask_for_config(Config) ->
 
   {request, ReqId2, apply_config, #{}} = vt:sent_to_probe(apply_config),
   {response, ReqId2, apply_config, ok} = vt:received_from_probe(apply_config),
-
-  {ok, [#{<<"instanceId">> := InstanceId}]} = vt:api_request(get, instances, [{user_id, UserId}]),
 
   ok.

@@ -15,7 +15,7 @@
  {<<"epgsql">>,{pkg,<<"epgsql">>,<<"3.3.0">>},1},
  {<<"eql">>,
   {git,"git://github.com/artemeff/eql.git",
-       {ref,"013dd61eb3f601bc8869c3eb548e5f50f6de2793"}},
+       {ref,"07414842dddd33b0ab6f443458e01992d5d9e322"}},
   0},
  {<<"gen_tracker">>,
   {git,"git://github.com/vladimir-vg/gen_tracker.git",

@@ -43,10 +43,12 @@ content_types_provided(Req, State) ->
 get_json(Req, State) ->
   {UserId, Req1} = cowboy_req:qs_val(<<"user_id">>, Req),
 
-  List = vision_db:query(select_instances_for_user_id, fun (C, SQL) ->
+  Ids = vision_db:query(select_instances_for_user_id, fun (C, SQL) ->
     {ok, _Cols, Rows} = epgpool:equery(C, SQL, [binary_to_integer(UserId)]),
-    [#{instanceId => Id} || {Id} <- Rows]
+    [Id || {Id} <- Rows]
   end),
 
-  Body = jsx:encode(List),
+  {ok, Instances} = vision_clk_events:select_instances_infos_with_ids(Ids),
+
+  Body = jsx:encode(Instances),
   {Body, Req1, State}.

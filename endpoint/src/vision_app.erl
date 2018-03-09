@@ -18,8 +18,10 @@ start(_StartType, _StartArgs) ->
   % for now save it as env variable
   % later probably we need to move it into ETS
   % or even generate module at runtime, as Tristan suggested
-  {ok, Queries} = eql:compile(code:priv_dir(vision) ++ "/queries.sql"),
-  ok = application:set_env(vision, queries, Queries),
+  {ok, PgQueries} = eql:compile(code:priv_dir(vision) ++ "/pg_queries.sql"),
+  {ok, ClkQueries} = eql:compile(code:priv_dir(vision) ++ "/clk_queries.sql"),
+  ok = application:set_env(vision, pg_queries, PgQueries),
+  ok = application:set_env(vision, clk_queries, ClkQueries),
 
   % useful to cache babel output
   % web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
