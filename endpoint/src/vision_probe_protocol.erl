@@ -2,6 +2,7 @@
 -behaviour(gen_server).
 -export([upgrade/4]). % cowboy callback
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
+-export([after_terminate/2]). % gen_tracker callback
 -export([mention_used_atoms/0]).
 
 
@@ -75,6 +76,15 @@ init(_) ->
 
 
 
+% gen_tracker callback
+% executed when process is already dead,
+% but its attrs are not removed yet
+after_terminate(_InstanceId, _Attrs) ->
+  % TODO: insert event about stopping trace
+  ok.
+
+
+
 % request by this process itself
 handle_info({probe_request, Method, Arg}, State) ->
   {ok, State1} = request_probe(probe_request, Method, Arg, State),
@@ -132,6 +142,14 @@ handle_message_from_probe({response, ReqId, Method, Result}, State) ->
 handle_message_from_probe({summary_info, Info}, State) ->
   #{dependency_in := _, instance_id := InstanceId, probe_version := _} = Info,
   {ok, State1} = insert_new_instance_into_db(InstanceId, State),
+
+  % provided start_link function don't even exist
+  % MFA provided to give gen_tracker an idea where to search for
+  % after_terminate callback
+  ChildSpec = {InstanceId, {vision_probe_protocol, start_link, []}, temporary, 200, worker, []},
+  gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
+
+  % TODO: insert event about starting trace
 
   % once successfully received summary
   % and inserted info about new instance
