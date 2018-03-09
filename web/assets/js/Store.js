@@ -1,4 +1,4 @@
-import { observable, action } from 'mobx';
+import { observable, action, extendObservable } from 'mobx';
 
 
 
@@ -11,8 +11,8 @@ export default class Store {
   fetchInstancesList() {
     fetch(window.API_URL + '/instances?user_id=1')
       .then((response) => response.json())
-      .then((json) => {
-        this.instances = json;
-      });
+      .then(action((json) => {
+        this.instances.replace(json);
+      }));
   }
 }

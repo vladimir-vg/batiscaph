@@ -25,6 +25,9 @@
 import ReactDOM from 'react-dom';
 import React from 'react';
 import { BrowserRouter, Route } from 'react-router-dom';
+import MobxDevTools from 'mobx-react-devtools'
+import { Provider } from 'mobx-react';
+import { extendObservable } from 'mobx';
 
 import Store from './Store';
 import InstancesPage from './InstancesPage';
@@ -37,9 +40,14 @@ document.addEventListener("DOMContentLoaded", function() {
   window.VisionStore = new Store();
 
   const routes = (
-    <BrowserRouter>
-      <Route path="/" render={(props) => <InstancesPage store={window.VisionStore} {...props} />} />
-    </BrowserRouter>
+    <div>
+      <Provider store={window.VisionStore}>
+        <BrowserRouter>
+          <Route path="/" component={InstancesPage} />
+        </BrowserRouter>
+      </Provider>
+      {/*<MobxDevTools />*/}
+    </div>
   );
 
   ReactDOM.render(routes, document.getElementById('container'));
