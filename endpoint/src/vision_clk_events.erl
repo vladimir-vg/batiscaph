@@ -1,6 +1,6 @@
 -module(vision_clk_events).
 -export([columns/0, create_tables/0, drop_tables/0]).
--export([insert/1, event/3]).
+-export([insert/1]).
 
 % different select queries
 -export([
@@ -19,10 +19,10 @@ columns() ->
     {<<"Type">>, <<"String">>},
     {<<"Pid1">>, <<"String">>},
     {<<"Pid2">>, <<"String">>},
-    {<<"Fields">>, {nested, [
-      {<<"Key">>, <<"String">>},
-      {<<"Value">>, <<"String">>}
-    ]}}
+
+    % we gonna insert nested columns just as two arrays
+    {<<"Attrs.Key">>, {array, <<"String">>}},
+    {<<"Attrs.Value">>, {array, <<"String">>}}
   ].
 
 
@@ -33,6 +33,7 @@ create_tables() ->
     "CREATE TABLE `", DBName, "`.events (\n",
     "\tAtSec DateTime,\n",
     "\tAtMcs UInt32,\n",
+    "\tSubId UInt16,\n",
     % might be better to turn it into FixedString(32)
     "\tInstanceId String,\n",
     "\tType String,\n",
@@ -40,7 +41,7 @@ create_tables() ->
     "\tPid2 String,\n",
 
     % into this nested column fall all custom fields
-    "\tFields Nested (\n",
+    "\tAttrs Nested (\n",
     "\t\tKey String,\n",
     "\t\tValue String\n",
     "\t),\n",
@@ -64,25 +65,13 @@ drop_tables() ->
 
 insert(Events) ->
   {ok, DBName} = application:get_env(vision, clickhouse_dbname),
-  InsertedColumns = [<<"InstanceId">>, <<"AtSec">>, <<"AtMcs">>, <<"Type">>],
+  InsertedColumns = [
+    <<"InstanceId">>, <<"AtSec">>, <<"AtMcs">>, <<"SubId">>, <<"Type">>,
+    <<"Pid1">>, <<"Attrs.Key">>, <<"Attrs.Value">>
+  ],
   Columns = [C || {K, _} = C <- columns(), lists:member(K, InsertedColumns)],
   ok = clickhouse:insert(DBName, <<"events">>, Columns, Events),
   ok.
-
-event(InstanceId, now, Type) ->
-  % TODO: server time might differ from client time
-  % need to align those timings, detect time difference
-  % when connecting with client
-  Microseconds = erlang:system_time(micro_seconds),
-  event(InstanceId, Microseconds, Type);
-
-event(InstanceId, Microseconds, Type) when is_integer(Microseconds) ->
-  #{
-    <<"InstanceId">> => InstanceId,
-    <<"AtSec">> => (Microseconds div (1000*1000)),
-    <<"AtMcs">> => (Microseconds rem (1000*1000)),
-    <<"Type">> => Type
-  }.
 
 
 

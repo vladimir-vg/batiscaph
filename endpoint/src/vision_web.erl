@@ -10,8 +10,8 @@ start_cowboy() ->
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/probe", vision_handler_probe, []},
-      {"/api/instances", vision_res_instances, []}
-      % {"/websocket", batiscaph_ws_handler, []},
+      {"/api/instances", vision_res_instances, []},
+      {"/websocket", vision_ws_handler, []}
       % {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       % {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       % {"/scenarios.json", scenarios_list_handler, []},

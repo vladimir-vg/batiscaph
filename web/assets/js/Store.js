@@ -30,7 +30,7 @@ export default class Store {
   connectToWebsocket() {
     const url = new URL(window.API_URL);
     const proto = url.protocol === 'http:' ? 'ws' : 'wss';
-    const wsurl = `${proto}://${url.host}/socket`;
+    const wsurl = `${proto}://${url.host}/websocket`;
     this.socket = new WebSocket(wsurl);
     this.socket.addEventListener('message', this.onWSMessage);
     this.socket.addEventListener('open', this.onWSOpen);

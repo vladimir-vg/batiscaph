@@ -14,6 +14,7 @@
   last_req_num = 0,
 
   user_id,
+  instance_id,
   test_subscribers = []
 }).
 
@@ -81,7 +82,7 @@ init(_) ->
 % but its attrs are not removed yet
 after_terminate(InstanceId, _Attrs) ->
   ok = vision_clk_events:insert([
-    vision_clk_events:event(InstanceId, now, <<"vision 0 connection-stop">>)
+    vision_event:event(InstanceId, now, <<"vision 0 connection-stop">>)
   ]),
   ok.
 
@@ -152,7 +153,7 @@ handle_message_from_probe({summary_info, Info}, State) ->
   gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
 
   ok = vision_clk_events:insert([
-    vision_clk_events:event(InstanceId, now, <<"vision 0 connection-start">>)
+    vision_event:event(InstanceId, now, <<"vision 0 connection-start">>)
   ]),
 
   % once successfully received summary
@@ -160,7 +161,12 @@ handle_message_from_probe({summary_info, Info}, State) ->
   % request config to start trace
   self() ! {probe_request, get_user_config, []},
 
-  {ok, State1};
+  {ok, State1#persistent{instance_id = InstanceId}};
+
+handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
+  Events1 = vision_event:transform(Events, #{instance_id => InstanceId}),
+  ok = vision_clk_events:insert(Events1),
+  {ok, State};
 
 handle_message_from_probe(Message, State) ->
   lager:info("got unknown message from probe: ~p", [Message]),

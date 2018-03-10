@@ -23,12 +23,13 @@ execute(SQL, Suffix) ->
   {ok, URL} = application:get_env(vision, clickhouse_url),
   Body = [SQL, Suffix], % iolist
   % suffix is usually terribly long (inserted rows, etc) and shouldn't be visible in logs
+  % lager:info("Clickhouse request:\n~s\n~s", [iolist_to_binary(SQL), Suffix]),
   lager:info("Clickhouse request:\n~s", [iolist_to_binary(SQL)]),
   case hackney:post(URL, [], Body, [{timeout, ?TIMEOUT}]) of
     {ok, 500, _RespHeaders, ClientRef} ->
       case hackney:body(ClientRef) of
         {ok, <<>>} -> {error, unknown_500};
-        {ok, RespBody} when is_binary(Body) ->
+        {ok, RespBody} when is_binary(RespBody) ->
           lager:error("Clickhouse error:\n~s", [RespBody]),
           {error, RespBody}
       end;
@@ -67,6 +68,7 @@ stringify_value(Name, Type, Item) ->
   Value = maps:get(Name, Item, DefaultValue),
   stringify_value0(Value, Type).
 
+default_value({array, _}) -> [];
 default_value(<<"String">>) -> <<>>;
 default_value(<<"DateTime">>) -> <<"0000000000">>;
 default_value(<<"UInt8">>) -> 0;
@@ -78,6 +80,9 @@ default_value(<<"Int16">>) -> 0;
 default_value(<<"Int32">>) -> 0;
 default_value(<<"Int64">>) -> 0;
 default_value(Type) -> error({unknown_default_column_value, Type}).
+
+stringify_value0(List, {array, <<"String">>}) ->
+  [$[, lists:join($,, [[$', escape_string(to_binary(V)), $'] || V <- List]), $]];
 
 stringify_value0(Value, <<"String">>) -> escape_string(Value);
 % Clickhouse accepts unixtime as datetime
@@ -94,6 +99,11 @@ stringify_value0(Value, Type) -> error({stringify_not_implemented, Value, Type})
 
 
 
+to_binary(V) when is_integer(V) -> integer_to_binary(V);
+to_binary(V) when is_binary(V) -> V.
+
+
+
 escape_string(Value) when is_list(Value) -> escape_string(list_to_binary(Value));
 escape_string(Value) -> escape_string(Value, <<>>).
 
@@ -104,6 +114,16 @@ escape_string(<<"\t", Rest/binary>>, Acc) ->
   escape_string(Rest, <<Acc/binary, "\\\t">>);
 escape_string(<<"\\", Rest/binary>>, Acc) ->
   escape_string(Rest, <<Acc/binary, "\\\\">>);
+% escape ' and [] because they are used in array formatting
+% this function should return string ready to be an array element
+escape_string(<<"'", Rest/binary>>, Acc) ->
+  escape_string(Rest, <<Acc/binary, "\\'">>);
+escape_string(<<"[", Rest/binary>>, Acc) ->
+  escape_string(Rest, <<Acc/binary, "\\[">>);
+escape_string(<<"]", Rest/binary>>, Acc) ->
+  escape_string(Rest, <<Acc/binary, "\\]">>);
+
+
 % visible ASCII text range
 escape_string(<<A, Rest/binary>>, Acc) when A >= 16#20, A =< 16#7e ->
   escape_string(Rest, <<Acc/binary, A>>);

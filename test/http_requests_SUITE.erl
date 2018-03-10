@@ -60,9 +60,8 @@ receive_http_request_event(Config) ->
 
   % open websocket and subscribe to instance delta
   % as browser client would do
-  {ok, Pid} = vt_ws:connect_to_endpoint(),
-  ok = vt_ws:subscribe_to_instance(Pid, InstanceId),
-  ok = vt_ws:skip_all_messages(Pid),
+  {ok, Ws} = vt_endpoint:ws_connect(),
+  ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
 
   {ok, 200, _RespHeaders, ClientRef} = hackney:request(get, BaseUrl, [], <<>>, []),
   ok = hackney:skip_body(ClientRef),
@@ -71,7 +70,7 @@ receive_http_request_event(Config) ->
   Events1 = lists:sort(fun (A, B) -> maps:get(at, A) < maps:get(at, B) end, Events),
   [<<"p1 plug:request start">>, <<"p1 plug:request stop">>] = [T || #{type := T} <- Events1],
 
-  #{<<"plug:requests">> := Reqs} = vt_ws:received(delta, Pid),
+  #{<<"plug:requests">> := Reqs} = vt_endpoint:ws_delivered(Ws, delta),
 
   % key of the request is unknown
   [{_, Req1}] = maps:to_list(Reqs),
