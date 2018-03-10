@@ -20,11 +20,14 @@ export default class Store {
   subscribeToInstance(id) {
     if (!this.socket) { this.connectToWebsocket(); }
 
-    this.wsSend('subscribe-to-instance', {id: id});
+    setTimeout(() => {
+      this.wsSend('subscribe_to_instance', {id: id});
+      
+    }, 1000); 
   }
 
   unsubscribeFromInstance(_id) {
-    this.wsSend('unsubscribe-from-instance', {id: id});
+    this.wsSend('unsubscribe_from_instance', {id: id});
   }
 
   connectToWebsocket() {
@@ -45,6 +48,7 @@ export default class Store {
   }
 
   wsSend(method, arg) {
+    
     this.socket.send(method + ' ' + JSON.stringify(arg));
   }
 }

@@ -1,11 +1,13 @@
 -module(vision_clk_events).
--export([columns/0, create_tables/0, drop_tables/0]).
+-export([create_tables/0, drop_tables/0]).
 -export([insert/1]).
 
 % different select queries
 -export([
-  select_instances_infos_with_ids/1
+  select_instances_infos_with_ids/1,
+  select_events/1
 ]).
+
 
 
 columns() ->
@@ -97,3 +99,22 @@ select_instances_infos_with_ids(Ids) ->
   end, #{}, Events),
 
   {ok, maps:values(Instances)}.
+
+
+
+select_events(#{
+  instance_id := Id, types := Types,
+  earlier_than := now, limit := Limit
+}) ->
+  {ok, Q} = application:get_env(vision, clk_queries),
+  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  Params = [
+    {dbname, DBName}, {types, clickhouse:list_sql(Types)},
+    {instance_id, Id}, {limit, integer_to_binary(Limit)}
+  ],
+  {ok, SQL} = eql:get_query(select_events_from_now, Q, Params),
+
+  {ok, Body} = clickhouse:execute(SQL),
+  {ok, Events} = clickhouse:parse_rows(maps, Body),
+
+  {ok, Events}.
