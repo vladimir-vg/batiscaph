@@ -22,10 +22,7 @@ end_per_suite(Config) ->
 
 
 receive_version(Config) ->
-  EndpointNode = vt:endpoint_node(),
-
-  % subscribe for communication
-  ok = rpc:call(EndpointNode, vision_test, subscribe_to_first_guest, [self()]),
+  ok = vt_endpoint:subscribe_to_first_guest(),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   {ok, _} = vt:start_docker_container(?MODULE, <<"vision-test/erlang_app1:latest">>, #{
@@ -37,6 +34,6 @@ receive_version(Config) ->
     probe_version := <<"0.1.0">>,
     dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
     instance_id := <<_/binary>>
-  }} = vt:received_from_probe(summary_info),
+  }} = vt_endpoint:received_from_probe(summary_info),
 
   ok.

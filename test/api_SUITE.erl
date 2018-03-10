@@ -26,15 +26,13 @@ end_per_suite(Config) ->
 
 
 instances_running_and_stopped(Config) ->
-  EndpointNode = vt:endpoint_node(),
-  WebappNode = vt:webapp_node(),
-  {ok, UserId, AccessKey} = rpc:call(WebappNode, 'Elixir.Vision.Test', create_user_and_return_access_key, []),
+  {ok, UserId, AccessKey} = vt_web:create_user_and_return_access_key(),
 
   % no instance started for this user
   {ok, []} = vt:api_request(get, instances, [{user_id, UserId}]),
 
   % subscribe for communication
-  ok = rpc:call(EndpointNode, vision_test, subscribe_to_session, [self(), #{user_id => UserId}]),
+  ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   {ok, AppContainer} = vt:start_docker_container(?MODULE, <<"vision-test/erlang_app1:latest">>, #{
@@ -43,8 +41,8 @@ instances_running_and_stopped(Config) ->
     <<"VISION_PROBE_ACCESS_KEY">> => AccessKey
   }),
 
-  {summary_info, #{instance_id := <<InstanceId/binary>>}} = vt:received_from_probe(summary_info),
-  {response, _, apply_config, ok} = vt:received_from_probe(apply_config),
+  {summary_info, #{instance_id := <<InstanceId/binary>>}} = vt_endpoint:received_from_probe(summary_info),
+  {response, _, apply_config, ok} = vt_endpoint:received_from_probe(apply_config),
 
   % instance connected and sent info
   % should appear as 'connected'

@@ -7,9 +7,7 @@
   webapp_node/0,
 
   base_url/2,
-  api_request/3,
-
-  received_from_probe/1, received_from_probe/2, sent_to_probe/1, sent_to_probe/2
+  api_request/3
 ]).
 
 
@@ -222,26 +220,3 @@ to_binary(Value) when is_list(Value) -> list_to_binary(Value);
 to_binary(Value) when is_atom(Value) -> atom_to_binary(Value, latin1);
 to_binary(Value) when is_integer(Value) -> integer_to_binary(Value).
 
-
-
-received_from_probe(Atom) -> received_from_probe(Atom, 5000).
-received_from_probe(Atom, Timeout) ->
-  receive
-    {from_probe, {Atom, _} = Message} -> Message;
-    {from_probe, {request, _, Atom, _} = Message} -> Message;
-    {from_probe, {response, _, Atom, _} = Message} -> Message
-  after Timeout ->
-    ct:pal("messages ~p", [erlang:process_info(self(), messages)]),
-    error(from_probe_message_timeout)
-  end.
-
-sent_to_probe(Atom) -> sent_to_probe(Atom, 5000).
-sent_to_probe(Atom, Timeout) ->
-  receive
-    {to_probe, {Atom, _} = Message} -> Message;
-    {to_probe, {request, _, Atom, _} = Message} -> Message;
-    {to_probe, {response, _, Atom, _} = Message} -> Message
-  after Timeout ->
-    ct:pal("messages ~p", [erlang:process_info(self(), messages)]),
-    error(to_probe_message_timeout)
-  end.

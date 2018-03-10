@@ -17,19 +17,17 @@ init_per_suite(Config) ->
   ok = vt:ensure_started(#{logdir => PrivDir}),
 
   % create user
-  WebappNode = vt:webapp_node(),
-  {ok, UserId, AccessKey} = rpc:call(WebappNode, 'Elixir.Vision.Test', create_user_and_return_access_key, []),
+  {ok, UserId, AccessKey} = vt_web:create_user_and_return_access_key(),
 
-  % subscribe to events of upcoming app run
-  ok = rpc:call(vt:endpoint_node(), vision_test, subscribe_to_session, [self(), #{user_id => UserId}]),
+  ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
 
   Port = 8083,
   {ok, AppContainer} = start_webapp(PrivDir, AccessKey, Port),
 
-  {summary_info, #{instance_id := <<InstanceId/binary>>}} = vt:received_from_probe(summary_info),
+  {summary_info, #{instance_id := <<InstanceId/binary>>}} = vt_endpoint:received_from_probe(summary_info),
 
   % wait until tracing is fully enabled
-  {response, _, apply_config, ok} = vt:received_from_probe(apply_config),
+  {response, _, apply_config, ok} = vt_endpoint:received_from_probe(apply_config),
 
   BaseUrl = vt:base_url(AppContainer, Port),
   [{app_base_url, BaseUrl}, {app_user_id, UserId}, {app_instance_id, InstanceId} | Config].
@@ -56,9 +54,8 @@ start_webapp(PrivDir, AccessKey, Port) ->
 receive_http_request_event(Config) ->
   InstanceId = proplists:get_value(app_instance_id, Config),
   UserId = proplists:get_value(app_user_id, Config),
-  EndpointNode = vt:endpoint_node(),
 
-  ok = rpc:call(EndpointNode, vision_test, subscribe_to_session, [self(), #{user_id => UserId}]),
+  ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
   BaseUrl = proplists:get_value(app_base_url, Config),
 
   % open websocket and subscribe to instance delta
@@ -70,11 +67,11 @@ receive_http_request_event(Config) ->
   {ok, 200, _RespHeaders, ClientRef} = hackney:request(get, BaseUrl, [], <<>>, []),
   ok = hackney:skip_body(ClientRef),
 
-  {events, Events} = vt:received_from_probe(events),
+  {events, Events} = vt_endpoint:received_from_probe(events),
   Events1 = lists:sort(fun (A, B) -> maps:get(at, A) < maps:get(at, B) end, Events),
   [<<"p1 plug:request start">>, <<"p1 plug:request stop">>] = [T || #{type := T} <- Events1],
 
-  #{<<"plug:requests">> := #{} = Reqs} = vt_ws:receive(delta, Pid),
+  #{<<"plug:requests">> := Reqs} = vt_ws:received(delta, Pid),
 
   % key of the request is unknown
   [{_, Req1}] = maps:to_list(Reqs),

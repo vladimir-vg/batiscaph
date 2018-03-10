@@ -23,12 +23,10 @@ end_per_suite(Config) ->
 
 
 authenticate_and_ask_for_config(Config) ->
-  EndpointNode = vt:endpoint_node(),
-  WebappNode = vt:webapp_node(),
-  {ok, UserId, AccessKey} = rpc:call(WebappNode, 'Elixir.Vision.Test', create_user_and_return_access_key, []),
+  {ok, UserId, AccessKey} = vt_web:create_user_and_return_access_key(),
 
   % subscribe for communication
-  ok = rpc:call(EndpointNode, vision_test, subscribe_to_session, [self(), #{user_id => UserId}]),
+  ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
 
   PrivDir = list_to_binary(proplists:get_value(priv_dir, Config)),
   {ok, _AppContainer} = vt:start_docker_container(?MODULE, <<"vision-test/erlang_app1:latest">>, #{
@@ -41,12 +39,12 @@ authenticate_and_ask_for_config(Config) ->
     probe_version := <<"0.1.0">>,
     dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
     instance_id := <<_/binary>>
-  }} = vt:received_from_probe(summary_info),
+  }} = vt_endpoint:received_from_probe(summary_info),
 
-  {request, ReqId1, get_user_config, _} = vt:sent_to_probe(get_user_config),
-  {response, ReqId1, get_user_config, #{}} = vt:received_from_probe(get_user_config),
+  {request, ReqId1, get_user_config, _} = vt_endpoint:sent_to_probe(get_user_config),
+  {response, ReqId1, get_user_config, #{}} = vt_endpoint:received_from_probe(get_user_config),
 
-  {request, ReqId2, apply_config, #{}} = vt:sent_to_probe(apply_config),
-  {response, ReqId2, apply_config, ok} = vt:received_from_probe(apply_config),
+  {request, ReqId2, apply_config, #{}} = vt_endpoint:sent_to_probe(apply_config),
+  {response, ReqId2, apply_config, ok} = vt_endpoint:received_from_probe(apply_config),
 
   ok.
