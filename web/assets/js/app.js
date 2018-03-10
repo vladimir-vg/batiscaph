@@ -25,9 +25,8 @@
 import ReactDOM from 'react-dom';
 import React from 'react';
 import { BrowserRouter, Route } from 'react-router-dom';
-import MobxDevTools from 'mobx-react-devtools'
+// import MobxDevTools from 'mobx-react-devtools'
 import { Provider } from 'mobx-react';
-import { extendObservable } from 'mobx';
 
 import Store from './Store';
 import InstancesPage from './InstancesPage';

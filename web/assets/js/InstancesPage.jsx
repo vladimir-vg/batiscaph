@@ -1,12 +1,12 @@
 import React from 'react';
-import { action } from 'mobx';
 import { observer, inject } from 'mobx-react';
 import { Link } from 'react-router-dom';
 
 
 
-@inject("store")
-@observer
+// just to silence eslint, which cannot detect decorators usage
+void(inject); void(observer);
+@inject("store") @observer
 export default class InstancesPage extends React.Component {
   componentWillMount() {
     this.props.store.fetchInstancesList();

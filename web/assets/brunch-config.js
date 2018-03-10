@@ -49,8 +49,13 @@ exports.config = {
       // Do not use ES6 compiler in vendor code
       ignore: [/vendor/],
       // for decorators used by MobX
-      plugins: ["transform-decorators-legacy"]
-    }
+      plugins: ["transform-decorators-legacy", "transform-object-rest-spread"]
+    },
+    eslint: {
+      pattern: /^js\/.*\.jsx?$/,
+      warnOnly: false,
+      formatter: 'codeframe',
+    },
   },
 
   modules: {
