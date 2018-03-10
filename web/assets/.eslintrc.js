@@ -21,9 +21,10 @@ module.exports = {
     }
   },
 
-  // "extends": ["plugin:react/recommended"],
   rules: {
-    'no-unused-vars': 'warn',
+    // vars started with _ do not trigger warning
+    'no-unused-vars': ['warn', {varsIgnorePattern: "^_", argsIgnorePattern: "^_"}],
+
     'prefer-const': 'warn',
     'prefer-destructuring': ['warn', { object: true }],
     'no-var': 'warn',
@@ -47,23 +48,4 @@ module.exports = {
     'react/no-string-refs': 'warn',
     'react/no-deprecated': 'warn',
   }
-  // ecmaFeatures: {
-  //   modules: true,
-  // },
-
-  // "extends": "eslint:recommended",
-  // "rules": {
-  //   // enable additional rules
-  //   "indent": ["error", 2],
-  //   "linebreak-style": ["error", "unix"],
-  //   "quotes": ["error", "double"],
-  //   "semi": ["error", "always"],
-  // 
-  //   // override default options for rules from base configurations
-  //   "comma-dangle": ["error", "always"],
-  //   "no-cond-assign": ["error", "always"],
-  // 
-  //   // disable rules from base configurations
-  //   "no-console": "off",
-  // }
 }

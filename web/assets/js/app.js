@@ -24,12 +24,13 @@
 
 import ReactDOM from 'react-dom';
 import React from 'react';
-import { BrowserRouter, Route } from 'react-router-dom';
+import { BrowserRouter, Route, Switch } from 'react-router-dom';
 // import MobxDevTools from 'mobx-react-devtools'
 import { Provider } from 'mobx-react';
 
 import Store from './Store';
-import InstancesPage from './InstancesPage';
+import InstancesListPage from './InstancesListPage';
+import InstancePage from './InstancePage';
 
 
 
@@ -42,7 +43,10 @@ document.addEventListener("DOMContentLoaded", function() {
     <div>
       <Provider store={window.VisionStore}>
         <BrowserRouter>
-          <Route path="/" component={InstancesPage} />
+          <Switch>
+            <Route exact path="/" component={InstancesListPage} />
+            <Route exact path="/instances/:id" component={InstancePage} />
+          </Switch>
         </BrowserRouter>
       </Provider>
       {/*<MobxDevTools />*/}
