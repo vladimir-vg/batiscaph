@@ -1,15 +1,25 @@
-import { observable, action } from 'mobx';
+import { action, observable, extendObservable, computed } from 'mobx';
+
+import { produceLayout } from './layout';
+import { mergeDelta } from './delta';
+void(computed); // just to silence eslint, which cannot detect decorators usage
 
 
 
 export default class Store {
   constructor() {
-    this.instancesList = observable([]);
+    extendObservable(this, {
+      instancesList: [],
+      delta: {'plug:requests': null}
+    });
+
     this.wsSendQueue = [];
 
     this.onWSMessage = this.onWSMessage.bind(this);
     this.onWSOpen = this.onWSOpen.bind(this);
   }
+
+
 
   @action
   fetchInstancesList() {
@@ -20,9 +30,26 @@ export default class Store {
       }));
   }
 
+  @computed
+  get layout() {
+    return produceLayout(this.delta);
+  }
+
+  getLayout() {
+    return produceLayout(this.delta);
+  }
+
+  @action
+  consumeDelta(delta) {
+    // make new delta also observable, to avoid having unobserved parts
+    // in observed delta
+    mergeDelta({oldDelta: this.delta, newDelta: observable(delta)});
+  }
+
+
+
   subscribeToInstance(id) {
     if (!this.socket) { this.connectToWebsocket(); }
-
     this.wsSend('subscribe_to_instance', {id: id});
   }
 
@@ -39,8 +66,22 @@ export default class Store {
     this.socket.addEventListener('open', this.onWSOpen);
   }
 
-  onWSMessage() {
-    
+  onWSMessage({ data }) {
+    const re = /^([^ ]+) (.*)/; // split by only one space
+    const match = re.exec(data);
+    const [_, method, payload] = match;
+    // const method = match[1];
+    // const payload = match[2];
+
+    switch (method) {
+    case 'delta': this.consumeDelta(JSON.parse(payload)); break;
+
+    default:
+      throw {
+        message: "Unknown message from server",
+        method, payload
+      };
+    }
   }
 
   onWSOpen() {

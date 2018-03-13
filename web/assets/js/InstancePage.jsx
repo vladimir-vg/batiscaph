@@ -16,7 +16,7 @@ export default class InstancePage extends React.Component {
 
   render() {
     return <div>
-      Hello {this.props.match.params.id}
+      Hello {'' +   Object.keys(this.props.store.layout)}
     </div>;
   }
 }

@@ -24,6 +24,7 @@
 
 import ReactDOM from 'react-dom';
 import React from 'react';
+import mobx from 'mobx';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 // import MobxDevTools from 'mobx-react-devtools'
 import { Provider } from 'mobx-react';
@@ -31,6 +32,9 @@ import { Provider } from 'mobx-react';
 import Store from './Store';
 import InstancesListPage from './InstancesListPage';
 import InstancePage from './InstancePage';
+
+// for debugging
+window.mobx = mobx;
 
 
 
