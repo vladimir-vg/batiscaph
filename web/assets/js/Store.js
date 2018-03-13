@@ -5,7 +5,10 @@ import { observable, action } from 'mobx';
 export default class Store {
   constructor() {
     this.instancesList = observable([]);
-    
+    this.wsSendQueue = [];
+
+    this.onWSMessage = this.onWSMessage.bind(this);
+    this.onWSOpen = this.onWSOpen.bind(this);
   }
 
   @action
@@ -20,10 +23,7 @@ export default class Store {
   subscribeToInstance(id) {
     if (!this.socket) { this.connectToWebsocket(); }
 
-    setTimeout(() => {
-      this.wsSend('subscribe_to_instance', {id: id});
-      
-    }, 1000); 
+    this.wsSend('subscribe_to_instance', {id: id});
   }
 
   unsubscribeFromInstance(_id) {
@@ -44,11 +44,23 @@ export default class Store {
   }
 
   onWSOpen() {
-    
+    while (this.wsSendQueue.length !== 0) {
+      // take from queue from beginning
+      const { method, arg } = this.wsSendQueue.shift();
+      this.socket.send(method + ' ' + JSON.stringify(arg));
+    }
   }
 
   wsSend(method, arg) {
-    
-    this.socket.send(method + ' ' + JSON.stringify(arg));
+    if (this.socket.readyState == WebSocket.CONNECTING) {
+      this.wsSendQueue.push({ method, arg });
+    } else if (this.socket.readyState == WebSocket.OPEN) {
+      this.socket.send(method + ' ' + JSON.stringify(arg));
+    } else {
+      throw {
+        message: "Wrong websocket state when attempted to send",
+        method, arg, state: this.socket.readyState
+      };
+    }
   }
 }
