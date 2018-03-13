@@ -53,7 +53,7 @@ exports.config = {
     },
     eslint: {
       pattern: /^js\/.*\.jsx?$/,
-      warnOnly: false,
+      warnOnly: true,
       formatter: 'codeframe',
     },
   },

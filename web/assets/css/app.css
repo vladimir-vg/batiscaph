@@ -1,1 +1,28 @@
 /* This file is for your main application css. */
+
+.InstancePage {
+  display: flex;
+}
+
+.InstancePage .map-container {
+  flex: 1;
+  background-color: rgba(0, 255, 0, 0.1);
+}
+.InstancePage .extra-info-container {
+  flex: 0.1 0 300px;
+  min-height: 300px;
+  background-color: rgba(0, 0, 255, 0.1);
+}
+
+@media (max-width: 760px) {
+  .InstancePage {
+    flex-direction: column;
+  }
+
+  .InstancePage .map-container {
+    flex: 1 1 100%;
+  }
+  .InstancePage .extra-info-container {
+    flex: 0.25 0 300px;
+  }
+}

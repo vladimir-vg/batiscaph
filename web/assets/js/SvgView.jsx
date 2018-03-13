@@ -1,4 +1,9 @@
-class SvgView extends React.Component {
+import React from 'react';
+import PropTypes from 'prop-types';
+
+
+
+export default class SvgView extends React.Component {
   constructor(props) {
     super();
     this.state = {
@@ -29,9 +34,9 @@ class SvgView extends React.Component {
   }
 
   onWheel(e) {
-    let x = this.state.posX;
-    let y = this.state.posY - e.deltaY;
-    let t = this.sanitizeXY(x, y);
+    const x = this.state.posX;
+    const y = this.state.posY - e.deltaY;
+    const t = this.sanitizeXY(x, y);
     this.setState({posY: t.y});
   }
 
@@ -47,18 +52,18 @@ class SvgView extends React.Component {
     if (this._posMoveAnimationRequest) return;
   
     // calculating difference from dragging start position, add to initial
-    var x = this.state.posX + (e.clientX - this._dragStartX);
-    var y = this.state.posY + (e.clientY - this._dragStartY);
+    const x = this.state.posX + (e.clientX - this._dragStartX);
+    const y = this.state.posY + (e.clientY - this._dragStartY);
   
     this.setPosition(x,y);
   }
 
   // do not allow to move out of padded space
   sanitizeXY(x,y) {
-    var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-    var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
-    var paddingLeft = this.props.paddingLeft || this.props.padding;
+    const paddingLeft = this.props.paddingLeft || this.props.padding;
 
     if ((viewportWidth+(-x)) > (this.props.paddedWidth + this.props.padding)) {
       x = -(this.props.paddedWidth-viewportWidth+this.props.padding);
@@ -73,17 +78,15 @@ class SvgView extends React.Component {
     return {x: x, y: y};
   }
 
-  setPosition(x,y) {
-    let t = this.sanitizeXY(x, y);
-    x = t.x;
-    y = t.y;
+  setPosition(x0, y0) {
+    const t = this.sanitizeXY(x0, y0);
+    const { x, y } = t;
 
     if (x == this._dragX && y == this._dragY) return;
 
     this._posMoveAnimationRequest = window.requestAnimationFrame((function () {
       // explicitly setting svg figure offset
-      this.refs.posBase.transform.baseVal.getItem(0).setTranslate(x,y);
-      // this.refs.vposBase.transform.baseVal.getItem(0).setTranslate(0,y);
+      this.posBase.transform.baseVal.getItem(0).setTranslate(x,y);
       this._dragX = x;
       this._dragY = y;
 
@@ -102,25 +105,12 @@ class SvgView extends React.Component {
   }
 
   render() {
-    // var verticallyMovingChildren = [];
-    // var allMovingChildren = [];
-    // 
-    // React.Children.forEach(this.props.children, function (child) {
-    //   if (child.props.moveOnlyVertically) {
-    //     verticallyMovingChildren.push(child);
-    //   } else {
-    //     allMovingChildren.push(child);
-    //   }
-    // });
-
     // Commented out code that was handling dragging and scrolling inside <svg>
-    return <svg ref="svg" className={this.props.className}
-        style={{position: 'fixed', top: 0, left: 0, width:'100%', height: '100%', cursor: this.state.areaCursor}}
+    return <svg className={this.props.className}
+        style={{width: '100%', height: '100%'}}
         onWheel={this.onWheel.bind(this)}
         onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}
-        onMouseUp={this.onMouseUp.bind(this)} onMouseLeave={this.onMouseLeave.bind(this)}
-
-        width={this.props.paddedWidth + this.props.padding*2} height={this.props.paddedHeight + this.props.padding*2}>
+        onMouseUp={this.onMouseUp.bind(this)} onMouseLeave={this.onMouseLeave.bind(this)}>
 
       <defs>
         <marker id="marker-send-start" markerWidth="8" markerHeight="8" refX="5" refY="5">
@@ -141,21 +131,16 @@ class SvgView extends React.Component {
       </defs>
 
       {/* transform={"translate("+this.props.padding+","+this.props.padding+")"} */}
-      {/*<g ref="vposBase" transform={"translate(0,"+this.state.posY+")"}>
-        {verticallyMovingChildren}
-      </g>*/}
-
-      {/* transform={"translate("+this.props.padding+","+this.props.padding+")"} */}
-      <g ref="posBase" transform={"translate("+this.state.posX+","+this.state.posY+")"}>
+      <g ref={(ref) => { this.posBase = ref; }} transform={"translate("+this.state.posX+","+this.state.posY+")"}>
         {this.props.children}
       </g>
     </svg>;
   }
 }
 SvgView.propTypes = {
-  className:PropTypes.string,
   padding: PropTypes.number.isRequired,
   paddedWidth: PropTypes.number.isRequired,
   paddedHeight: PropTypes.number.isRequired,
+  className: PropTypes.any,
 };
    
