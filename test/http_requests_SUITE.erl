@@ -58,11 +58,6 @@ receive_http_request_event(Config) ->
   ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
   BaseUrl = proplists:get_value(app_base_url, Config),
 
-  % open websocket and subscribe to instance delta
-  % as browser client would do
-  {ok, Ws} = vt_endpoint:ws_connect(),
-  ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
-
   {ok, 200, _RespHeaders, ClientRef} = hackney:request(get, BaseUrl, [], <<>>, []),
   ok = hackney:skip_body(ClientRef),
 
@@ -70,10 +65,16 @@ receive_http_request_event(Config) ->
   Events1 = lists:sort(fun (A, B) -> maps:get(at, A) < maps:get(at, B) end, Events),
   [<<"p1 plug:request start">>, <<"p1 plug:request stop">>] = [T || #{type := T} <- Events1],
 
+  % open websocket and subscribe to instance delta
+  % as browser client would do
+  {ok, Ws} = vt_endpoint:ws_connect(),
+  ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
+
   #{<<"plug:requests">> := Reqs} = vt_endpoint:ws_delivered(Ws, delta),
 
   % key of the request is unknown
   [{_, Req1}] = maps:to_list(Reqs),
-  #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid1">> := _} = Req1,
+  #{<<"StartedAt">> := A1, <<"StoppedAt">> := A2, <<"Pid">> := _} = Req1,
+  true = A1 < A2,
 
   ok.

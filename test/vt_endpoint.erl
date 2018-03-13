@@ -71,7 +71,7 @@ ws_connect() ->
 
 
 ws_send(Pid, subscribe_to_instance, InstanceId) ->
-  Body = iolist_to_binary([<<"subscribe-to-instance ">>, jsx:encode(#{id => InstanceId})]),
+  Body = iolist_to_binary([<<"subscribe_to_instance ">>, jsx:encode(#{id => InstanceId})]),
   gun:ws_send(Pid, {text, Body}),
   ok;
 
@@ -79,11 +79,19 @@ ws_send(_Pid, Method, Arg) ->
   error({unknown_ws_method, Method, Arg}).
 
 
-ws_delivered(Pid, Method) ->
+ws_delivered(Pid, Method) when is_atom(Method) ->
+  ws_delivered(Pid, atom_to_binary(Method, latin1));
+
+ws_delivered(Pid, Method) when is_binary(Method) ->
+  Length = byte_size(Method),
   receive
+    {gun_ws, Pid, {text, <<Method:Length/binary, " ", Payload/binary>>}} ->
+      jsx:decode(Payload, [return_maps]);
+
     {gun_ws, Pid, Frame} ->
-      ct:pal("got frame: ~p", [Frame]),
-      ok
+      ct:pal("got unknown frame: ~p", [Frame]),
+      {error, Frame}
+
   after 5000 ->
     ct:pal("messages: ~p", [erlang:process_info(self(), messages)]),
     error(timeout_receiving_ws_frame)

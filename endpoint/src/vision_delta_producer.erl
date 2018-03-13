@@ -97,11 +97,15 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
     earlier_than => now, limit => ?CHUNK_SIZE
   }),
 
-  DeltaChunk = produce_delta_chunk(Events),
-  #chunk{delta = Result} = DeltaChunk,
-  % TODO: insert new chunk into chunks list
-  % in proper position
-  {ok, Result, State}.
+  case Events of
+    [] -> {ok, #{}, State};
+    _ ->
+      DeltaChunk = produce_delta_chunk(Events),
+      #chunk{delta = Result} = DeltaChunk,
+      % TODO: insert new chunk into chunks list
+      % in proper position
+      {ok, Result, State}
+  end.
 
 
 
