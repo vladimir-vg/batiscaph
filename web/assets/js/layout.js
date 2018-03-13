@@ -32,12 +32,13 @@ export function produceLayout(delta) {
 
 function convertToCoords({ elements, toX, toY }) {
   return elements.map((e) => {
-    const { key, x1, x2, y1, y2, attrs } = e;
-    return {
-      x1: toX(x1, e), x2: toX(x2, e),
-      y1: toY(y1, e), y2: toY(y2, e),
-      key, attrs,
-    }
+    const { id, x1, x2, y1, y2, attrs } = e;
+    const result = { id, attrs };
+    if (x1) { result.x1 = toX(x1, e); }
+    if (x2) { result.x2 = toX(x2, e); }
+    if (y1) { result.y1 = toY(y1, e); }
+    if (y2) { result.y2 = toY(y2, e); }
+    return result;
   });
 }
 
@@ -54,18 +55,18 @@ function generateCoordFuncs({ HttpReq: reqs }) {
 
   for (const i in reqs) {
     const r = reqs[i];
-    if (r.x1 && timestamps.indexOf(r.x1) == -1) { timestamps.push(r.x1); }
-    if (r.x2 && timestamps.indexOf(r.x2) == -1) { timestamps.push(r.x2); }
-    if (r.y1 && pids.indexOf(r.y1) == -1) { pids.push(r.y1); }
-    if (r.y2 && pids.indexOf(r.y2) == -1) { pids.push(r.y2); }
+    if (r.x1 && pids.indexOf(r.x1) == -1) { pids.push(r.x1); }
+    if (r.x2 && pids.indexOf(r.x2) == -1) { pids.push(r.x2); }
+    if (r.y1 && timestamps.indexOf(r.y1) == -1) { timestamps.push(r.y1); }
+    if (r.y2 && timestamps.indexOf(r.y2) == -1) { timestamps.push(r.y2); }
   }
 
   timestamps.sort();
   pids.sort();
 
   // create closures that will work using collected timestamps and pids
-  const toX = (timestamp, _element) => timestamps.indexOf(timestamp);
-  const toY = (pid, _element) => pids.indexOf(pid);
+  const toY = (timestamp, _element) => timestamps.indexOf(timestamp)+1;
+  const toX = (pid, _element) => pids.indexOf(pid);
 
   return { toX, toY };
 };
