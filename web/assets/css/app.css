@@ -45,5 +45,15 @@ h1 {
 
 
 .RequestsInfo {
-  margin: 20px;
+  margin-left: 20px;
+  margin-top: 20px;
+}
+
+.RequestsInfo .table-container {
+  overflow-y: scroll;
+  width: 100%;
+}
+
+.RequestsInfo table {
+  width: 100%;
 }

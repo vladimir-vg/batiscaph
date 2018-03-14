@@ -35,8 +35,12 @@ export default class Store {
     return produceLayout(this.delta);
   }
 
-  getLayout() {
-    return produceLayout(this.delta);
+  // sorted list of ready to display reqs
+  @computed
+  get httpRequestsList() {
+    const reqs = Object.values(this.delta['plug:requests'] || {});
+    reqs.sort(({StartedAt: a}, {StartedAt: b}) => a < b ? 1 : -1);
+    return reqs;
   }
 
   @action

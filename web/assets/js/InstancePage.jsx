@@ -20,10 +20,44 @@ const grid = {
 
 
 class RequestsInfo extends React.Component {
+  constructor() {
+    super();
+
+    // only affects scroll, shouldn't be put into state
+    // not part of the renderable state
+    this.stickToBottom = true;
+
+    this.renderItem = this.renderItem.bind(this);
+  }
+
+  componentDidUpdate() {
+    if (this.stickToBottom) {
+      this.containerRef.scrollTop = this.containerRef.scrollHeight - this.containerRef.clientHeight;
+    }
+  }
+
+  renderItem({ id, method, path, resp_code }) {
+    return <tr key={id}>
+      <td>{method}</td>
+      <td>{path}</td>
+      <td>{resp_code}</td>
+    </tr>;
+  }
+
   render() {
-    return <div className="RequestsInfo">
+    const topOffest = 60;
+    return <div className="RequestsInfo" style={{position: 'relative', height: '100%'}}>
       <h1>Requests</h1>
-      extra info container
+      <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: topOffest}}>
+        <table>
+          <tbody>
+            {this.props.reqs.map(this.renderItem)}
+          </tbody>
+        </table>
+
+        {/* add some space on the bottom, make it easier to read */}
+        <div style={{height: '50%'}} />
+      </div>
     </div>;
   }
 }
@@ -88,7 +122,7 @@ export default class InstancePage extends React.Component {
         </SvgView>
       </div>
       <div className="extra-info-container">
-        <RequestsInfo />
+        <RequestsInfo reqs={this.props.store.httpRequestsList} />
       </div>
     </div>;
   }

@@ -43,8 +43,8 @@ consume(#{<<"Type">> := <<"p1 plug:request start">>} = E, #{ongoing_reqs := Ongo
 consume(#{<<"Type">> := <<"p1 plug:request stop">>} = E, #{ongoing_reqs := Ongoing, ready_reqs := Ready} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid, <<"resp_code">> := Code} = E,
   {R, Ongoing1} = maps:take(Pid, Ongoing),
-  R1 = R#{<<"StoppedAt">> => At, <<"resp_code">> => Code},
   Key = iolist_to_binary([Pid, <<"-">>, integer_to_binary(At)]), % for simplicity
+  R1 = R#{<<"StoppedAt">> => At, <<"resp_code">> => Code, <<"id">> => Key},
   State#{ongoing_reqs => Ongoing1, ready_reqs => Ready#{Key => R1}};
 
 consume(_E, State) ->
