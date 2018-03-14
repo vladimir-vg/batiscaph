@@ -19,6 +19,17 @@ const grid = {
 
 
 
+class RequestsInfo extends React.Component {
+  render() {
+    return <div className="RequestsInfo">
+      <h1>Requests</h1>
+      extra info container
+    </div>;
+  }
+}
+
+
+
 @inject("store") @observer
 export default class InstancePage extends React.Component {
   constructor() {
@@ -39,6 +50,8 @@ export default class InstancePage extends React.Component {
   }
 
   renderGrid() {
+    return null;
+
     const cols = [];
     const rows = [];
     for (let i = -100; i < 700; i++) {
@@ -75,7 +88,7 @@ export default class InstancePage extends React.Component {
         </SvgView>
       </div>
       <div className="extra-info-container">
-        extra info container
+        <RequestsInfo />
       </div>
     </div>;
   }

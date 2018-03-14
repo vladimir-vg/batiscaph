@@ -7,6 +7,7 @@
 
     <title>Hello Vision!</title>
     <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
+    <link href="https://fonts.googleapis.com/css?family=PT+Sans|PT+Serif+Caption&amp;subset=cyrillic" rel="stylesheet">
   </head>
 
   <body>
