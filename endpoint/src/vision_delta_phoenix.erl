@@ -1,6 +1,6 @@
 -module(vision_delta_phoenix).
 -behaviour(vision_delta_producer).
--export([desired_types/0, init/0, consume/2, finalize/1]).
+-export([desired_types/0, desired_attrs/0, init/0, consume/2, finalize/1]).
 
 
 
@@ -24,6 +24,9 @@
 desired_types() ->
   [<<"p1 plug:request start">>, <<"p1 plug:request stop">>].
 
+desired_attrs() ->
+  [<<"method">>, <<"path">>, <<"resp_code">>].
+
 init() ->
   #{
     ongoing_reqs => #{}, % key is pid
@@ -33,14 +36,14 @@ init() ->
 
 
 consume(#{<<"Type">> := <<"p1 plug:request start">>} = E, #{ongoing_reqs := Ongoing} = State) ->
-  #{<<"At">> := At, <<"Pid1">> := Pid} = E,
-  R = #{<<"StartedAt">> => At, <<"Pid">> => Pid},
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"method">> := Method, <<"path">> := Path} = E,
+  R = #{<<"StartedAt">> => At, <<"Pid">> => Pid, <<"method">> => Method, <<"path">> => Path},
   State#{ongoing_reqs => Ongoing#{Pid => R}};
 
 consume(#{<<"Type">> := <<"p1 plug:request stop">>} = E, #{ongoing_reqs := Ongoing, ready_reqs := Ready} = State) ->
-  #{<<"At">> := At, <<"Pid1">> := Pid} = E,
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"resp_code">> := Code} = E,
   {R, Ongoing1} = maps:take(Pid, Ongoing),
-  R1 = R#{<<"StoppedAt">> => At},
+  R1 = R#{<<"StoppedAt">> => At, <<"resp_code">> => Code},
   Key = iolist_to_binary([Pid, <<"-">>, integer_to_binary(At)]), % for simplicity
   State#{ongoing_reqs => Ongoing1, ready_reqs => Ready#{Key => R1}};
 

@@ -1,11 +1,11 @@
 -module(http_requests_SUITE).
 -export([all/0, init_per_suite/1, end_per_suite/1]).
--export([receive_http_request_event/1]).
+-export([receive_http_request_event_and_delta/1]).
 
 
 
 all() ->
-  [receive_http_request_event].
+  [receive_http_request_event_and_delta].
 
 
 
@@ -51,7 +51,7 @@ start_webapp(PrivDir, AccessKey, Port) ->
 
 
 
-receive_http_request_event(Config) ->
+receive_http_request_event_and_delta(Config) ->
   InstanceId = proplists:get_value(app_instance_id, Config),
   UserId = proplists:get_value(app_user_id, Config),
 
@@ -74,7 +74,8 @@ receive_http_request_event(Config) ->
 
   % key of the request is unknown
   [{_, Req1}] = maps:to_list(Reqs),
-  #{<<"StartedAt">> := A1, <<"StoppedAt">> := A2, <<"Pid">> := _} = Req1,
+  #{<<"StartedAt">> := A1, <<"StoppedAt">> := A2, <<"Pid">> := _, <<"Attrs">> := Attrs} = Req1,
+  #{<<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>} = Attrs,
   true = A1 < A2,
 
   ok.

@@ -103,14 +103,16 @@ select_instances_infos_with_ids(Ids) ->
 
 
 select_events(#{
-  instance_id := Id, types := Types,
+  instance_id := Id, types := Types, attrs := Attrs,
   earlier_than := now, limit := Limit
 }) ->
   {ok, Q} = application:get_env(vision, clk_queries),
   {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, AttrsSQL} = attrs_sql(Q, Attrs),
   Params = [
     {dbname, DBName}, {types, clickhouse:list_sql(Types)},
-    {instance_id, Id}, {limit, integer_to_binary(Limit)}
+    {instance_id, Id}, {limit, integer_to_binary(Limit)},
+    {attrs, AttrsSQL}
   ],
   {ok, SQL} = eql:get_query(select_events_from_now, Q, Params),
 
@@ -118,3 +120,10 @@ select_events(#{
   {ok, Events} = clickhouse:parse_rows(maps, Body),
 
   {ok, Events}.
+
+attrs_sql(Q, Attrs) ->
+  Parts = lists:map(fun (Attr) ->
+    {ok, SQL} = eql:get_query(selectable_attr, Q, [{attr, Attr}]),
+    SQL
+  end, Attrs),
+  {ok, lists:join(<<",">>, Parts)}.

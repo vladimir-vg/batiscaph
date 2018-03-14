@@ -4,7 +4,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
 
 % how many events to retreive for single delta chunk
--define(CHUNK_SIZE, 100).
+-define(CHUNK_SIZE, 1000).
 
 
 
@@ -18,7 +18,7 @@
 -callback desired_types() -> [binary()].
 % actually it might be convenient to fetch attrs
 % using arrayElement(Attrs.Value, indexOf(Attrs.Key, 'path'))
-% -callback desired_attrs() -> [binary()].
+-callback desired_attrs() -> [binary()].
 -callback init() -> State :: any(). % generates new state
 -callback consume(Event :: map(), State :: any()) -> State :: any().
 % returns delta that going to be merged with deltas frm other features
@@ -94,6 +94,7 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
   % do expect that events are sorted DESC
   {ok, Events} = vision_clk_events:select_events(#{
     instance_id => Id, types => vision_delta_phoenix:desired_types(),
+    attrs => vision_delta_phoenix:desired_attrs(),
     earlier_than => now, limit => ?CHUNK_SIZE
   }),
 
