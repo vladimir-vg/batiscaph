@@ -22,13 +22,13 @@ h1 {
   /*background-color: rgba(0, 255, 0, 0.1);*/
 }
 .InstancePage .extra-info-container {
-  flex: 0.1 0 300px;
+  flex: 0.1 0 500px;
   min-height: 300px;
   border-left: 1px solid #E5E5E5;
   /*background-color: rgba(0, 0, 255, 0.1);*/
 }
 
-@media (max-width: 760px) {
+@media (max-width: 960px) {
   .InstancePage {
     flex-direction: column;
   }

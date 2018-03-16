@@ -61,9 +61,7 @@ receive_http_request_event_and_delta(Config) ->
   {ok, 200, _RespHeaders, ClientRef} = hackney:request(get, BaseUrl, [], <<>>, []),
   ok = hackney:skip_body(ClientRef),
 
-  {events, Events} = vt_endpoint:received_from_probe(events),
-  Events1 = lists:sort(fun (A, B) -> maps:get(at, A) < maps:get(at, B) end, Events),
-  [<<"p1 plug:request start">>, <<"p1 plug:request stop">>] = [T || #{type := T} <- Events1],
+  {events, _} = vt_endpoint:received_from_probe(events),
 
   % open websocket and subscribe to instance delta
   % as browser client would do
@@ -74,8 +72,25 @@ receive_http_request_event_and_delta(Config) ->
 
   % key of the request is unknown
   [{_, Req1}] = maps:to_list(Reqs),
-  #{<<"StartedAt">> := A1, <<"StoppedAt">> := A2, <<"Pid">> := _, <<"Attrs">> := Attrs} = Req1,
-  #{<<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>} = Attrs,
+  #{
+    <<"StartedAt">> := A1, <<"StoppedAt">> := A2, <<"Pid">> := _,
+    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>,
+    <<"plugs">> := Plugs
+  } = Req1,
   true = A1 < A2,
+
+  [
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Static">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.RequestId">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Logger">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Parsers">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.MethodOverride">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Head">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Session">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.PhoenixApp1Web.Router">>, <<"plugs">> := [
+      #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.CSRFProtection">>},
+      #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.PhoenixApp1Web.PageController">>}
+    ]}
+  ] = Plugs,
 
   ok.

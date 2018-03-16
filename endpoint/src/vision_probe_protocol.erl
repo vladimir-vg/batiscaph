@@ -82,7 +82,7 @@ init(_) ->
 % but its attrs are not removed yet
 after_terminate(InstanceId, _Attrs) ->
   ok = vision_clk_events:insert([
-    vision_event:event(InstanceId, now, <<"vision 0 connection-stop">>)
+    vision_event:event(InstanceId, now, <<"0 vision connection-stop">>)
   ]),
   ok.
 
@@ -153,7 +153,7 @@ handle_message_from_probe({summary_info, Info}, State) ->
   gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
 
   ok = vision_clk_events:insert([
-    vision_event:event(InstanceId, now, <<"vision 0 connection-start">>)
+    vision_event:event(InstanceId, now, <<"0 vision connection-start">>)
   ]),
 
   % once successfully received summary
@@ -218,7 +218,7 @@ response_from_probe(ReqId, Method, Result, #persistent{sent_requests = Reqs} = S
 
 
 handle_own_request_response(get_user_config, _Result, State) ->
-  Config = #{phoenix => [http_requests]},
+  Config = #{plug_requests => true},
   self() ! {probe_request, apply_config, Config},
   {ok, State};
 
@@ -267,5 +267,6 @@ mention_used_atoms() ->
   [
     events,at,type,pid1,pid2,
     host,method,path,port,request_id,
-    req_headers,resp_headers,resp_code
+    req_headers,resp_headers,resp_code,
+    plug, halted
   ].

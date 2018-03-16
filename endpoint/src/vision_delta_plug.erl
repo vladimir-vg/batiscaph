@@ -22,10 +22,10 @@
 
 
 desired_types() ->
-  [<<"p1 plug:request start">>, <<"p1 plug:request stop">>].
+  [<<"p1 plug:request start">>, <<"p1 plug:request stop">>, <<"p1 plug:plug stop">>, <<"p1 plug:plug start">>].
 
 desired_attrs() ->
-  [<<"method">>, <<"path">>, <<"resp_code">>].
+  [<<"method">>, <<"path">>, <<"resp_code">>, <<"module">>].
 
 init() ->
   #{
@@ -45,7 +45,46 @@ consume(#{<<"Type">> := <<"p1 plug:request stop">>} = E, #{ongoing_reqs := Ongoi
   {R, Ongoing1} = maps:take(Pid, Ongoing),
   Key = iolist_to_binary([Pid, <<"-">>, integer_to_binary(At)]), % for simplicity
   R1 = R#{<<"StoppedAt">> => At, <<"resp_code">> => Code, <<"id">> => Key},
-  State#{ongoing_reqs => Ongoing1, ready_reqs => Ready#{Key => R1}};
+  R2 = case maps:get(plugs, R1, undefined) of
+    undefined -> R1;
+    Plugs -> R1#{plugs => lists:reverse(Plugs)}
+  end,
+  State#{ongoing_reqs => Ongoing1, ready_reqs => Ready#{Key => R2}};
+
+consume(#{<<"Type">> := <<"p1 plug:plug start">>} = E, #{ongoing_reqs := Ongoing} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"module">> := Module} = E,
+  R = maps:get(Pid, Ongoing),
+  PlugsStack = maps:get(current_plugs_stack, R, []),
+  lager:info("~p ~p start", [Pid, Module]), % current: ~p , PlugsStack
+  P = #{<<"StartedAt">> => At, <<"module">> => Module},
+  PlugsStack1 = [P | PlugsStack],
+  R1 = R#{current_plugs_stack => PlugsStack1},
+  Ongoing1 = Ongoing#{Pid => R1},
+  State#{ongoing_reqs => Ongoing1};
+
+consume(#{<<"Type">> := <<"p1 plug:plug stop">>} = E, #{ongoing_reqs := Ongoing} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"module">> := Module} = E,
+  R = maps:get(Pid, Ongoing),
+  lager:info("~p ~p stop", [Pid, Module]), %  maps:get(current_plugs_stack, R)
+  [#{<<"module">> := Module} = P | PlugsStack] = maps:get(current_plugs_stack, R),
+  P1 = P#{<<"StoppedAt">> => At},
+  P2 = case maps:get(plugs, P1, undefined) of
+    undefined -> P1;
+    NestedPlugs -> P1#{plugs => lists:reverse(NestedPlugs)}
+  end,
+
+  case PlugsStack of
+    [] ->
+      ReqPlugs = maps:get(plugs, R, []),
+      R1 = R#{plugs => [P2 | ReqPlugs], current_plugs_stack => []},
+      State#{ongoing_reqs => Ongoing#{Pid => R1}};
+
+    [ParentPlug | Rest] ->
+      SiblingsPlugs = maps:get(plugs, ParentPlug, []),
+      ParentPlug1 = ParentPlug#{plugs => [P2 | SiblingsPlugs]},
+      R1 = R#{current_plugs_stack => [ParentPlug1 | Rest]},
+      State#{ongoing_reqs => Ongoing#{Pid => R1}}
+  end;
 
 consume(_E, State) ->
   State.

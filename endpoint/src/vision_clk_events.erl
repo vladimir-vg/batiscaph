@@ -88,12 +88,12 @@ select_instances_infos_with_ids(Ids) ->
   CurrentlyConnected = [Id || {Id, _Attrs} <- gen_tracker:list(probes, [])],
 
   Instances = lists:foldl(fun
-    (#{<<"Type">> := <<"vision 0 connection-start">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
+    (#{<<"Type">> := <<"0 vision connection-start">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
       Map = maps:get(Id, Acc, #{<<"InstanceId">> => Id}),
       Map1 = Map#{<<"Connected">> => lists:member(Id, CurrentlyConnected)},
       Acc#{Id => maps:put(<<"StartedAt">>, At, Map1)};
 
-    (#{<<"Type">> := <<"vision 0 connection-stop">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
+    (#{<<"Type">> := <<"0 vision connection-stop">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
       Map = maps:get(Id, Acc, #{<<"InstanceId">> => Id}),
       Acc#{Id => maps:put(<<"StoppedAt">>, At, Map)}
   end, #{}, Events),
