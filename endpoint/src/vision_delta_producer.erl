@@ -93,8 +93,8 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
 
   % do expect that events are sorted DESC
   {ok, Events} = vision_clk_events:select_events(#{
-    instance_id => Id, types => vision_delta_phoenix:desired_types(),
-    attrs => vision_delta_phoenix:desired_attrs(),
+    instance_id => Id, types => vision_delta_plug:desired_types(),
+    attrs => vision_delta_plug:desired_attrs(),
     earlier_than => now, limit => ?CHUNK_SIZE
   }),
 
@@ -112,16 +112,16 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
 
 produce_delta_chunk([#{<<"At">> := At, <<"SubId">> := SubId} | _] = Events) ->
   From = {At div (1000*1000), At rem (1000*1000), SubId},
-  State = vision_delta_phoenix:init(),
+  State = vision_delta_plug:init(),
   produce_delta_chunk(Events, #chunk{from = From}, State).
 
 % last event
 produce_delta_chunk([#{<<"At">> := At, <<"SubId">> := SubId} = E], Chunk, State) ->
   To = {At div (1000*1000), At rem (1000*1000), SubId},
-  State1 = vision_delta_phoenix:consume(E, State),
-  Delta = vision_delta_phoenix:finalize(State1),
+  State1 = vision_delta_plug:consume(E, State),
+  Delta = vision_delta_plug:finalize(State1),
   Chunk#chunk{to = To, delta = Delta};
 
 produce_delta_chunk([E | Events], Chunk, State) ->
-  State1 = vision_delta_phoenix:consume(E, State),
+  State1 = vision_delta_plug:consume(E, State),
   produce_delta_chunk(Events, Chunk, State1).

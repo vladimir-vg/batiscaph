@@ -1,4 +1,4 @@
--module(vision_delta_phoenix).
+-module(vision_delta_plug).
 -behaviour(vision_delta_producer).
 -export([desired_types/0, desired_attrs/0, init/0, consume/2, finalize/1]).
 
