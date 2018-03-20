@@ -11,9 +11,15 @@ export default class Store {
     extendObservable(this, {
       currentInstanceId: null,
       instancesList: [],
-      delta: {'plug:requests': null},
+      delta: {
+        'plug:requests': null,
+      },
       selectedRequestId: null,
-      reqsDetails: {}, // for full request info
+
+      // for full request info
+      // we need use Map to make MobX react to dynamically added keys
+      // ordinary object won't work
+      reqsDetails: new Map(),
     });
 
     this.wsSendQueue = [];
@@ -54,8 +60,8 @@ export default class Store {
   }
 
   @action
-  toggleSelectedRequest(id) {
-    if (this.selectedRequestId === id) {
+  onSelectRequest(id) {
+    if (id === null) {
       this.selectedRequestId = null;
     } else {
       this.selectedRequestId = id;
@@ -72,23 +78,23 @@ export default class Store {
       };
     }
 
-    if (this.reqsDetails[id] && this.reqsreqsDetails[id].StoppedAt) {
+    if (this.reqsDetails.has(id) && this.reqsDetails.get(id).StoppedAt) {
       return; // request was fetched before, and request was finished
     }
 
     fetch(`${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`)
       .then((response) => response.json())
       .then(action((json) => {
-        this.reqsDetails[id] = json;
+        this.reqsDetails.set(id, json);
       }));
   }
 
   @computed
   get selectedReqInfo() {
     if (!this.selectedRequestId) { return null; }
-    if (!this.reqsDetails[this.selectedRequestId]) { return 'loading'; }
+    if (!this.reqsDetails.has(this.selectedRequestId)) { return 'loading'; }
 
-    return this.reqsDetails[this.selectedRequestId];
+    return this.reqsDetails.get(this.selectedRequestId);
   }
 
 

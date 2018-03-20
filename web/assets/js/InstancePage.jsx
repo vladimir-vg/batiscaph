@@ -29,6 +29,7 @@ class RequestsInfo extends React.Component {
     this.stickToBottom = true;
 
     this.onItemSelect = this.onItemSelect.bind(this);
+    this.clearSelection = this.onItemSelect.bind(this, null);
     this.renderItem = this.renderItem.bind(this);
   }
 
@@ -50,10 +51,27 @@ class RequestsInfo extends React.Component {
     </tr>;
   }
 
+  renderSelectedRequest({ topOffest }) {
+    if (!this.props.selectedReqInfo) { return null; }
+
+    if (this.props.selectedReqInfo === 'loading') {
+      return <div style={{position: 'absolute', bottom: 0, top: topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+        loading...
+        <button onClick={this.clearSelection}>x</button>
+      </div>;
+    }
+
+    return <div style={{position: 'absolute', bottom: 0, top: topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+      huy
+      <button onClick={this.clearSelection}>x</button>
+    </div>;
+  }
+
   render() {
     const topOffest = 60;
     return <div className="RequestsInfo" style={{position: 'relative', height: '100%'}}>
       <h1>Requests</h1>
+      {this.renderSelectedRequest({ topOffest })}
       <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: topOffest}}>
         <table>
           <tbody>
@@ -80,7 +98,7 @@ export default class InstancePage extends React.Component {
   constructor() {
     super();
 
-    this.onToggleSelectedReq = this.onToggleSelectedReq.bind(this);
+    this.onSelectRequest = this.onSelectRequest.bind(this);
 
     // TODO: listen to resize event, update height accordingly
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
@@ -97,9 +115,8 @@ export default class InstancePage extends React.Component {
     this.props.store.unsubscribeFromInstance(this.props.match.params.id);
   }
 
-  onToggleSelectedReq(id) {
-    this.props.store.toggleSelectedRequest(id);
-    console.log("select item", id)
+  onSelectRequest(id) {
+    this.props.store.onSelectRequest(id);
   }
 
   renderGrid() {
@@ -142,7 +159,7 @@ export default class InstancePage extends React.Component {
       </div>
       <div className="extra-info-container">
         <RequestsInfo reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
-          onItemSelect={this.onToggleSelectedReq} />
+          onItemSelect={this.onSelectRequest} />
       </div>
     </div>;
   }
