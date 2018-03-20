@@ -203,11 +203,18 @@ stop_docker_container(Container) ->
 api_request(Method, Resource, Arg) when is_atom(Resource) ->
   api_request(Method, atom_to_binary(Resource,latin1), Arg);
 
-api_request(get, Resource, Arg) when is_binary(Resource) andalso is_list(Arg) ->
+api_request(get, Resource, Arg) when is_binary(Resource) andalso is_map(Arg) ->
   {ok, BaseUrl} = application:get_env(vision_test, endpoint_base_url),
-  Url1 = hackney_url:make_url(BaseUrl, [<<"api">>, Resource], to_qs_vals(Arg)),
-  {ok, 200, _RespHeaders, Body} = hackney:request(get, Url1, [], <<>>, [with_body]),
+  Url = api_url(get, BaseUrl, Resource, Arg),
+  {ok, 200, _RespHeaders, Body} = hackney:request(get, Url, [], <<>>, [with_body]),
   {ok, jsx:decode(Body, [return_maps])}.
+
+
+
+api_url(get, BaseUrl, <<"instances">>, #{user_id := UserId}) ->
+  hackney_url:make_url(BaseUrl, [<<"api">>, <<"instances">>], to_qs_vals([{user_id, UserId}]));
+api_url(get, BaseUrl, <<"plug_request">>, #{instance_id := InstanceId, request_id := ReqId}) ->
+  hackney_url:make_url(BaseUrl, [<<"api">>, <<"instances">>, InstanceId, <<"plug-requests">>, ReqId], []).
 
 to_qs_vals([]) -> [];
 to_qs_vals([{K,V} | Rest]) ->

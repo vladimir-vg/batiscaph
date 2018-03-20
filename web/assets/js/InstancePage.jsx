@@ -1,5 +1,6 @@
 import React from 'react';
 import { observer, inject } from 'mobx-react';
+import PropTypes from 'prop-types';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
 import SvgView from './SvgView';
@@ -27,6 +28,7 @@ class RequestsInfo extends React.Component {
     // not part of the renderable state
     this.stickToBottom = true;
 
+    this.onItemSelect = this.onItemSelect.bind(this);
     this.renderItem = this.renderItem.bind(this);
   }
 
@@ -36,8 +38,12 @@ class RequestsInfo extends React.Component {
     }
   }
 
+  onItemSelect(id) {
+    this.props.onItemSelect(id);
+  }
+
   renderItem({ id, method, path, resp_code }) {
-    return <tr key={id}>
+    return <tr key={id} onClick={this.onItemSelect.bind(this, id)}>
       <td>{method}</td>
       <td>{path}</td>
       <td>{resp_code}</td>
@@ -61,6 +67,11 @@ class RequestsInfo extends React.Component {
     </div>;
   }
 }
+RequestsInfo.propTypes = {
+  reqs: PropTypes.array.isRequired,
+  onItemSelect: PropTypes.func.isRequired,
+  selectedReqInfo: PropTypes.any // null, 'loading' or actual request object
+}
 
 
 
@@ -68,6 +79,9 @@ class RequestsInfo extends React.Component {
 export default class InstancePage extends React.Component {
   constructor() {
     super();
+
+    this.onToggleSelectedReq = this.onToggleSelectedReq.bind(this);
+
     // TODO: listen to resize event, update height accordingly
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
     this.state = {
@@ -81,6 +95,11 @@ export default class InstancePage extends React.Component {
 
   componentWillUnmount() {
     this.props.store.unsubscribeFromInstance(this.props.match.params.id);
+  }
+
+  onToggleSelectedReq(id) {
+    this.props.store.toggleSelectedRequest(id);
+    console.log("select item", id)
   }
 
   renderGrid() {
@@ -122,7 +141,8 @@ export default class InstancePage extends React.Component {
         </SvgView>
       </div>
       <div className="extra-info-container">
-        <RequestsInfo reqs={this.props.store.httpRequestsList} />
+        <RequestsInfo reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
+          onItemSelect={this.onToggleSelectedReq} />
       </div>
     </div>;
   }

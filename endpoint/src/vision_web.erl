@@ -11,6 +11,7 @@ start_cowboy() ->
     {'_', [
       {"/probe", vision_handler_probe, []},
       {"/api/instances", vision_res_instances, []},
+      {"/api/instances/[:instance_id]/plug-requests/[:req_id]", vision_res_plug_requests, []},
       {"/websocket", vision_ws_handler, []}
       % {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       % {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},

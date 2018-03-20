@@ -9,8 +9,11 @@ void(computed); // just to silence eslint, which cannot detect decorators usage
 export default class Store {
   constructor() {
     extendObservable(this, {
+      currentInstanceId: null,
       instancesList: [],
-      delta: {'plug:requests': null}
+      delta: {'plug:requests': null},
+      selectedRequestId: null,
+      reqsDetails: {}, // for full request info
     });
 
     this.wsSendQueue = [];
@@ -50,14 +53,56 @@ export default class Store {
     mergeDelta({oldDelta: this.delta, newDelta: observable(delta)});
   }
 
+  @action
+  toggleSelectedRequest(id) {
+    if (this.selectedRequestId === id) {
+      this.selectedRequestId = null;
+    } else {
+      this.selectedRequestId = id;
+      this.ensureRequestInfoFetch(id);
+    }
+  }
+
+  @action
+  ensureRequestInfoFetch(id) {
+    if (!this.currentInstanceId) {
+      throw {
+        message: "Undefined current instance while fetching request info",
+        instanceId: this.currentInstanceId, requestId: id
+      };
+    }
+
+    if (this.reqsDetails[id] && this.reqsreqsDetails[id].StoppedAt) {
+      return; // request was fetched before, and request was finished
+    }
+
+    fetch(`${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`)
+      .then((response) => response.json())
+      .then(action((json) => {
+        this.reqsDetails[id] = json;
+      }));
+  }
+
+  @computed
+  get selectedReqInfo() {
+    if (!this.selectedRequestId) { return null; }
+    if (!this.reqsDetails[this.selectedRequestId]) { return 'loading'; }
+
+    return this.reqsDetails[this.selectedRequestId];
+  }
 
 
+
+  @action
   subscribeToInstance(id) {
+    this.currentInstanceId = id;
     if (!this.socket) { this.connectToWebsocket(); }
     this.wsSend('subscribe_to_instance', {id: id});
   }
 
-  unsubscribeFromInstance(_id) {
+  @action
+  unsubscribeFromInstance(id) {
+    if (this.currentInstanceId == id) { this.currentInstanceId = null; }
     this.wsSend('unsubscribe_from_instance', {id: id});
   }
 

@@ -1,4 +1,4 @@
--module(api_SUITE).
+-module(instances_SUITE).
 -export([all/0, init_per_suite/1, end_per_suite/1]).
 -export([
   instances_running_and_stopped/1
@@ -29,7 +29,7 @@ instances_running_and_stopped(Config) ->
   {ok, UserId, AccessKey} = vt_web:create_user_and_return_access_key(),
 
   % no instance started for this user
-  {ok, []} = vt:api_request(get, instances, [{user_id, UserId}]),
+  {ok, []} = vt:api_request(get, instances, #{user_id => UserId}),
 
   % subscribe for communication
   ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
@@ -46,7 +46,7 @@ instances_running_and_stopped(Config) ->
 
   % instance connected and sent info
   % should appear as 'connected'
-  {ok, [Instance1]} = vt:api_request(get, instances, [{user_id, UserId}]),
+  {ok, [Instance1]} = vt:api_request(get, instances, #{user_id => UserId}),
   #{<<"InstanceId">> := InstanceId, <<"StartedAt">> := _, <<"Connected">> := true} = Instance1,
 
   ok = vt:stop_docker_container(AppContainer),
@@ -56,7 +56,7 @@ instances_running_and_stopped(Config) ->
   timer:sleep(1000),
 
   % instance is stopped
-  {ok, [Instance2]} = vt:api_request(get, instances, [{user_id, UserId}]),
+  {ok, [Instance2]} = vt:api_request(get, instances, #{user_id => UserId}),
   #{<<"InstanceId">> := InstanceId, <<"StartedAt">> := At1, <<"StoppedAt">> := At2, <<"Connected">> := false} = Instance2,
   true = At1 < At2,
 

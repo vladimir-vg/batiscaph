@@ -56,4 +56,15 @@ h1 {
 
 .RequestsInfo table {
   width: 100%;
+  border-collapse: collapse;
+}
+
+.RequestsInfo table td {
+  padding: 3px 5px;
+}
+
+.RequestsInfo table tr:hover {
+  background-color: #2F80ED;
+  color: white;
+  cursor: pointer;
 }

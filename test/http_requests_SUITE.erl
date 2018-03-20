@@ -1,11 +1,15 @@
 -module(http_requests_SUITE).
 -export([all/0, init_per_suite/1, end_per_suite/1]).
--export([receive_http_request_event_and_delta/1]).
+-export([
+  receive_http_request_event_and_delta/1
+]).
 
 
 
 all() ->
-  [receive_http_request_event_and_delta].
+  [
+    receive_http_request_event_and_delta
+  ].
 
 
 
@@ -71,13 +75,21 @@ receive_http_request_event_and_delta(Config) ->
   #{<<"plug:requests">> := Reqs} = vt_endpoint:ws_delivered(Ws, delta),
 
   % key of the request is unknown
-  [{_, Req1}] = maps:to_list(Reqs),
+  [{ReqId, Req1}] = maps:to_list(Reqs),
   #{
-    <<"StartedAt">> := A1, <<"StoppedAt">> := A2, <<"Pid">> := _,
-    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>,
-    <<"plugs">> := Plugs
+    <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
+    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>
   } = Req1,
-  true = A1 < A2,
+  true = StartedAt < StoppedAt,
+
+
+
+  {ok, ReqInfo} = vt:api_request(get, plug_request, #{instance_id => InstanceId, request_id => ReqId}),
+  #{
+    <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
+    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>,
+    <<"plugs">> := Plugs, <<"resp_headers">> := RespHeaders, <<"req_headers">> := ReqHeaders
+  } = ReqInfo,
 
   [
     #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Static">>},
@@ -93,4 +105,13 @@ receive_http_request_event_and_delta(Config) ->
     ]}
   ] = Plugs,
 
+  % just to ensure lexicographic order
+  ReqHeaders1 = lists:sort(ReqHeaders),
+  RespHeaders1 = lists:sort(RespHeaders),
+
+  [[<<"host">>, <<_/binary>>], [<<"user-agent">>, <<"hackney", _/binary>>] | _] = ReqHeaders1,
+  [[<<"cache-control">>, <<_/binary>>], [<<"content-type">>, <<"text/html", _/binary>>] | _] = RespHeaders1,
+
   ok.
+
+
