@@ -1,5 +1,119 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { scaleLinear } from 'd3-scale';
+
+
+
+const producePlugParts = (plugs, scale, offset, height) => {
+  let result = [];
+  offset = offset || 0.5;
+  plugs.forEach((p) => {
+    const width = scale(p.StoppedAt - p.StartedAt);
+    const width1 = Math.max(Math.floor(width), 2)
+    result.push({
+      x: offset, width: width1, height: height,
+      module: p.module, duration: p.StoppedAt - p.StartedAt
+    });
+
+    if (p.plugs) {
+      const items = producePlugParts(p.plugs, scale, offset, height-2);
+      result = result.concat(items);
+    }
+
+    offset += width1;
+  })
+
+  return result;
+};
+
+
+
+const formatDuration = (mcs) => {
+  if (mcs < 1000) { return '0.' + mcs.toString().padStart(3, "0") + 'ms' }
+  return '' + Math.floor(mcs / 1000) + 'ms';
+};
+
+const formatPlugModule = (module) => {
+  return module.replace(/^Elixir./, '');
+};
+
+
+
+class PlugsInfo extends React.Component {
+  constructor() {
+    super();
+
+    this.state = {
+      svgWidth: null,
+      durationScale: null,
+      hoveredPlug: null, // object
+    };
+  }
+
+  componentDidMount() {
+    // TODO: listen to resize, update width
+    // should draw plugs in such a way that every plug will be visible
+    // no matter how short its duration was,
+    // yet try to display all plugs proportionally to taken time
+    const { StartedAt, StoppedAt } = this.props.selectedReqInfo;
+    const totalDurationMcs = StoppedAt - StartedAt;
+    const durationScale = scaleLinear()
+      .domain([0, totalDurationMcs])
+      .range([0, this.svgRef.clientWidth]);
+    this.setState({svgWidth: this.svgRef.clientWidth, durationScale });
+  }
+
+  onPlugHover(plug) {
+    this.setState({hoveredPlug: plug});
+  }
+
+  renderRects(currentOffset) {
+    if (!this.state.svgWidth) { return null; }
+
+    const parts = producePlugParts(this.props.selectedReqInfo.plugs, this.state.durationScale, 0.5, this.props.barHeight);
+    const nodes = [];
+    for (let i in parts) {
+      const p = parts[i];
+
+      let className = "plug";
+      // let height = this.props.barHeight;
+      if (this.state.hoveredPlug && this.state.hoveredPlug.module === p.module) {
+        className += " hovered";
+      }
+
+      nodes.push(<rect key={i}
+        className={className}
+        onMouseEnter={this.onPlugHover.bind(this, p)}
+        onMouseLeave={this.onPlugHover.bind(this, null)}
+        x={p.x} y={0.5} width={p.width} height={p.height-0.5*2} />);
+    }
+
+    return <g>{nodes}</g>;
+  }
+
+  render() {
+    let moduleName = '';
+    const { StartedAt, StoppedAt } = this.props.selectedReqInfo;
+    let duration = StoppedAt - StartedAt;
+
+    if (this.state.hoveredPlug) {
+      moduleName = formatPlugModule(this.state.hoveredPlug.module);
+      duration = this.state.hoveredPlug.duration;
+    }
+
+    return <div>
+      <svg ref={(ref) => { this.svgRef = ref; }}
+          height={this.props.barHeight} width="100%">
+        {this.renderRects()}
+      </svg>
+      <div>{formatDuration(duration)} {moduleName}</div>
+    </div>;
+  }
+}
+PlugsInfo.propTypes = {
+  selectedReqInfo: PropTypes.object.isRequired,
+  barHeight: PropTypes.number.isRequired,
+}
 
 
 
@@ -35,6 +149,8 @@ class SelectedRequestInfo extends React.Component {
           <div style={{flex: '0'}}><button onClick={this.props.clearSelection}>×</button></div>
         </div>
 
+        <PlugsInfo barHeight={20} selectedReqInfo={this.props.selectedReqInfo} />
+
         <h2>request headers:</h2>
         {this.renderHeaders(req_headers)}
 
@@ -67,7 +183,7 @@ export default class RequestsList extends React.Component {
   componentDidMount() {
     this.containerRef.addEventListener("scroll", () => {
       const fullScroll = this.containerRef.scrollHeight - this.containerRef.clientHeight;
-      const scrollTop = this.containerRef.scrollTop;
+      const { scrollTop } = this.containerRef;
 
       // stick to bottom, if we scrolled to very bottom
       // if was scrolled up, then unstick

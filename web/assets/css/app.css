@@ -81,3 +81,12 @@ code {
 .RequestsInfo .SelectedRequestInfo code > div {
   line-height: 1.3em;
 }
+.RequestsInfo .SelectedRequestInfo svg rect.plug {
+  stroke: #C4C4C4;
+  stroke-width: 1px;
+  fill: #F2F2F2;
+}
+.RequestsInfo .SelectedRequestInfo svg rect.plug.hovered {
+  stroke: #2F80ED;
+  stroke-width: 3px;
+}
