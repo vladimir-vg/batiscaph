@@ -22,7 +22,10 @@ const grid = {
 
 class SelectedRequestInfo extends React.Component {
   renderHeaderItem([key, value], i) {
-    return <div key={i}>{key}: {value}</div>;
+    const key1 = key
+      .replace(/^([a-z])/, (a, l) => l.toUpperCase())
+      .replace(/-([a-z])/, (a, l) => '-' + l.toUpperCase())
+    return <div key={i}>{key1}:&nbsp;<span className="value">{value}</span></div>;
   }
 
   renderHeaders(headers) {
@@ -33,32 +36,32 @@ class SelectedRequestInfo extends React.Component {
 
   render() {
     if (!this.props.selectedReqInfo) { return null; }
-
     if (this.props.selectedReqInfo === 'loading') {
-      return <div style={{position: 'absolute', bottom: 0, top: this.props.topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+      return <div style={{position: 'absolute', bottom: 0, top: 0, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
         loading...
-        <button onClick={this.props.clearSelection}>x</button>
+        <button onClick={this.props.clearSelection}>×</button>
       </div>;
     }
 
     const { method, path, resp_code, resp_headers, req_headers } = this.props.selectedReqInfo;
 
-    return <div style={{position: 'absolute', bottom: 0, top: this.props.topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
-      <div style={{display: 'flex'}}>
-        <div style={{flex: '1'}}>{method} {path} {resp_code}</div>
-        <div style={{flex: '0'}}><button onClick={this.props.clearSelection}>x</button></div>
+    return <div className="SelectedRequestInfo" style={{position: 'absolute', bottom: 0, top: 0, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+      <div>
+        <div style={{display: 'flex'}}>
+          <div style={{flex: '1'}}>{method} {path} {resp_code}</div>
+          <div style={{flex: '0'}}><button onClick={this.props.clearSelection}>×</button></div>
+        </div>
+
+        <h2>request headers:</h2>
+        {this.renderHeaders(req_headers)}
+
+        <h2>response headers:</h2>
+        {this.renderHeaders(resp_headers)}
       </div>
-
-      <h2>request headers:</h2>
-      {this.renderHeaders(req_headers)}
-
-      <h2>response headers:</h2>
-      {this.renderHeaders(resp_headers)}
     </div>;
   }
 }
 SelectedRequestInfo.propTypes = {
-  topOffest: PropTypes.number.isRequired,
   clearSelection: PropTypes.func.isRequired,
   selectedReqInfo: PropTypes.any // null, 'loading' or actual request object
 }
@@ -116,13 +119,13 @@ class RequestsInfo extends React.Component {
   }
 
   render() {
-    const topOffest = 60;
+    const topOffset = 90;
     return <div className="RequestsInfo" style={{position: 'relative', height: '100%'}}>
       <h1>Requests</h1>
-      <SelectedRequestInfo topOffest={topOffest}
+      <SelectedRequestInfo
         selectedReqInfo={this.props.selectedReqInfo}
         clearSelection={this.onRequestSelect.bind(this, null)} />
-      <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: topOffest}}>
+      <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: topOffset}}>
         <table>
           <tbody>
             {this.props.reqs.map(this.renderItem)}
