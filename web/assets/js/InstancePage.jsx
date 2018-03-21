@@ -20,6 +20,51 @@ const grid = {
 
 
 
+class SelectedRequestInfo extends React.Component {
+  renderHeaderItem([key, value], i) {
+    return <div key={i}>{key}: {value}</div>;
+  }
+
+  renderHeaders(headers) {
+    return <code>
+      {headers.map(this.renderHeaderItem)}
+    </code>;
+  }
+
+  render() {
+    if (!this.props.selectedReqInfo) { return null; }
+
+    if (this.props.selectedReqInfo === 'loading') {
+      return <div style={{position: 'absolute', bottom: 0, top: this.props.topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+        loading...
+        <button onClick={this.props.clearSelection}>x</button>
+      </div>;
+    }
+
+    const { method, path, resp_code, resp_headers, req_headers } = this.props.selectedReqInfo;
+
+    return <div style={{position: 'absolute', bottom: 0, top: this.props.topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+      <div style={{display: 'flex'}}>
+        <div style={{flex: '1'}}>{method} {path} {resp_code}</div>
+        <div style={{flex: '0'}}><button onClick={this.props.clearSelection}>x</button></div>
+      </div>
+
+      <h2>request headers:</h2>
+      {this.renderHeaders(req_headers)}
+
+      <h2>response headers:</h2>
+      {this.renderHeaders(resp_headers)}
+    </div>;
+  }
+}
+SelectedRequestInfo.propTypes = {
+  topOffest: PropTypes.number.isRequired,
+  clearSelection: PropTypes.func.isRequired,
+  selectedReqInfo: PropTypes.any // null, 'loading' or actual request object
+}
+
+
+
 class RequestsInfo extends React.Component {
   constructor() {
     super();
@@ -28,9 +73,20 @@ class RequestsInfo extends React.Component {
     // not part of the renderable state
     this.stickToBottom = true;
 
-    this.onItemSelect = this.onItemSelect.bind(this);
-    this.clearSelection = this.onItemSelect.bind(this, null);
     this.renderItem = this.renderItem.bind(this);
+    this.onRequestSelect = this.onRequestSelect.bind(this);
+    this.onRequestHover = this.onRequestHover.bind(this);
+  }
+
+  componentDidMount() {
+    this.containerRef.addEventListener("scroll", () => {
+      const fullScroll = this.containerRef.scrollHeight - this.containerRef.clientHeight;
+      const scrollTop = this.containerRef.scrollTop;
+
+      // stick to bottom, if we scrolled to very bottom
+      // if was scrolled up, then unstick
+      this.stickToBottom = (scrollTop === fullScroll);
+    });
   }
 
   componentDidUpdate() {
@@ -39,39 +95,33 @@ class RequestsInfo extends React.Component {
     }
   }
 
-  onItemSelect(id) {
-    this.props.onItemSelect(id);
-  }
+  onRequestSelect(id) { this.props.onRequestSelect(id); }
+  onRequestHover(id) { this.props.onRequestHover(id); }
 
   renderItem({ id, method, path, resp_code }) {
-    return <tr key={id} onClick={this.onItemSelect.bind(this, id)}>
+    let className = "";
+    if (id === this.props.hoveredRequestId) {
+      className += " hovered";
+    }
+
+    return <tr key={id} className={className}
+        onClick={this.onRequestSelect.bind(this, id)}
+        onMouseEnter={this.onRequestHover.bind(this, id)}
+        onMouseLeave={this.onRequestHover.bind(this, null)}>
+
       <td>{method}</td>
       <td>{path}</td>
       <td>{resp_code}</td>
     </tr>;
   }
 
-  renderSelectedRequest({ topOffest }) {
-    if (!this.props.selectedReqInfo) { return null; }
-
-    if (this.props.selectedReqInfo === 'loading') {
-      return <div style={{position: 'absolute', bottom: 0, top: topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
-        loading...
-        <button onClick={this.clearSelection}>x</button>
-      </div>;
-    }
-
-    return <div style={{position: 'absolute', bottom: 0, top: topOffest, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
-      huy
-      <button onClick={this.clearSelection}>x</button>
-    </div>;
-  }
-
   render() {
     const topOffest = 60;
     return <div className="RequestsInfo" style={{position: 'relative', height: '100%'}}>
       <h1>Requests</h1>
-      {this.renderSelectedRequest({ topOffest })}
+      <SelectedRequestInfo topOffest={topOffest}
+        selectedReqInfo={this.props.selectedReqInfo}
+        clearSelection={this.onRequestSelect.bind(this, null)} />
       <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: topOffest}}>
         <table>
           <tbody>
@@ -87,7 +137,10 @@ class RequestsInfo extends React.Component {
 }
 RequestsInfo.propTypes = {
   reqs: PropTypes.array.isRequired,
-  onItemSelect: PropTypes.func.isRequired,
+  onRequestSelect: PropTypes.func.isRequired,
+  onRequestHover: PropTypes.func.isRequired,
+  selectedRequestId: PropTypes.string,
+  hoveredRequestId: PropTypes.string,
   selectedReqInfo: PropTypes.any // null, 'loading' or actual request object
 }
 
@@ -98,7 +151,8 @@ export default class InstancePage extends React.Component {
   constructor() {
     super();
 
-    this.onSelectRequest = this.onSelectRequest.bind(this);
+    this.onRequestSelect = this.onRequestSelect.bind(this);
+    this.onRequestHover = this.onRequestHover.bind(this);
 
     // TODO: listen to resize event, update height accordingly
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
@@ -115,9 +169,8 @@ export default class InstancePage extends React.Component {
     this.props.store.unsubscribeFromInstance(this.props.match.params.id);
   }
 
-  onSelectRequest(id) {
-    this.props.store.onSelectRequest(id);
-  }
+  onRequestSelect(id) { this.props.store.onRequestSelect(id); }
+  onRequestHover(id) { this.props.store.onRequestHover(id); }
 
   renderGrid() {
     return null;
@@ -140,9 +193,12 @@ export default class InstancePage extends React.Component {
   }
 
   renderElement(C, e) {
+    const { selectedRequestId, hoveredRequestId } = this.props.store;
+    const { onRequestSelect, onRequestHover } = this; // take wrapped functions
+    const storeProps = { onRequestSelect, onRequestHover, selectedRequestId, hoveredRequestId };
     const { id, x1, x2, y1, y2, attrs } = e;
-    const props = { id, x1, x2, y1, y2, attrs };
-    return <C key={id} grid={grid} {...props} />;
+    const layoutProps = { id, x1, x2, y1, y2, attrs };
+    return <C key={id} grid={grid} {...storeProps} {...layoutProps} />;
   }
 
   render() {
@@ -158,8 +214,10 @@ export default class InstancePage extends React.Component {
         </SvgView>
       </div>
       <div className="extra-info-container">
-        <RequestsInfo reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
-          onItemSelect={this.onSelectRequest} />
+        <RequestsInfo
+          reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
+          selectedRequestId={this.props.store.selectedRequestId} hoveredRequestId={this.props.store.hoveredRequestId}
+          onRequestSelect={this.onRequestSelect} onRequestHover={this.onRequestHover} />
       </div>
     </div>;
   }

@@ -15,6 +15,7 @@ export default class Store {
         'plug:requests': null,
       },
       selectedRequestId: null,
+      hoveredRequestId: null,
 
       // for full request info
       // we need use Map to make MobX react to dynamically added keys
@@ -48,7 +49,7 @@ export default class Store {
   @computed
   get httpRequestsList() {
     const reqs = Object.values(this.delta['plug:requests'] || {});
-    reqs.sort(({StartedAt: a}, {StartedAt: b}) => a < b ? 1 : -1);
+    reqs.sort(({StartedAt: a}, {StartedAt: b}) => a > b ? 1 : -1);
     return reqs;
   }
 
@@ -60,13 +61,14 @@ export default class Store {
   }
 
   @action
-  onSelectRequest(id) {
-    if (id === null) {
-      this.selectedRequestId = null;
-    } else {
-      this.selectedRequestId = id;
-      this.ensureRequestInfoFetch(id);
-    }
+  onRequestSelect(id) {
+    this.selectedRequestId = id;
+    if (id) { this.ensureRequestInfoFetch(id); }
+  }
+
+  @action
+  onRequestHover(id) {
+    this.hoveredRequestId = id;
   }
 
   @action

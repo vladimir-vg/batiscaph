@@ -3,3 +3,8 @@ rect.HttpReq {
   stroke-width: 1px;
   fill: #F2F2F2;
 }
+
+rect.HttpReq.current,
+rect.HttpReq.hovered {
+  stroke: #2F80ED;
+}

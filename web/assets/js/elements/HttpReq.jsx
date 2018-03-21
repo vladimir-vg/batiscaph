@@ -26,6 +26,16 @@ function produceElements(delta) {
 
 
 class Component extends React.Component {
+  constructor() {
+    super();
+
+    this.onRequestSelect = this.onRequestSelect.bind(this);
+    this.onRequestHover = this.onRequestHover.bind(this);
+  }
+
+  onRequestSelect(id) { this.props.onRequestSelect(id); }
+  onRequestHover(id) { this.props.onRequestHover(id); }
+
   render() {
     const g = this.props.grid;
     const HPADDING_OFFSET = 0;
@@ -35,10 +45,20 @@ class Component extends React.Component {
     const y = g.yRowAt(this.props.y1)-VPADDING_OFFSET;
     const height = (g.yRowAt(this.props.y2) - g.yRowAt(this.props.y1))+2*VPADDING_OFFSET;
 
+    let className = "HttpReq";
+    if (this.props.id === this.props.selectedRequestId) {
+      className += " current";
+    } else if (this.props.id === this.props.hoveredRequestId) {
+      className += " hovered";
+    }
+
     // currently not possble to draw border inside rect
     // have to correct offset by hand
     const borderWidth = 1;
-    return <rect className="HttpReq" style={{strokeWidth: borderWidth}}
+    return <rect className={className} style={{strokeWidth: borderWidth}}
+      onMouseEnter={this.onRequestHover.bind(this, this.props.id)}
+      onMouseLeave={this.onRequestHover.bind(this, null)}
+      onClick={this.onRequestSelect.bind(this, this.props.id)}
       x={x-borderWidth/2} y={y-borderWidth/2} width={width+borderWidth} height={height+borderWidth} />;
   }
 }
@@ -49,6 +69,10 @@ Component.propTypes = {
   y2: PropTypes.number.isRequired,
 
   grid: PropTypes.object.isRequired,
+  selectedRequestId: PropTypes.string,
+  hoveredRequestId: PropTypes.string,
+  onRequestSelect: PropTypes.func.isRequired,
+  onRequestHover: PropTypes.func.isRequired,
 }
 
 

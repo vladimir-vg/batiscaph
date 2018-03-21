@@ -3,8 +3,12 @@ body, html {
   font-family: 'PT Sans', sans-serif;
 }
 
-h1 {
-  font-family: 'PT Serif Caption', serif;
+h1, h2 {
+  font-family: 'PT Serif', serif;
+}
+
+code {
+  font-family: 'PT Mono', monospace;
 }
 
 
@@ -63,7 +67,7 @@ h1 {
   padding: 3px 5px;
 }
 
-.RequestsInfo table tr:hover {
+.RequestsInfo table tr.hovered {
   background-color: #2F80ED;
   color: white;
   cursor: pointer;
