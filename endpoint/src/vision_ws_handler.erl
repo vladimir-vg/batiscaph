@@ -1,7 +1,7 @@
 -module(vision_ws_handler).
 -behaviour(cowboy_websocket_handler).
 -export([
-  init/3,websocket_init/3, websocket_handle/3,
+  init/3, websocket_init/3, websocket_handle/3,
   websocket_info/3, websocket_terminate/3
 ]).
 

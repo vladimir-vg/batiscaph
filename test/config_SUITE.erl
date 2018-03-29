@@ -6,6 +6,11 @@
 
 
 
+% Tests in this suite check correct behaviour of config
+% transmission and application
+
+
+
 all() ->
   [authenticate_and_ask_for_config].
 

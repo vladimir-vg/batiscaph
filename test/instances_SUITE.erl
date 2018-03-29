@@ -6,6 +6,11 @@
 
 
 
+% Tests in this suite check how information about instances
+% changes on service.
+
+
+
 all() ->
   [instances_running_and_stopped].
 

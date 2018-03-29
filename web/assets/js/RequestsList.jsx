@@ -121,7 +121,7 @@ class SelectedRequestInfo extends React.Component {
   renderHeaderItem([key, value], i) {
     const key1 = key
       .replace(/^([a-z])/, (a, l) => l.toUpperCase())
-      .replace(/-([a-z])/, (a, l) => '-' + l.toUpperCase())
+      .replace(/-([a-z])/g, (a, l) => '-' + l.toUpperCase())
     return <div key={i}>{key1}:&nbsp;<span className="value">{value}</span></div>;
   }
 

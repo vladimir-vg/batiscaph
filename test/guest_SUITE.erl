@@ -6,6 +6,11 @@
 
 
 
+% Tests in this suite checks behaviour of the client
+% in case if it was not supplied by any credentials.
+
+
+
 all() ->
   [receive_version].
 

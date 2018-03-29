@@ -218,7 +218,7 @@ response_from_probe(ReqId, Method, Result, #persistent{sent_requests = Reqs} = S
 
 
 handle_own_request_response(get_user_config, _Result, State) ->
-  Config = #{plug_requests => true},
+  Config = #{plug_requests => true, cowboy_requests => true},
   self() ! {probe_request, apply_config, Config},
   {ok, State};
 

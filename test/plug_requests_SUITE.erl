@@ -1,8 +1,13 @@
--module(http_requests_SUITE).
+-module(plug_requests_SUITE).
 -export([all/0, init_per_suite/1, end_per_suite/1]).
 -export([
   receive_http_request_event_and_delta/1
 ]).
+
+
+
+% Tests in this suite check correctness of provided info
+% about http requests.
 
 
 
@@ -52,6 +57,10 @@ start_webapp(PrivDir, AccessKey, Port) ->
     wait_for_application => phoenix_app1
   }),
   {ok, AppContainer}.
+
+
+
+%%%%%%%
 
 
 
