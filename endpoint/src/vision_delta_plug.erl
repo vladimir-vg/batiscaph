@@ -52,7 +52,7 @@ init() ->
 
 consume(#{<<"Type">> := <<"p1 plug:request start">>} = E, #{ongoing_reqs := Ongoing} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid, <<"method">> := Method, <<"path">> := Path} = E,
-  R = #{<<"StartedAt">> => At, <<"Pid">> => Pid, <<"method">> => Method, <<"path">> => Path},
+  R = #{<<"StartedAt">> => At, <<"Pid">> => Pid, <<"Method">> => Method, <<"Path">> => Path},
   State#{ongoing_reqs => Ongoing#{Pid => R}};
 
 consume(#{<<"Type">> := <<"p1 plug:request stop">>} = E, #{ongoing_reqs := Ongoing, ready_reqs := Ready} = State) ->
@@ -62,7 +62,7 @@ consume(#{<<"Type">> := <<"p1 plug:request stop">>} = E, #{ongoing_reqs := Ongoi
   #{<<"StartedAt">> := StartedAt} = R,
   Id = format_id(Pid, StartedAt, StoppedAt),
 
-  R1 = R#{<<"StoppedAt">> => StoppedAt, <<"resp_code">> => Code, <<"id">> => Id},
+  R1 = R#{<<"StoppedAt">> => StoppedAt, <<"RespCode">> => Code, <<"Id">> => Id},
   % R2 = case maps:get(plugs, R1, undefined) of
   %   undefined -> R1;
   %   Plugs -> R1#{plugs => lists:reverse(Plugs)}

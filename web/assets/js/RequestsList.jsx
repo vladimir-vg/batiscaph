@@ -12,11 +12,11 @@ const producePlugParts = (plugs, scale, offset, height) => {
     const width1 = Math.max(Math.floor(width), 2)
     result.push({
       x: offset, width: width1, height: height,
-      module: p.module, duration: p.StoppedAt - p.StartedAt
+      module: p.Module, duration: p.StoppedAt - p.StartedAt
     });
 
-    if (p.plugs) {
-      const items = producePlugParts(p.plugs, scale, offset, height-2);
+    if (p.Plugs) {
+      const items = producePlugParts(p.Plugs, scale, offset, height-2);
       result = result.concat(items);
     }
 
@@ -70,7 +70,7 @@ class PlugsInfo extends React.Component {
   renderRects(currentOffset) {
     if (!this.state.svgWidth) { return null; }
 
-    const parts = producePlugParts(this.props.selectedReqInfo.plugs, this.state.durationScale, 0.5, this.props.barHeight);
+    const parts = producePlugParts(this.props.selectedReqInfo.Plugs, this.state.durationScale, 0.5, this.props.barHeight);
     const nodes = [];
     for (let i in parts) {
       const p = parts[i];
@@ -140,22 +140,22 @@ class SelectedRequestInfo extends React.Component {
       </div>;
     }
 
-    const { method, path, resp_code, resp_headers, req_headers } = this.props.selectedReqInfo;
+    const { Method, Path, RespCode, RespHeaders, ReqHeaders } = this.props.selectedReqInfo;
 
     return <div className="SelectedRequestInfo" style={{position: 'absolute', bottom: 0, top: 0, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
       <div>
         <div style={{display: 'flex'}}>
-          <div style={{flex: '1'}}>{method} {path} {resp_code}</div>
+          <div style={{flex: '1'}}>{Method} {Path} {RespCode}</div>
           <div style={{flex: '0'}}><button onClick={this.props.clearSelection}>×</button></div>
         </div>
 
         <PlugsInfo barHeight={20} selectedReqInfo={this.props.selectedReqInfo} />
 
         <h2>request headers:</h2>
-        {this.renderHeaders(req_headers)}
+        {this.renderHeaders(ReqHeaders)}
 
         <h2>response headers:</h2>
-        {this.renderHeaders(resp_headers)}
+        {this.renderHeaders(RespHeaders)}
       </div>
     </div>;
   }
@@ -200,20 +200,20 @@ export default class RequestsList extends React.Component {
   onRequestSelect(id) { this.props.onRequestSelect(id); }
   onRequestHover(id) { this.props.onRequestHover(id); }
 
-  renderItem({ id, method, path, resp_code }) {
+  renderItem({ Id, Method, Path, RespCode }) {
     let className = "";
-    if (id === this.props.hoveredRequestId) {
+    if (Id === this.props.hoveredRequestId) {
       className += " hovered";
     }
 
-    return <tr key={id} className={className}
-        onClick={this.onRequestSelect.bind(this, id)}
-        onMouseEnter={this.onRequestHover.bind(this, id)}
+    return <tr key={Id} className={className}
+        onClick={this.onRequestSelect.bind(this, Id)}
+        onMouseEnter={this.onRequestHover.bind(this, Id)}
         onMouseLeave={this.onRequestHover.bind(this, null)}>
 
-      <td>{method}</td>
-      <td>{path}</td>
-      <td>{resp_code}</td>
+      <td>{Method}</td>
+      <td>{Path}</td>
+      <td>{RespCode}</td>
     </tr>;
   }
 

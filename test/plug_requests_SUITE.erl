@@ -87,7 +87,7 @@ receive_http_request_event_and_delta(Config) ->
   [{ReqId, Req1}] = maps:to_list(Reqs),
   #{
     <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
-    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>
+    <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/">>
   } = Req1,
   true = StartedAt < StoppedAt,
 
@@ -96,21 +96,21 @@ receive_http_request_event_and_delta(Config) ->
   {ok, ReqInfo} = vt:api_request(get, plug_request, #{instance_id => InstanceId, request_id => ReqId}),
   #{
     <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
-    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>,
-    <<"plugs">> := Plugs, <<"resp_headers">> := RespHeaders, <<"req_headers">> := ReqHeaders
+    <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/">>,
+    <<"Plugs">> := Plugs, <<"RespHeaders">> := RespHeaders, <<"ReqHeaders">> := ReqHeaders
   } = ReqInfo,
 
   [
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Static">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.RequestId">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Logger">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Parsers">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.MethodOverride">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Head">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.Session">>},
-    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.PhoenixApp1Web.Router">>, <<"plugs">> := [
-      #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.Plug.CSRFProtection">>},
-      #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"module">> := <<"Elixir.PhoenixApp1Web.PageController">>}
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.Static">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.RequestId">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.Logger">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.Parsers">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.MethodOverride">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.Head">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.Session">>},
+    #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.PhoenixApp1Web.Router">>, <<"Plugs">> := [
+      #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.Plug.CSRFProtection">>},
+      #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Module">> := <<"Elixir.PhoenixApp1Web.PageController">>}
     ]}
   ] = Plugs,
 

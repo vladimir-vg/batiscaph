@@ -62,7 +62,7 @@ start_webapp(PrivDir, AccessKey, Port) ->
 
 
 
-% for now a plug request is the only way to start tracing on process
+% for now a cowboy request is the only convenient way to start tracing on process
 % that's why these test are written through http requests
 % later this interfacing part might be rewritten in some other manner
 
@@ -86,7 +86,7 @@ spawn_process(Config) ->
   ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
 
   #{<<"cowboy:requests">> := Reqs, <<"erlang:processes">> := Procs} = vt_endpoint:ws_delivered(Ws, delta),
-  [ReqPid] = [P || {_, #{<<"path">> := <<"/spawn_process">>, <<"Pid">> := P}} <- maps:to_list(Reqs)],
+  [ReqPid] = [P || {_, #{<<"Path">> := <<"/spawn_process">>, <<"Pid">> := P}} <- maps:to_list(Reqs)],
   Proc = maps:get(ReqPid, Procs),
   #{} = Proc,
 

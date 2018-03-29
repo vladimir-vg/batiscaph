@@ -85,7 +85,7 @@ receive_http_request_event_and_delta(Config) ->
   [{ReqId, Req1}] = maps:to_list(Reqs),
   #{
     <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
-    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/hello_world">>
+    <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/hello_world">>
   } = Req1,
   true = StartedAt < StoppedAt,
 
@@ -94,8 +94,8 @@ receive_http_request_event_and_delta(Config) ->
   {ok, ReqInfo} = vt:api_request(get, plug_request, #{instance_id => InstanceId, request_id => ReqId}),
   #{
     <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
-    <<"resp_code">> := <<"200">>, <<"method">> := <<"GET">>, <<"path">> := <<"/">>,
-    <<"resp_headers">> := RespHeaders, <<"req_headers">> := ReqHeaders
+    <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/">>,
+    <<"RespHeaders">> := RespHeaders, <<"ReqHeaders">> := ReqHeaders
   } = ReqInfo,
 
   % just to ensure lexicographic order

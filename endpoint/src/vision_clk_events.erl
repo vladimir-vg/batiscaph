@@ -157,12 +157,11 @@ select_plug_request_info(#{
 
 
 produce_request_info([], R) ->
-  case maps:get(plugs, R, undefined) of
-    undefined ->
-      maps:without([current_plugs_stack], R);
+  case maps:take(plugs, R) of
+    error -> maps:without([current_plugs_stack], R);
 
-    [_ | _] = Plugs ->
-      maps:without([current_plugs_stack], R#{plugs => lists:reverse(Plugs)})
+    {[_ | _] = Plugs, R1} ->
+      maps:without([current_plugs_stack], R1#{<<"Plugs">> => lists:reverse(Plugs)})
   end;
 
 produce_request_info([#{<<"Type">> := <<"p1 plug:request start">>} = E | Events], R) ->
@@ -170,27 +169,27 @@ produce_request_info([#{<<"Type">> := <<"p1 plug:request start">>} = E | Events]
     <<"path">> := Path, <<"req_headers">> := Headers
   } = E,
   R1 = R#{
-    <<"StartedAt">> => At, <<"method">> => Method,
-    <<"path">> => Path, <<"req_headers">> => read_headers(Headers)
+    <<"StartedAt">> => At, <<"Method">> => Method,
+    <<"Path">> => Path, <<"ReqHeaders">> => read_headers(Headers)
   },
   produce_request_info(Events, R1);
 
 produce_request_info([#{<<"Type">> := <<"p1 plug:plug start">>} = E | Events], R) ->
   #{<<"At">> := At, <<"module">> := Module} = E,
   PlugsStack = maps:get(current_plugs_stack, R, []),
-  P = #{<<"StartedAt">> => At, <<"module">> => Module},
+  P = #{<<"StartedAt">> => At, <<"Module">> => Module},
   PlugsStack1 = [P | PlugsStack],
   R1 = R#{current_plugs_stack => PlugsStack1},
   produce_request_info(Events, R1);
 
 produce_request_info([#{<<"Type">> := <<"p1 plug:plug stop">>} = E | Events], R) ->
   #{<<"At">> := At, <<"module">> := Module} = E,
-  [#{<<"module">> := Module} = P | PlugsStack] = maps:get(current_plugs_stack, R),
+  [#{<<"Module">> := Module} = P | PlugsStack] = maps:get(current_plugs_stack, R),
   P1 = P#{<<"StoppedAt">> => At},
   P2 =
-    case maps:get(plugs, P1, undefined) of
-      undefined -> P1;
-      NestedPlugs -> P1#{plugs => lists:reverse(NestedPlugs)}
+    case maps:take(plugs, P1) of
+      error -> P1;
+      {NestedPlugs, P3} -> P3#{<<"Plugs">> => lists:reverse(NestedPlugs)}
     end,
 
   case PlugsStack of
@@ -211,8 +210,8 @@ produce_request_info([#{<<"Type">> := <<"p1 plug:request stop">>} = E | Events],
     <<"resp_code">> := Code, <<"resp_headers">> := Headers
   } = E,
   R1 = R#{
-    <<"StoppedAt">> => StoppedAt, <<"resp_code">> => Code,
-    <<"resp_headers">> => read_headers(Headers)
+    <<"StoppedAt">> => StoppedAt, <<"RespCode">> => Code,
+    <<"RespHeaders">> => read_headers(Headers)
   },
   produce_request_info(Events, R1).
 
