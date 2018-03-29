@@ -17,4 +17,8 @@ COPY lib lib
 COPY priv/gettext priv/gettext
 COPY priv/repo priv/repo
 
+# to avoid installing node in container
+# expect that assets were correctly built on host machine
+COPY priv/static priv/static
+
 RUN mix compile

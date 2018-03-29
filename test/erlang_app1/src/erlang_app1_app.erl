@@ -20,7 +20,8 @@ start_cowboy(Port) ->
   application:ensure_all_started(cowboy),
   Dispatch = cowboy_router:compile([
     {'_', [
-      {"/spawn_process", spawn_process, []}
+      {"/spawn_process", spawn_process, []},
+      {"/hello_world", hello_world, []}
     ]}
   ]),
   {ok, _} = cowboy:start_http(http, 100, [{port, Port}], [

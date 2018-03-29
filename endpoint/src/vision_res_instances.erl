@@ -21,7 +21,7 @@ rest_init(Req, _Opts) ->
   Req1 = cowboy_req:set_resp_header(<<"access-control-max-age">>, <<"1728000">>, Req),
   Req2 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"HEAD, GET">>, Req1),
   Req3 = cowboy_req:set_resp_header(<<"access-control-allow-headers">>, <<"content-type, authorization">>, Req2),
-  Req4 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"http://0.0.0.0:4000">>, Req3),
+  Req4 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, <<"http://0.0.0.0:8082">>, Req3),
   {ok, Req4, no_state}.
 
 terminate(_Reason, _Req, _State) ->

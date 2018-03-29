@@ -164,6 +164,7 @@ handle_message_from_probe({summary_info, Info}, State) ->
   {ok, State1#persistent{instance_id = InstanceId}};
 
 handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
+  % [lager:info("event: ~p", [E]) || E <- Events],
   Events1 = vision_event:transform(Events, #{instance_id => InstanceId}),
   ok = vision_clk_events:insert(Events1),
   {ok, State};
@@ -268,5 +269,5 @@ mention_used_atoms() ->
     events,at,type,pid1,pid2,
     host,method,path,port,request_id,
     req_headers,resp_headers,resp_code,
-    plug, halted
+    resp_body_size,plug,halted
   ].

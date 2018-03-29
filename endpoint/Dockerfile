@@ -19,7 +19,6 @@ WORKDIR /root
 
 ENV VISION_ENDPOINT_CLICKHOUSE_DB batiscaph_test
 ENV VISION_ENDPOINT_CLICKHOUSE_URL http://127.0.0.1:8123/
-ENV VISION_ENDPOINT_NEO4J_HTTP_URL http://neo4j:neo4j@127.0.0.1:7474/
 COPY before-test-run.sh before-test-run.sh
 
 # first add only rebar config and download deps,

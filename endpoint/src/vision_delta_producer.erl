@@ -91,10 +91,12 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
   % correct our request by it.
   % Do not intersect
 
+  Types = lists:usort(vision_delta_plug:desired_types() ++ vision_delta_cowboy:desired_types()),
+  Attrs = lists:usort(vision_delta_plug:desired_attrs() ++ vision_delta_cowboy:desired_attrs()),
+
   % do expect that events are sorted DESC
   {ok, Events} = vision_clk_events:select_events(#{
-    instance_id => Id, types => vision_delta_plug:desired_types(),
-    attrs => vision_delta_plug:desired_attrs(),
+    instance_id => Id, types => Types, attrs => Attrs,
     earlier_than => now, limit => ?CHUNK_SIZE
   }),
 
@@ -112,16 +114,33 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
 
 produce_delta_chunk([#{<<"At">> := At, <<"SubId">> := SubId} | _] = Events) ->
   From = {At div (1000*1000), At rem (1000*1000), SubId},
-  State = vision_delta_plug:init(),
+  State = delta_init(),
   produce_delta_chunk(Events, #chunk{from = From}, State).
 
 % last event
 produce_delta_chunk([#{<<"At">> := At, <<"SubId">> := SubId} = E], Chunk, State) ->
   To = {At div (1000*1000), At rem (1000*1000), SubId},
-  State1 = vision_delta_plug:consume(E, State),
-  Delta = vision_delta_plug:finalize(State1),
+  State1 = delta_consume(E, State),
+  Delta = delta_finalize(State1),
   Chunk#chunk{to = To, delta = Delta};
 
 produce_delta_chunk([E | Events], Chunk, State) ->
-  State1 = vision_delta_plug:consume(E, State),
+  State1 = delta_consume(E, State),
   produce_delta_chunk(Events, Chunk, State1).
+
+
+
+delta_init() ->
+  #{plug => vision_delta_plug:init(), cowboy => vision_delta_cowboy:init()}.
+
+delta_consume(E, State) ->
+  maps:map(fun
+    (plug, State1) -> vision_delta_plug:consume(E, State1);
+    (cowboy, State1) -> vision_delta_cowboy:consume(E, State1)
+  end, State).
+
+delta_finalize(State) ->
+  maps:fold(fun
+    (plug, State1, Acc) -> maps:merge(Acc, vision_delta_plug:finalize(State1));
+    (cowboy, State1, Acc) -> maps:merge(Acc, vision_delta_cowboy:finalize(State1))
+  end, #{<<"erlang:processes">> => #{}}, State).
