@@ -44,6 +44,7 @@ run_fresh_endpoint(DockerName, LogDir) ->
   Opts = #{
     <<"VISION_ENDPOINT_HTTP_PORT">> => Port,
     <<"VISION_ENDPOINT_POSTGRES_URL">> => <<"postgres://postgres:postgres@127.0.0.1/vision_test">>,
+    <<"VISION_ENDPOINT_ALLOW_ORIGIN_URL">> => <<"http://0.0.0.0:8082">>, % to be able to access web UI on this address
     host_network => true,
     logdir => LogDir,
     docker_name => DockerName,
