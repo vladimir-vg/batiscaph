@@ -2,7 +2,7 @@
 -behaviour(vision_delta_producer).
 -export([desired_types/0, desired_attrs/0, init/0, consume/2, finalize/1]). % delta producer callbacks
 -export([parse_id/1]).
-
+-export([produce_request_info/2, desired_request_types/0, desired_request_attrs/0]).
 
 
 % this is a brother-module for vision_probe_feature_phoenix
@@ -84,3 +84,72 @@ consume(_E, State) ->
 
 finalize(#{ready_reqs := Reqs}) ->
   #{<<"cowboy:requests">> => Reqs}.
+
+
+
+%
+%
+%
+
+
+
+desired_request_attrs() ->
+  [
+    <<"req_headers">>, <<"resp_headers">>, <<"resp_code">>,
+    <<"method">>, <<"port">>, <<"path">>
+  ].
+
+desired_request_types() ->
+  [
+    <<"p1 cowboy:request init start">>, <<"p1 cowboy:request init stop">>,
+    <<"p1 cowboy:request handle start">>, <<"p1 cowboy:request handle stop">>,
+    <<"p1 cowboy:request reply">>
+  ].
+
+
+
+produce_request_info([], R) ->
+  R;
+
+produce_request_info([#{<<"Type">> := <<"p1 cowboy:request init start">>} = E | Events], R) ->
+  #{<<"At">> := At, <<"method">> := Method, <<"path">> := Path, <<"req_headers">> := Headers} = E,
+  R1 = R#{
+    <<"Method">> => Method, <<"Path">> => Path,
+    <<"init">> => #{<<"StartedAt">> => At},
+    <<"ReqHeaders">> => read_headers(Headers)
+  },
+  produce_request_info(Events, R1);
+
+produce_request_info([#{<<"Type">> := <<"p1 cowboy:request init stop">>} = E | Events], R) ->
+  #{<<"At">> := At} = E,
+  #{<<"init">> := Init} = R,
+  R1 = R#{<<"init">> => Init#{<<"StoppedAt">> => At}},
+  produce_request_info(Events, R1);
+
+produce_request_info([#{<<"Type">> := <<"p1 cowboy:request handle start">>} = E | Events], R) ->
+  #{<<"At">> := At} = E,
+  R1 = R#{<<"handle">> => #{<<"StartedAt">> => At}},
+  produce_request_info(Events, R1);
+
+produce_request_info([#{<<"Type">> := <<"p1 cowboy:request reply">>} = E | Events], R) ->
+  #{<<"At">> := At, <<"resp_headers">> := Headers, <<"resp_code">> := RespCode} = E,
+  R1 = R#{
+    <<"handle">> => #{<<"StartedAt">> => At},
+    <<"RespHeaders">> => read_headers(Headers),
+    <<"RespCode">> => RespCode
+  },
+  produce_request_info(Events, R1);
+
+produce_request_info([#{<<"Type">> := <<"p1 cowboy:request handle stop">>} = E | Events], R) ->
+  #{<<"At">> := At} = E,
+  #{<<"handle">> := Init} = R,
+  R1 = R#{<<"handle">> => Init#{<<"StoppedAt">> => At}},
+  produce_request_info(Events, R1).
+
+
+
+read_headers(Headers) ->
+  try erlang:binary_to_term(Headers, [safe]) of
+    Value -> [[K, V] || {K, V} <- Value]
+  catch _:_ -> <<"unable_to_decode_binary_term">>
+  end.

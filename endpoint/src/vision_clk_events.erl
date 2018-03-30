@@ -6,7 +6,7 @@
 -export([
   select_instances_infos_with_ids/1,
   select_events/1,
-  select_plug_request_info/1
+  select_plug_request_info/1, select_cowboy_request_info/1
 ]).
 
 
@@ -137,11 +137,8 @@ select_plug_request_info(#{
   {ok, Q} = application:get_env(vision, clk_queries),
   {ok, DBName} = application:get_env(vision, clickhouse_dbname),
 
-  Attrs = [<<"req_headers">>, <<"resp_headers">>, <<"resp_code">>, <<"method">>, <<"port">>, <<"path">>, <<"module">>],
-  Types = [
-    <<"p1 plug:request start">>, <<"p1 plug:request stop">>,
-    <<"p1 plug:plug start">>, <<"p1 plug:plug stop">>
-  ],
+  Attrs = vision_delta_plug:desired_request_attrs(),
+  Types = vision_delta_plug:desired_request_types(),
   Params = [
     {dbname, DBName}, {instance_id, InstanceId}, {pid, Pid},
     {started_at, integer_to_binary(StartedAt)}, {stopped_at, integer_to_binary(StoppedAt)},
@@ -151,97 +148,28 @@ select_plug_request_info(#{
   {ok, SQL} = eql:get_query(select_request_events, Q, Params),
   {ok, Body} = clickhouse:execute(SQL),
   {ok, Events} = clickhouse:parse_rows(maps, Body),
-  Info = produce_request_info(Events, #{<<"Pid">> => Pid}),
+  Info = vision_delta_plug:produce_request_info(Events, #{<<"Pid">> => Pid}),
   {ok, Info}.
 
 
 
-produce_request_info([], R) ->
-  case maps:take(plugs, R) of
-    error -> maps:without([current_plugs_stack], R);
+select_cowboy_request_info(#{
+  pid := Pid, instance_id := InstanceId,
+  started_at := StartedAt, stopped_at := StoppedAt
+}) ->
+  {ok, Q} = application:get_env(vision, clk_queries),
+  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
 
-    {[_ | _] = Plugs, R1} ->
-      maps:without([current_plugs_stack], R1#{<<"Plugs">> => lists:reverse(Plugs)})
-  end;
+  Attrs = vision_delta_cowboy:desired_request_attrs(),
+  Types = vision_delta_cowboy:desired_request_types(),
+  Params = [
+    {dbname, DBName}, {instance_id, InstanceId}, {pid, Pid},
+    {started_at, integer_to_binary(StartedAt)}, {stopped_at, integer_to_binary(StoppedAt)},
+    {types, clickhouse:list_sql(Types)}, {attrs, attrs_sql(Q, Attrs)}
+  ],
 
-produce_request_info([#{<<"Type">> := <<"p1 plug:request start">>} = E | Events], R) ->
-  #{<<"At">> := At, <<"method">> := Method,
-    <<"path">> := Path, <<"req_headers">> := Headers
-  } = E,
-  R1 = R#{
-    <<"StartedAt">> => At, <<"Method">> => Method,
-    <<"Path">> => Path, <<"ReqHeaders">> => read_headers(Headers)
-  },
-  produce_request_info(Events, R1);
-
-produce_request_info([#{<<"Type">> := <<"p1 plug:plug start">>} = E | Events], R) ->
-  #{<<"At">> := At, <<"module">> := Module} = E,
-  PlugsStack = maps:get(current_plugs_stack, R, []),
-  P = #{<<"StartedAt">> => At, <<"Module">> => Module},
-  PlugsStack1 = [P | PlugsStack],
-  R1 = R#{current_plugs_stack => PlugsStack1},
-  produce_request_info(Events, R1);
-
-produce_request_info([#{<<"Type">> := <<"p1 plug:plug stop">>} = E | Events], R) ->
-  #{<<"At">> := At, <<"module">> := Module} = E,
-  [#{<<"Module">> := Module} = P | PlugsStack] = maps:get(current_plugs_stack, R),
-  P1 = P#{<<"StoppedAt">> => At},
-  P2 =
-    case maps:take(plugs, P1) of
-      error -> P1;
-      {NestedPlugs, P3} -> P3#{<<"Plugs">> => lists:reverse(NestedPlugs)}
-    end,
-
-  case PlugsStack of
-    [] ->
-      ReqPlugs = maps:get(plugs, R, []),
-      R1 = R#{plugs => [P2 | ReqPlugs], current_plugs_stack => []},
-      produce_request_info(Events, R1);
-
-    [ParentPlug | Rest] ->
-      SiblingsPlugs = maps:get(plugs, ParentPlug, []),
-      ParentPlug1 = ParentPlug#{plugs => [P2 | SiblingsPlugs]},
-      R1 = R#{current_plugs_stack => [ParentPlug1 | Rest]},
-      produce_request_info(Events, R1)
-  end;
-
-produce_request_info([#{<<"Type">> := <<"p1 plug:request stop">>} = E | Events], R) ->
-  #{<<"At">> := StoppedAt,
-    <<"resp_code">> := Code, <<"resp_headers">> := Headers
-  } = E,
-  R1 = R#{
-    <<"StoppedAt">> => StoppedAt, <<"RespCode">> => Code,
-    <<"RespHeaders">> => read_headers(Headers)
-  },
-  produce_request_info(Events, R1).
-
-read_headers(Headers) ->
-  try erlang:binary_to_term(Headers, [safe]) of
-    Value -> [[K, V] || {K, V} <- Value]
-  catch _:_ -> <<"unable_to_decode_binary_term">>
-  end.
-
-
-
-% consume(#{<<"Type">> := <<"p1 plug:plug stop">>} = E, #{ongoing_reqs := Ongoing} = State) ->
-%   #{<<"At">> := At, <<"Pid1">> := Pid, <<"module">> := Module} = E,
-%   R = maps:get(Pid, Ongoing),
-%   [#{<<"module">> := Module} = P | PlugsStack] = maps:get(current_plugs_stack, R),
-%   P1 = P#{<<"StoppedAt">> => At},
-%   P2 = case maps:get(plugs, P1, undefined) of
-%     undefined -> P1;
-%     NestedPlugs -> P1#{plugs => lists:reverse(NestedPlugs)}
-%   end,
-% 
-%   case PlugsStack of
-%     [] ->
-%       ReqPlugs = maps:get(plugs, R, []),
-%       R1 = R#{plugs => [P2 | ReqPlugs], current_plugs_stack => []},
-%       State#{ongoing_reqs => Ongoing#{Pid => R1}};
-% 
-%     [ParentPlug | Rest] ->
-%       SiblingsPlugs = maps:get(plugs, ParentPlug, []),
-%       ParentPlug1 = ParentPlug#{plugs => [P2 | SiblingsPlugs]},
-%       R1 = R#{current_plugs_stack => [ParentPlug1 | Rest]},
-%       State#{ongoing_reqs => Ongoing#{Pid => R1}}
-%   end;
+  {ok, SQL} = eql:get_query(select_request_events, Q, Params),
+  {ok, Body} = clickhouse:execute(SQL),
+  {ok, Events} = clickhouse:parse_rows(maps, Body),
+  Info = vision_delta_cowboy:produce_request_info(Events, #{<<"Pid">> => Pid}),
+  {ok, Info}.

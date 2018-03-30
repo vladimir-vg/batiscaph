@@ -1,6 +1,6 @@
 // Code in this file is responsible for producing ready for render tree
 //
-// layout takes declarative definitions of *Element's
+// layout takes declarative definitions of elements
 // makes sure that requested constraints are met
 // generates ready-to-render data tree, with calculated x's and y's.
 
@@ -32,8 +32,8 @@ export function produceLayout(delta) {
 
 function convertToCoords({ elements, toX, toY }) {
   return elements.map((e) => {
-    const { id, x1, x2, y1, y2, attrs } = e;
-    const result = { id, attrs };
+    const { id, key, x1, x2, y1, y2 } = e;
+    const result = { id, key };
     if (x1) { result.x1 = toX(x1, e); }
     if (x2) { result.x2 = toX(x2, e); }
     if (y1) { result.y1 = toY(y1, e); }

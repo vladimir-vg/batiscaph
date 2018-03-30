@@ -71,9 +71,9 @@ export default class InstancePage extends React.Component {
     const { selectedRequestId, hoveredRequestId } = this.props.store;
     const { onRequestSelect, onRequestHover } = this; // take wrapped functions
     const storeProps = { onRequestSelect, onRequestHover, selectedRequestId, hoveredRequestId };
-    const { id, x1, x2, y1, y2, attrs } = e;
-    const layoutProps = { id, x1, x2, y1, y2, attrs };
-    return <C key={id} grid={grid} {...storeProps} {...layoutProps} />;
+    const { id, key, x1, x2, y1, y2 } = e;
+    const layoutProps = { id, x1, x2, y1, y2 };
+    return <C key={key} grid={grid} {...storeProps} {...layoutProps} />;
   }
 
   render() {

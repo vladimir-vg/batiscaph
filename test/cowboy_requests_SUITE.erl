@@ -84,17 +84,19 @@ receive_http_request_event_and_delta(Config) ->
   % key of the request is unknown
   [{ReqId, Req1}] = maps:to_list(Reqs),
   #{
-    <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
-    <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/hello_world">>
+    <<"Pid">> := _, <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/hello_world">>,
+    <<"init">> := #{<<"StartedAt">> := StartedAt, <<"StoppedAt">> := _},
+    <<"handle">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := StoppedAt}
   } = Req1,
   true = StartedAt < StoppedAt,
 
 
 
-  {ok, ReqInfo} = vt:api_request(get, plug_request, #{instance_id => InstanceId, request_id => ReqId}),
+  {ok, ReqInfo} = vt:api_request(get, cowboy_request, #{instance_id => InstanceId, request_id => ReqId}),
   #{
-    <<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt, <<"Pid">> := _,
-    <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/">>,
+    <<"Pid">> := _, <<"RespCode">> := <<"200">>, <<"Method">> := <<"GET">>, <<"Path">> := <<"/hello_world">>,
+    <<"init">> := #{<<"StartedAt">> := StartedAt, <<"StoppedAt">> := _},
+    <<"handle">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := StoppedAt},
     <<"RespHeaders">> := RespHeaders, <<"ReqHeaders">> := ReqHeaders
   } = ReqInfo,
 
@@ -103,7 +105,7 @@ receive_http_request_event_and_delta(Config) ->
   RespHeaders1 = lists:sort(RespHeaders),
 
   [[<<"host">>, <<_/binary>>], [<<"user-agent">>, <<"hackney", _/binary>>] | _] = ReqHeaders1,
-  [[<<"cache-control">>, <<_/binary>>], [<<"content-type">>, <<"text/html", _/binary>>] | _] = RespHeaders1,
+  [[<<"content-type">>, <<"text/plain">>] | _] = RespHeaders1,
 
   ok.
 

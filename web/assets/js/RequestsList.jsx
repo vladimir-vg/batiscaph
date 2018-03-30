@@ -142,6 +142,11 @@ class SelectedRequestInfo extends React.Component {
 
     const { Method, Path, RespCode, RespHeaders, ReqHeaders } = this.props.selectedReqInfo;
 
+    let plugInfo = null;
+    if (this.props.selectedReqInfo.Plugs) {
+      plugInfo = <PlugsInfo barHeight={20} selectedReqInfo={this.props.selectedReqInfo} />;
+    }
+
     return <div className="SelectedRequestInfo" style={{position: 'absolute', bottom: 0, top: 0, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
       <div>
         <div style={{display: 'flex'}}>
@@ -149,7 +154,7 @@ class SelectedRequestInfo extends React.Component {
           <div style={{flex: '0'}}><button onClick={this.props.clearSelection}>×</button></div>
         </div>
 
-        <PlugsInfo barHeight={20} selectedReqInfo={this.props.selectedReqInfo} />
+        {plugInfo}
 
         <h2>request headers:</h2>
         {this.renderHeaders(ReqHeaders)}

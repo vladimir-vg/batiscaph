@@ -215,7 +215,9 @@ api_request(get, Resource, Arg) when is_binary(Resource) andalso is_map(Arg) ->
 api_url(get, BaseUrl, <<"instances">>, #{user_id := UserId}) ->
   hackney_url:make_url(BaseUrl, [<<"api">>, <<"instances">>], to_qs_vals([{user_id, UserId}]));
 api_url(get, BaseUrl, <<"plug_request">>, #{instance_id := InstanceId, request_id := ReqId}) ->
-  hackney_url:make_url(BaseUrl, [<<"api">>, <<"instances">>, InstanceId, <<"plug-requests">>, ReqId], []).
+  hackney_url:make_url(BaseUrl, [<<"api">>, <<"instances">>, InstanceId, <<"plug-requests">>, ReqId], []);
+api_url(get, BaseUrl, <<"cowboy_request">>, #{instance_id := InstanceId, request_id := ReqId}) ->
+  hackney_url:make_url(BaseUrl, [<<"api">>, <<"instances">>, InstanceId, <<"cowboy-requests">>, ReqId], []).
 
 to_qs_vals([]) -> [];
 to_qs_vals([{K,V} | Rest]) ->

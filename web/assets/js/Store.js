@@ -13,6 +13,7 @@ export default class Store {
       instancesList: [],
       delta: {
         'plug:requests': null,
+        'cowboy:requests': null,
       },
       selectedRequestId: null,
       hoveredRequestId: null,
@@ -48,8 +49,23 @@ export default class Store {
   // sorted list of ready to display reqs
   @computed
   get httpRequestsList() {
-    const reqs = Object.values(this.delta['plug:requests'] || {});
-    reqs.sort(({StartedAt: a}, {StartedAt: b}) => a > b ? 1 : -1);
+    const reqs1 = Object.values(this.delta['plug:requests'] || {});
+    const reqs2 = Object.values(this.delta['cowboy:requests'] || {});
+    const reqs = reqs1.concat(reqs2);
+    reqs.sort((a, b) => {
+      let aAt, bAt;
+      if ('StartedAt' in a) {
+        aAt = a.StartedAt;
+      } else if (a.init && 'StartedAt' in a.init) {
+        aAt = a.init.StartedAt;
+      }
+      if ('StartedAt' in b) {
+        bAt = b.StartedAt;
+      } else if (b.init && 'StartedAt' in b.init) {
+        bAt = b.init.StartedAt;
+      }
+      return aAt > bAt ? 1 : -1;
+    });
     return reqs;
   }
 
@@ -84,7 +100,14 @@ export default class Store {
       return; // request was fetched before, and request was finished
     }
 
-    fetch(`${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`)
+    let url = null;
+    if (id in this.delta['plug:requests']) {
+      url = `${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`;
+    } else if (id in this.delta['cowboy:requests']) {
+      url = `${window.API_URL}/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
+    }
+
+    fetch(url)
       .then((response) => response.json())
       .then(action((json) => {
         this.reqsDetails.set(id, json);

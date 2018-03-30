@@ -13,9 +13,28 @@ function produceElements(delta) {
       const req = delta['plug:requests'][id];
       result.push({
         id: id,
+        key: id,
         x1: req.Pid,
         y1: req.StartedAt,
         y2: req.StoppedAt,
+      });
+    }
+
+    for (const id in delta['cowboy:requests']) {
+      const req = delta['cowboy:requests'][id];
+      result.push({
+        id: id,
+        key: `init ${id}`,
+        x1: req.Pid,
+        y1: req.init.StartedAt,
+        y2: req.init.StoppedAt,
+      });
+      result.push({
+        id: id,
+        key: `handle ${id}`,
+        x1: req.Pid,
+        y1: req.handle.StartedAt,
+        y2: req.handle.StoppedAt,
       });
     }
   }
