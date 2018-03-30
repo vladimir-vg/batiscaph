@@ -46,7 +46,11 @@ instances_running_and_stopped(Config) ->
     <<"VISION_PROBE_ACCESS_KEY">> => AccessKey
   }),
 
-  {summary_info, #{instance_id := <<InstanceId/binary>>}} = vt_endpoint:received_from_probe(summary_info),
+  InstanceId =
+    receive {probe_connected, <<Id/binary>>} -> Id
+    after 5000 -> error(probe_connection_timeout)
+    end,
+
   {response, _, apply_config, ok} = vt_endpoint:received_from_probe(apply_config),
 
   % instance connected and sent info

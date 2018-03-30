@@ -33,7 +33,10 @@ init_per_suite(Config) ->
   Port = 8083,
   {ok, AppContainer} = start_webapp(PrivDir, AccessKey, Port),
 
-  {summary_info, #{instance_id := <<InstanceId/binary>>}} = vt_endpoint:received_from_probe(summary_info),
+  InstanceId =
+    receive {probe_connected, <<Id/binary>>} -> Id
+    after 5000 -> error(probe_connection_timeout)
+    end,
 
   % wait until tracing is fully enabled
   {response, _, apply_config, ok} = vt_endpoint:received_from_probe(apply_config),

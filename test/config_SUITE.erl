@@ -40,16 +40,19 @@ authenticate_and_ask_for_config(Config) ->
     <<"VISION_PROBE_ACCESS_KEY">> => AccessKey
   }),
 
-  {summary_info, #{
-    probe_version := <<"0.1.0">>,
-    dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
-    instance_id := <<_/binary>>
-  }} = vt_endpoint:received_from_probe(summary_info),
+  receive {probe_connected, _InstanceId} -> ok
+  after 5000 -> error(probe_connection_timeout)
+  end,
 
   {request, ReqId1, get_user_config, _} = vt_endpoint:sent_to_probe(get_user_config),
   {response, ReqId1, get_user_config, #{}} = vt_endpoint:received_from_probe(get_user_config),
 
   {request, ReqId2, apply_config, #{}} = vt_endpoint:sent_to_probe(apply_config),
   {response, ReqId2, apply_config, ok} = vt_endpoint:received_from_probe(apply_config),
+
+  {summary_info, #{
+    probe_version := <<"0.1.0">>,
+    dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}]
+  }} = vt_endpoint:received_from_probe(summary_info),
 
   ok.

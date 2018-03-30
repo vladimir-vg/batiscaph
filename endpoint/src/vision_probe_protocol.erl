@@ -38,12 +38,41 @@ authorize_by_token(Token) ->
 
 
 start_persistent_loop(Env, UserId, Req) ->
+  ok = remove_from_ranch_connection_pool(Env),
+  InstanceId = vision_util:binary_to_hex(crypto:strong_rand_bytes(32)),
+  {ok, Socket, Transport, Req1} = switch_socket_to_binary_stream(InstanceId, Req),
+  lager:info("Socket ~p was open open on id: ~p", [Socket, InstanceId]),
+
+  % now we turning this process into gen_server
+  % add necessary dict values to make supervisor happy
+  put('$ancestors', [self()]),
+  State = #persistent{socket = Socket, transport = Transport, user_id = UserId, instance_id = InstanceId},
+  {ok, State1} = insert_new_instance_into_db(InstanceId, State),
+  ok = attach_to_gen_tracker(InstanceId),
+
+  ok = vision_clk_events:insert([
+    vision_event:event(InstanceId, now, <<"0 vision connection-start">>)
+  ]),
+
+  self() ! {probe_request, get_user_config, []},
+
+  {ok, State2} = check_test_subscribers(State1),
+  ok = notify_subscribers_about_connection(State2),
+  gen_server:enter_loop(?MODULE, [], State2).
+
+
+
+remove_from_ranch_connection_pool(Env) ->
   % take this socket out of pool
   % more details in ranch official documentation
   Ref = proplists:get_value(listener, Env),
-  ok = ranch:remove_connection(Ref),
+  ok = ranch:remove_connection(Ref).
 
-  Headers = [{<<"upgrade">>, <<"application/vision-persistent-v0">>}],
+switch_socket_to_binary_stream(InstanceId, Req) ->
+  Headers = [
+    {<<"upgrade">>, <<"application/vision-persistent-v0">>}
+    % {<<"x-runtime-vision-instance-id">>, InstanceId}
+  ],
   {ok, Req1} = cowboy_req:upgrade_reply(101, Headers, Req),
   [Socket, Transport] = cowboy_req:get([socket, transport], Req1),
   Transport:setopts(Socket, [{active,once},{packet,4}]),
@@ -53,16 +82,19 @@ start_persistent_loop(Env, UserId, Req) ->
   receive {cowboy_req,resp_sent} -> ok
   after 1000 -> error(failed_cowboy_upgrade_reply)
   end,
+  {ok, Socket, Transport, Req1}.
 
-  lager:info("Socket ~p open", [Socket]),
+attach_to_gen_tracker(InstanceId) ->
+  % provided start_link function don't even exist
+  % MFA provided to give gen_tracker an idea where to search for
+  % after_terminate callback
+  ChildSpec = {InstanceId, {vision_probe_protocol, start_link, []}, temporary, 200, worker, []},
+  gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
+  ok.
 
-  % now we turning this process into gen_server
-  % add necessary dict values to make it happy
-  put('$ancestors', [self()]),
-  State = #persistent{socket = Socket, transport = Transport, user_id = UserId},
-
-  {ok, State1} = check_test_subscribers(State),
-  gen_server:enter_loop(?MODULE, [], State1).
+notify_subscribers_about_connection(#persistent{test_subscribers = Pids, instance_id = InstanceId}) ->
+  [Pid ! {probe_connected, InstanceId} || Pid <- Pids],
+  ok.
 
 
 
@@ -143,25 +175,8 @@ handle_message_from_probe({response, ReqId, Method, Result}, State) ->
   {ok, State1};
 
 handle_message_from_probe({summary_info, Info}, State) ->
-  #{dependency_in := _, instance_id := InstanceId, probe_version := _} = Info,
-  {ok, State1} = insert_new_instance_into_db(InstanceId, State),
-
-  % provided start_link function don't even exist
-  % MFA provided to give gen_tracker an idea where to search for
-  % after_terminate callback
-  ChildSpec = {InstanceId, {vision_probe_protocol, start_link, []}, temporary, 200, worker, []},
-  gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
-
-  ok = vision_clk_events:insert([
-    vision_event:event(InstanceId, now, <<"0 vision connection-start">>)
-  ]),
-
-  % once successfully received summary
-  % and inserted info about new instance
-  % request config to start trace
-  self() ! {probe_request, get_user_config, []},
-
-  {ok, State1#persistent{instance_id = InstanceId}};
+  #{dependency_in := _, probe_version := _} = Info,
+  {ok, State};
 
 handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
   % [lager:info("event: ~p", [E]) || E <- Events],

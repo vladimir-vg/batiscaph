@@ -37,8 +37,7 @@ receive_version(Config) ->
 
   {summary_info, #{
     probe_version := <<"0.1.0">>,
-    dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}],
-    instance_id := <<_/binary>>
+    dependency_in := [{<<"erlang_app1">>, <<"1.2.3-test1">>}]
   }} = vt_endpoint:received_from_probe(summary_info),
 
   ok.
