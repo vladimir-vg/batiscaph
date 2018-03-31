@@ -8,9 +8,9 @@ import PropTypes from 'prop-types';
 function produceElements(delta) {
   const result = [];
 
-  if (delta['plug:requests']) {
-    for (const id in delta['plug:requests']) {
-      const req = delta['plug:requests'][id];
+  if (delta['plug-requests']) {
+    for (const id in delta['plug-requests']) {
+      const req = delta['plug-requests'][id];
       result.push({
         id: id,
         key: id,
@@ -20,8 +20,8 @@ function produceElements(delta) {
       });
     }
 
-    for (const id in delta['cowboy:requests']) {
-      const req = delta['cowboy:requests'][id];
+    for (const id in delta['cowboy-requests']) {
+      const req = delta['cowboy-requests'][id];
       result.push({
         id: id,
         key: `init ${id}`,

@@ -97,7 +97,7 @@ consume(_E, State) ->
 
 
 finalize(#{ready_reqs := Reqs}) ->
-  #{<<"plug:requests">> => Reqs}.
+  #{<<"plug-requests">> => Reqs}.
 
 
 

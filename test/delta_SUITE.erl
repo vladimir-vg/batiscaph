@@ -88,7 +88,7 @@ spawn_process(Config) ->
   {ok, Ws} = vt_endpoint:ws_connect(),
   ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
 
-  #{<<"cowboy:requests">> := Reqs, <<"erlang:processes">> := Procs} = vt_endpoint:ws_delivered(Ws, delta),
+  #{<<"cowboy-requests">> := Reqs, <<"erlang-processes">> := Procs} = vt_endpoint:ws_delivered(Ws, delta),
   [ReqPid] = [P || {_, #{<<"Path">> := <<"/spawn_process">>, <<"Pid">> := P}} <- maps:to_list(Reqs)],
   Proc = maps:get(ReqPid, Procs),
   #{} = Proc,

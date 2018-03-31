@@ -84,7 +84,7 @@ receive_http_request_event_and_delta(Config) ->
   {ok, Ws} = vt_endpoint:ws_connect(),
   ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
 
-  #{<<"plug:requests">> := Reqs} = vt_endpoint:ws_delivered(Ws, delta),
+  #{<<"plug-requests">> := Reqs} = vt_endpoint:ws_delivered(Ws, delta),
 
   % key of the request is unknown
   [{ReqId, Req1}] = maps:to_list(Reqs),

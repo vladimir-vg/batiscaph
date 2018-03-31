@@ -12,8 +12,9 @@ export default class Store {
       currentInstanceId: null,
       instancesList: [],
       delta: {
-        'plug:requests': null,
-        'cowboy:requests': null,
+        'plug-requests': null,
+        'cowboy-requests': null,
+        'erlang-processes': null,
       },
       selectedRequestId: null,
       hoveredRequestId: null,
@@ -49,8 +50,8 @@ export default class Store {
   // sorted list of ready to display reqs
   @computed
   get httpRequestsList() {
-    const reqs1 = Object.values(this.delta['plug:requests'] || {});
-    const reqs2 = Object.values(this.delta['cowboy:requests'] || {});
+    const reqs1 = Object.values(this.delta['plug-requests'] || {});
+    const reqs2 = Object.values(this.delta['cowboy-requests'] || {});
     const reqs = reqs1.concat(reqs2);
     reqs.sort((a, b) => {
       let aAt, bAt;
@@ -101,9 +102,9 @@ export default class Store {
     }
 
     let url = null;
-    if (id in this.delta['plug:requests']) {
+    if (id in this.delta['plug-requests']) {
       url = `${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`;
-    } else if (id in this.delta['cowboy:requests']) {
+    } else if (id in this.delta['cowboy-requests']) {
       url = `${window.API_URL}/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
     }
 

@@ -102,7 +102,7 @@ finalize(#{ongoing_reqs := Reqs, ready_reqs := Ready}) ->
     Id = format_req_id(R),
     Acc#{Id => R#{<<"Id">> => Id}}
   end, Ready, Reqs),
-  #{<<"cowboy:requests">> => Reqs1}.
+  #{<<"cowboy-requests">> => Reqs1}.
 
 
 
