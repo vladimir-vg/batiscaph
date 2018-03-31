@@ -22,6 +22,14 @@ parse_id(Id) ->
     stopped_at => binary_to_integer(StoppedAtBin)
   }.
 
+format_req_id(R) ->
+  #{
+    <<"Pid">> := Pid,
+    <<"init">> := #{<<"StartedAt">> := StartedAt},
+    <<"handle">> := #{<<"StoppedAt">> := StoppedAt}
+  } = R,
+  format_id(Pid, StartedAt, StoppedAt).
+
 
 
 desired_types() ->
@@ -42,13 +50,20 @@ init() ->
 
 
 
-consume(#{<<"Type">> := <<"p1 cowboy:request init start">>} = E, #{ongoing_reqs := Ongoing} = State) ->
+consume(#{<<"Type">> := <<"p1 cowboy:request init start">>} = E, #{ongoing_reqs := Ongoing, ready_reqs := Ready} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid, <<"method">> := Method, <<"path">> := Path} = E,
   R = #{
     <<"Pid">> => Pid, <<"Method">> => Method, <<"Path">> => Path,
     <<"init">> => #{<<"StartedAt">> => At}
   },
-  State#{ongoing_reqs => Ongoing#{Pid => R}};
+  case maps:get(Pid, Ongoing, undefined) of
+    undefined -> State#{ongoing_reqs => Ongoing#{Pid => R}};
+    PrevR ->
+      % there is still a previous request for this pid
+      Id = format_req_id(PrevR),
+      Ready1 = Ready#{Id => PrevR#{<<"Id">> => Id}},
+      State#{ongoing_reqs => Ongoing#{Pid => R}, ready_reqs => Ready1}
+  end;
 
 consume(#{<<"Type">> := <<"p1 cowboy:request init stop">>} = E, #{ongoing_reqs := Ongoing} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid} = E,
@@ -69,21 +84,29 @@ consume(#{<<"Type">> := <<"p1 cowboy:request reply">>} = E, #{ongoing_reqs := On
   R1 = R#{<<"RespCode">> => Code},
   State#{ongoing_reqs => Ongoing#{Pid => R1}};
 
-consume(#{<<"Type">> := <<"p1 cowboy:request handle stop">>} = E, #{ongoing_reqs := Ongoing, ready_reqs := Ready} = State) ->
+consume(#{<<"Type">> := <<"p1 cowboy:request handle stop">>} = E, #{ongoing_reqs := Ongoing} = State) ->
   #{<<"At">> := StoppedAt, <<"Pid1">> := Pid} = E,
-  {R, Ongoing1} = maps:take(Pid, Ongoing),
-  #{<<"init">> := #{<<"StartedAt">> := StartedAt}, <<"handle">> := Handle} = R,
-  Id = format_id(Pid, StartedAt, StoppedAt),
-  R1 = R#{<<"handle">> => Handle#{<<"StoppedAt">> => StoppedAt}, <<"Id">> => Id},
-  State#{ongoing_reqs => Ongoing1, ready_reqs => Ready#{Id => R1}};
+  #{<<"handle">> := Handle} = R = maps:get(Pid, Ongoing),
+  R1 = R#{<<"handle">> => Handle#{<<"StoppedAt">> => StoppedAt}},
+  % cowboy reply may be sent after handle, for example by standard fallback, 404 response
+  % keep all requests in map, finalize only at the end
+  State#{ongoing_reqs => Ongoing#{Pid => R1}};
 
 consume(_E, State) ->
   State.
 
 
 
-finalize(#{ready_reqs := Reqs}) ->
-  #{<<"cowboy:requests">> => Reqs}.
+finalize(#{ongoing_reqs := Reqs, ready_reqs := Ready}) ->
+  Reqs1 = maps:fold(fun (_Key, R, Acc) ->
+    Id = format_req_id(R),
+    Acc#{Id => R#{<<"Id">> => Id}}
+  end, Ready, Reqs),
+  #{<<"cowboy:requests">> => Reqs1}.
+
+
+
+
 
 
 

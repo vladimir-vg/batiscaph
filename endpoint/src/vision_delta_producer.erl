@@ -14,6 +14,18 @@
 
 
 
+% TODO: it's not clear how to produce correct delta
+% when start and stop of request are in different chunks
+% but we can't give good id from single event
+% because request_id appears only at second event
+% and pid may be reused by other requests.
+% There must be some kind of continuation, in deltas.
+% Or just store incomplete requests separately, where their pids gonna be unique?
+%
+% merge callback for chunks?
+
+
+
 % interface that different trace features should implement to produce delta
 -callback desired_types() -> [binary()].
 % actually it might be convenient to fetch attrs
@@ -91,18 +103,18 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
   % correct our request by it.
   % Do not intersect
 
-  Types = lists:usort(vision_delta_plug:desired_types() ++ vision_delta_cowboy:desired_types()),
-  Attrs = lists:usort(vision_delta_plug:desired_attrs() ++ vision_delta_cowboy:desired_attrs()),
-
   % do expect that events are sorted DESC
   {ok, Events} = vision_clk_events:select_events(#{
-    instance_id => Id, types => Types, attrs => Attrs,
+    instance_id => Id, types => delta_types(), attrs => delta_attrs(),
     earlier_than => now, limit => ?CHUNK_SIZE
   }),
 
   case Events of
     [] -> {ok, #{}, State};
     _ ->
+      % lager:info("----------------------------------"),
+      % [lager:info("e: ~p", [E]) || E <- Events],
+      % lager:info("----------------------------------"),
       DeltaChunk = produce_delta_chunk(Events),
       #chunk{delta = Result} = DeltaChunk,
       % TODO: insert new chunk into chunks list
@@ -130,17 +142,35 @@ produce_delta_chunk([E | Events], Chunk, State) ->
 
 
 
+delta_types() ->
+  lists:usort(lists:flatmap(fun (Mod) ->
+    Mod:desired_types()
+  end, delta_modules())).
+
+delta_attrs() ->
+  lists:usort(lists:flatmap(fun (Mod) ->
+    Mod:desired_attrs()
+  end, delta_modules())).
+
+delta_modules() ->
+  [vision_delta_plug, vision_delta_cowboy, vision_delta_procs].
+
 delta_init() ->
-  #{plug => vision_delta_plug:init(), cowboy => vision_delta_cowboy:init()}.
+  lists:foldl(fun (Mod, Acc) ->
+    Acc#{Mod => Mod:init()}
+  end, #{}, delta_modules()).
 
 delta_consume(E, State) ->
+  % lager:info("consume: ~p", [maps:get(<<"Type">>, E)]),
+  % lager:info("state1: ~p~n~n", [State]),
+  % State1 =
   maps:map(fun
-    (plug, State1) -> vision_delta_plug:consume(E, State1);
-    (cowboy, State1) -> vision_delta_cowboy:consume(E, State1)
+    (Mod, FeatureState) -> Mod:consume(E, FeatureState)
   end, State).
+  % lager:info("state2: ~p~n~n", [State1]),
+  % State1.
 
 delta_finalize(State) ->
   maps:fold(fun
-    (plug, State1, Acc) -> maps:merge(Acc, vision_delta_plug:finalize(State1));
-    (cowboy, State1, Acc) -> maps:merge(Acc, vision_delta_cowboy:finalize(State1))
-  end, #{<<"erlang:processes">> => #{}}, State).
+    (Mod, FeatureState, Acc) -> maps:merge(Acc, Mod:finalize(FeatureState))
+  end, #{}, State).

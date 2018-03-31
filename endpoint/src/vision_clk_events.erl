@@ -68,12 +68,7 @@ drop_tables() ->
 
 insert(Events) ->
   {ok, DBName} = application:get_env(vision, clickhouse_dbname),
-  InsertedColumns = [
-    <<"InstanceId">>, <<"AtSec">>, <<"AtMcs">>, <<"SubId">>, <<"Type">>,
-    <<"Pid1">>, <<"Attrs.Key">>, <<"Attrs.Value">>
-  ],
-  Columns = [C || {K, _} = C <- columns(), lists:member(K, InsertedColumns)],
-  ok = clickhouse:insert(DBName, <<"events">>, Columns, Events),
+  ok = clickhouse:insert(DBName, <<"events">>, columns(), Events),
   ok.
 
 

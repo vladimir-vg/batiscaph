@@ -29,6 +29,11 @@ transform([], _Opts) -> [];
 transform([#{type := <<"p1 ", _/binary>>, pid1 := Pid1} = E0 | Rest], Opts) ->
   % typespec specific transform
   E1 = #{<<"Pid1">> => Pid1},
+  [transform0(E1, E0, Opts) | transform(Rest, Opts)];
+
+transform([#{type := <<"p2 ", _/binary>>, pid1 := Pid1, pid2 := Pid2} = E0 | Rest], Opts) ->
+  % typespec specific transform
+  E1 = #{<<"Pid1">> => Pid1, <<"Pid2">> => Pid2},
   [transform0(E1, E0, Opts) | transform(Rest, Opts)].
 
 

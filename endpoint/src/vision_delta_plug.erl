@@ -25,18 +25,6 @@ parse_id(Id) ->
 
 
 
-% TODO: it's not clear how to produce correct delta
-% when start and stop of request are in different chunks
-% but we can't give good id from single event
-% because request_id appears only at second event
-% and pid may be reused by other requests.
-% There must be some kind of continuation, in deltas.
-% Or just store incomplete requests separately, where their pids gonna be unique?
-%
-% merge callback for chunks?
-
-
-
 desired_types() ->
   [<<"p1 plug:request start">>, <<"p1 plug:request stop">>]. % , <<"p1 plug:plug stop">>, <<"p1 plug:plug start">>
 

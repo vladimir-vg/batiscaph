@@ -166,7 +166,9 @@ read_node_ip_address(Port) ->
   receive {Port, {data, {eol, _}}} -> ok after 1000 -> error(no_output_from_node) end,
   {ok, Rest} =
     receive {Port, {data, {eol, <<"    inet ", Rest1/binary>>}}} -> {ok, Rest1}
-    after 1000 -> error(no_output_from_node)
+    after 1000 ->
+      ct:pal("read_node_ip_address messages: ~p", [erlang:process_info(self(), messages)]),
+      error(no_output_from_node)
     end,
 
   % just read out the rest from mailbox

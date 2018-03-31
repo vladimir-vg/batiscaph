@@ -40,7 +40,7 @@ authorize_by_token(Token) ->
 start_persistent_loop(Env, UserId, Req) ->
   ok = remove_from_ranch_connection_pool(Env),
   InstanceId = vision_util:binary_to_hex(crypto:strong_rand_bytes(32)),
-  {ok, Socket, Transport, Req1} = switch_socket_to_binary_stream(InstanceId, Req),
+  {ok, Socket, Transport, _Req1} = switch_socket_to_binary_stream(InstanceId, Req),
   lager:info("Socket ~p was open open on id: ~p", [Socket, InstanceId]),
 
   % now we turning this process into gen_server
@@ -68,7 +68,7 @@ remove_from_ranch_connection_pool(Env) ->
   Ref = proplists:get_value(listener, Env),
   ok = ranch:remove_connection(Ref).
 
-switch_socket_to_binary_stream(InstanceId, Req) ->
+switch_socket_to_binary_stream(_InstanceId, Req) ->
   Headers = [
     {<<"upgrade">>, <<"application/vision-persistent-v0">>}
     % {<<"x-runtime-vision-instance-id">>, InstanceId}
@@ -284,5 +284,6 @@ mention_used_atoms() ->
     events,at,type,pid1,pid2,
     host,method,path,port,request_id,
     req_headers,resp_headers,resp_code,
-    resp_body_size,plug,halted
+    resp_body_size,plug,halted,
+    reason,mfa
   ].
