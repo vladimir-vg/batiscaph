@@ -6,52 +6,6 @@ import c from '../constraint';
 
 
 
-// this function extracts all request elements from delta
-function produceElements(delta) {
-  const result = [];
-
-  if (delta['plug-requests']) {
-    for (const id in delta['plug-requests']) {
-      const req = delta['plug-requests'][id];
-      result.push({
-        id: id,
-        key: id,
-        constraints: {
-          x1: c.xPid(req.Pid),
-          y1: c.yTimestamp(req.StartedAt),
-          y2: c.yTimestamp(req.StoppedAt),
-        }
-      });
-    }
-
-    for (const id in delta['cowboy-requests']) {
-      const req = delta['cowboy-requests'][id];
-      result.push({
-        id: id,
-        key: `init ${id}`,
-        constraints: {
-          x1: c.xPid(req.Pid),
-          y1: c.yTimestamp(req.init.StartedAt),
-          y2: c.yTimestamp(req.init.StoppedAt),
-        }
-      });
-      result.push({
-        id: id,
-        key: `handle ${id}`,
-        constraints: {
-          x1: c.xPid(req.Pid),
-          y1: c.yTimestamp(req.handle.StartedAt),
-          y2: c.yTimestamp(req.handle.StoppedAt),
-        }
-      });
-    }
-  }
-
-  return result;
-};
-
-
-
 class Component extends React.Component {
   constructor() {
     super();
@@ -67,7 +21,7 @@ class Component extends React.Component {
     const g = this.props.grid;
     const HPADDING_OFFSET = 0;
     const VPADDING_OFFSET = 0;
-    const x = g.xColStart(this.props.x1)-HPADDING_OFFSET;
+    const x = g.xColStart(this.props.x)-HPADDING_OFFSET;
     const width = g.xColWidth+2*HPADDING_OFFSET;
     const y = g.yRowAt(this.props.y1)-VPADDING_OFFSET;
     const height = (g.yRowAt(this.props.y2) - g.yRowAt(this.props.y1))+2*VPADDING_OFFSET;
@@ -91,7 +45,7 @@ class Component extends React.Component {
 }
 Component.propTypes = {
   id: PropTypes.string.isRequired,
-  x1: PropTypes.number.isRequired,
+  x: PropTypes.number.isRequired,
   y1: PropTypes.number.isRequired,
   y2: PropTypes.number.isRequired,
 
@@ -104,6 +58,53 @@ Component.propTypes = {
 
 
 
+// this function extracts all request elements from delta
+function produceElements(delta) {
+  const result = [];
+
+  for (const id in delta['plug-requests']) {
+    const req = delta['plug-requests'][id];
+    result.push({
+      id: id,
+      key: id,
+      Component,
+      constraints: {
+        x: c.xPid(req.Pid),
+        y1: c.yTimestamp(req.StartedAt),
+        y2: c.yTimestamp(req.StoppedAt),
+      }
+    });
+  }
+
+  for (const id in delta['cowboy-requests']) {
+    const req = delta['cowboy-requests'][id];
+    result.push({
+      id: id,
+      key: `init ${id}`,
+      Component,
+      constraints: {
+        x: c.xPid(req.Pid),
+        y1: c.yTimestamp(req.init.StartedAt),
+        y2: c.yTimestamp(req.init.StoppedAt),
+      }
+    });
+    result.push({
+      id: id,
+      key: `handle ${id}`,
+      Component,
+      constraints: {
+        x: c.xPid(req.Pid),
+        y1: c.yTimestamp(req.handle.StartedAt),
+        y2: c.yTimestamp(req.handle.StoppedAt),
+      }
+    });
+  }
+
+  return result;
+};
+
+
+
 export default {
-  produceElements, Component
+  produceElements //, Component
 };

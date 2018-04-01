@@ -4,22 +4,32 @@
 
 
 
-export function xPid(pid) {
+function xPid(pid) {
   return {type: 'pid', value: pid};
 }
 
-export function yTimestamp(timestamp) {
+function yTimestamp(timestamp) {
   return {type: 'timestamp', value: timestamp};
+}
+
+function yTimestampNow() {
+  return {type: 'timestamp', value: 'now'};
 }
 
 
 
-export function getPids(con) {
+function getPids(con) {
   if (con.type === 'pid') { return [con.value]; }
   return [];
 }
 
-export function getTimestamps(con) {
-  if (con.type === 'timestamp') { return [con.value]; }
+function getTimestamps(con) {
+  if (con.type === 'timestamp' && con.value !== 'now') { return [con.value]; }
   return [];
 }
+
+
+
+export default {
+  xPid, yTimestamp, yTimestampNow, getPids, getTimestamps
+};

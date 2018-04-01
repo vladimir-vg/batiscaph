@@ -5,6 +5,8 @@
 // generates ready-to-render data tree, with calculated x's and y's.
 
 import HttpReq from './elements/HttpReq';
+import Process from './elements/Process';
+import c from './constraint';
 
 
 
@@ -15,17 +17,20 @@ export function produceLayout(delta) {
   // for now args are just Timestamp and Pids
   // but I want it to be flexible in future
   const reqs = HttpReq.produceElements(delta);
+  const procs = Process.produceElements(delta);
+  console.log('procs', procs);
 
   // here we should consider all generated elements and their
   // constrains, and produce resolve function
   // that can turn each constraint field into actual numeric value
-  const resolve = produceResolveFunc({ HttpReq: reqs });
+  const resolve = produceResolveFunc({ HttpReq: reqs, Process: procs });
 
   // now when we got clear coordinate transforms
   // just generate ready-to-render tree with coords
 
   return {
-    HttpReq: resolveConstraints({ elements: reqs, resolve })
+    HttpReq: resolveConstraints({ elements: reqs, resolve }),
+    Process: resolveConstraints({ elements: procs, resolve }),
   };
 }
 
@@ -33,8 +38,8 @@ export function produceLayout(delta) {
 
 function resolveConstraints({ elements, resolve }) {
   return elements.map((e) => {
-    const { id, key, constraints } = e;
-    const result = { id, key };
+    const { id, key, constraints, Component } = e;
+    const result = { id, key, Component };
     for (const ckey in constraints) {
       result[ckey] = resolve(constraints[ckey], e);
     }
@@ -44,12 +49,22 @@ function resolveConstraints({ elements, resolve }) {
 
 
 
-function produceResolveFunc({ HttpReq: reqs }) {
+function produceResolveFunc({ HttpReq: reqs, Process: procs }) {
   let timestamps = [];
   let pids = [];
 
   for (const i in reqs) {
     const cons = reqs[i].constraints;
+    for (const key in cons) {
+      // walk through all constrains of all elements
+      // and extract pids and timestamps
+      pids = pids.concat(c.getPids(cons[key]));
+      timestamps = timestamps.concat(c.getTimestamps(cons[key]));
+    }
+  }
+
+  for (const i in procs) {
+    const cons = procs[i].constraints;
     for (const key in cons) {
       // walk through all constrains of all elements
       // and extract pids and timestamps
@@ -66,6 +81,7 @@ function produceResolveFunc({ HttpReq: reqs }) {
 
   return (constraint, element) => {
     if (constraint.type === 'timestamp') {
+      if (constraint.value === 'now') { return timestamps1.length + 1; }
       return timestamps1.indexOf(constraint.value)+1;
     } else if (constraint.type === 'pid') {
       return pids1.indexOf(constraint.value);

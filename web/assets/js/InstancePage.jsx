@@ -4,7 +4,6 @@ void(inject); void(observer); // just to silence eslint, which cannot detect dec
 
 import SvgView from './SvgView';
 import RequestsList from './RequestsList';
-import HttpReq from './elements/HttpReq';
 
 
 
@@ -27,6 +26,7 @@ export default class InstancePage extends React.Component {
 
     this.onRequestSelect = this.onRequestSelect.bind(this);
     this.onRequestHover = this.onRequestHover.bind(this);
+    this.renderElement = this.renderElement.bind(this);
 
     // TODO: listen to resize event, update height accordingly
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
@@ -66,17 +66,17 @@ export default class InstancePage extends React.Component {
     return <g>{cols}{rows}</g>;
   }
 
-  renderElement(C, e) {
+  renderElement(e) {
     const { selectedRequestId, hoveredRequestId } = this.props.store;
     const { onRequestSelect, onRequestHover } = this; // take wrapped functions
     const storeProps = { onRequestSelect, onRequestHover, selectedRequestId, hoveredRequestId };
-    const { id, key, x1, x2, y1, y2 } = e;
-    const layoutProps = { id, x1, x2, y1, y2 };
-    return <C key={key} grid={grid} {...storeProps} {...layoutProps} />;
+    const { id, key, Component, ...elementProps} = e;
+    return <Component key={key} grid={grid} {...storeProps} id={id} {...elementProps} />;
   }
 
   render() {
     const reqs = this.props.store.layout.HttpReq || [];
+    const procs = this.props.store.layout.Process || [];
 
     // for some reason setting viewportHeight for div height creates scrollbar
     // make it disappear using overflow: hidden
@@ -84,7 +84,8 @@ export default class InstancePage extends React.Component {
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>
           {this.renderGrid()}
-          {reqs.map(this.renderElement.bind(this, HttpReq.Component))}
+          <g>{reqs.map(this.renderElement)}</g>
+          <g>{procs.map(this.renderElement)}</g>
         </SvgView>
       </div>
       <div className="extra-info-container">
