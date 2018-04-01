@@ -2,6 +2,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import c from '../constraint';
+
 
 
 // this function extracts all request elements from delta
@@ -14,9 +16,11 @@ function produceElements(delta) {
       result.push({
         id: id,
         key: id,
-        x1: req.Pid,
-        y1: req.StartedAt,
-        y2: req.StoppedAt,
+        constraints: {
+          x1: c.xPid(req.Pid),
+          y1: c.yTimestamp(req.StartedAt),
+          y2: c.yTimestamp(req.StoppedAt),
+        }
       });
     }
 
@@ -25,16 +29,20 @@ function produceElements(delta) {
       result.push({
         id: id,
         key: `init ${id}`,
-        x1: req.Pid,
-        y1: req.init.StartedAt,
-        y2: req.init.StoppedAt,
+        constraints: {
+          x1: c.xPid(req.Pid),
+          y1: c.yTimestamp(req.init.StartedAt),
+          y2: c.yTimestamp(req.init.StoppedAt),
+        }
       });
       result.push({
         id: id,
         key: `handle ${id}`,
-        x1: req.Pid,
-        y1: req.handle.StartedAt,
-        y2: req.handle.StoppedAt,
+        constraints: {
+          x1: c.xPid(req.Pid),
+          y1: c.yTimestamp(req.handle.StartedAt),
+          y2: c.yTimestamp(req.handle.StoppedAt),
+        }
       });
     }
   }

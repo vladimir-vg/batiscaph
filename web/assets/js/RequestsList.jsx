@@ -67,12 +67,12 @@ class PlugsInfo extends React.Component {
     this.setState({hoveredPlug: plug});
   }
 
-  renderRects(currentOffset) {
+  renderRects() {
     if (!this.state.svgWidth) { return null; }
 
     const parts = producePlugParts(this.props.selectedReqInfo.Plugs, this.state.durationScale, 0.5, this.props.barHeight);
     const nodes = [];
-    for (let i in parts) {
+    for (const i in parts) {
       const p = parts[i];
 
       let className = "plug";
@@ -98,7 +98,7 @@ class PlugsInfo extends React.Component {
 
     if (this.state.hoveredPlug) {
       moduleName = formatPlugModule(this.state.hoveredPlug.module);
-      duration = this.state.hoveredPlug.duration;
+      ({ duration } = this.state.hoveredPlug.duration);
     }
 
     return <div>
