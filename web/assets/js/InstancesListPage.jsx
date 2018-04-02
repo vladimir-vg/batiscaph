@@ -11,10 +11,10 @@ export default class InstancesListPage extends React.Component {
     this.props.store.fetchInstancesList();
   }
 
-  renderLink({ InstanceId }) {
+  renderLink({ InstanceId, Connected }) {
     return <div key={InstanceId}>
       <Link to={"/instances/" + InstanceId}>
-        {InstanceId}
+        {InstanceId} {Connected ? "(connected)" : null}
       </Link>
     </div>;
   }

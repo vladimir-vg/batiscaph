@@ -47,7 +47,7 @@ export default class InstancePage extends React.Component {
   onRequestHover(id) { this.props.store.onRequestHover(id); }
 
   renderGrid() {
-    return null;
+    if (!this.props.store.gridEnabled) { return null; }
 
     const cols = [];
     const rows = [];

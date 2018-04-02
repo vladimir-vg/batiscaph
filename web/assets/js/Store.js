@@ -18,6 +18,7 @@ export default class Store {
       },
       selectedRequestId: null,
       hoveredRequestId: null,
+      gridEnabled: false,
 
       // for full request info
       // we need use Map to make MobX react to dynamically added keys
@@ -29,6 +30,12 @@ export default class Store {
 
     this.onWSMessage = this.onWSMessage.bind(this);
     this.onWSOpen = this.onWSOpen.bind(this);
+  }
+
+  // to be used for debug from browser console
+  @action
+  toggleGrid() {
+    this.gridEnabled = !this.gridEnabled;
   }
 
 
