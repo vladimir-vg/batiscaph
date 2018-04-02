@@ -17,3 +17,7 @@ rect.HttpReq.hovered {
 .Process .exit {
   fill: #FC8888;
 }
+.Process .spawn {
+  stroke: #828282;
+  stroke-width: 1px;
+}
