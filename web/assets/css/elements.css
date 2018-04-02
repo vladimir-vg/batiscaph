@@ -8,3 +8,12 @@ rect.HttpReq.current,
 rect.HttpReq.hovered {
   stroke: #2F80ED;
 }
+
+
+
+.Process .body {
+  fill: #D9D9D9;
+}
+.Process .exit {
+  fill: #FC8888;
+}

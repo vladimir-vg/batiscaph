@@ -4,13 +4,36 @@ import PropTypes from 'prop-types';
 import c from '../constraint';
 
 
+const PROC_WIDTH = 4;
 
 class Component extends React.Component {
   render() {
-    return <g className="Process" />;
+    const g = this.props.grid;
+    const sideOffset = (g.xColWidth - PROC_WIDTH)/2;
+    const x = g.xColStart(this.props.x) + sideOffset;
+    const width = PROC_WIDTH;
+    const y = g.yRowAt(this.props.startedY);
+    const height = (g.yRowAt(this.props.continueY || this.props.exitedY) - g.yRowAt(this.props.startedY));
+
+    let exit = null;
+    if (this.props.exitedY) {
+      const y = g.yRowAt(this.props.exitedY-1);
+      exit = <rect className="exit" x={x} y={y} width={width} height={g.yRowHeight} />
+    }
+
+    return <g className="Process">
+      <rect className="body" x={x} y={y} width={width} height={height} />
+      {exit}
+    </g>;
   }
 }
 Component.propTypes = {
+  id: PropTypes.string.isRequired,
+  x: PropTypes.number.isRequired,
+  startedY: PropTypes.number.isRequired,
+  exitedY: PropTypes.number,
+  continueY: PropTypes.number,
+  parentX: PropTypes.number,
 }
 
 

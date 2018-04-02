@@ -18,6 +18,7 @@ export function produceLayout(delta) {
   // but I want it to be flexible in future
   const reqs = HttpReq.produceElements(delta);
   const procs = Process.produceElements(delta);
+  console.log('reqs', reqs);
   console.log('procs', procs);
 
   // here we should consider all generated elements and their
@@ -77,7 +78,10 @@ function produceResolveFunc({ HttpReq: reqs, Process: procs }) {
   const timestamps1 = [...(new Set(timestamps))];
   const pids1 = [...(new Set(pids))];
 
-  timestamps.sort();
+  timestamps1.sort();
+
+  console.log("timestamps", timestamps1);
+  console.log("timestamps", pids1);
 
   return (constraint, element) => {
     if (constraint.type === 'timestamp') {
