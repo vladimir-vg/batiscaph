@@ -21,3 +21,4 @@ node_modules
 priv/scenarios
 priv/batiscaph_drv.so
 
+_checkouts

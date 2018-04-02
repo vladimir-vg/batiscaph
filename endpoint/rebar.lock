@@ -19,7 +19,7 @@
   0},
  {<<"gen_tracker">>,
   {git,"git://github.com/vladimir-vg/gen_tracker.git",
-       {ref,"2ba4e5e2e6674f80cb5b2f92cd026a321f47527e"}},
+       {ref,"b69c70f8360e364550cfb9e31a85cc313aae82ca"}},
   0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"gproc">>,
