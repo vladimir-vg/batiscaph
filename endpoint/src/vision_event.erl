@@ -57,8 +57,15 @@ transform0(E1, E0, #{instance_id := InstanceId}) ->
 
 
 
+% value that trace_ts messages provide us
 at_value({Mega, Sec, Micro}) ->
-  {Mega*1000*1000 + Sec, Micro}.
+  {Mega*1000*1000 + Sec, Micro};
+
+% the value that we get from erlang:system_time(micro_seconds)
+at_value(FullMcs) when is_integer(FullMcs) ->
+  AtScs = FullMcs div (1000*1000),
+  AtMcs = FullMcs rem (1000*1000),
+  {AtScs, AtMcs}.
 
 to_binary(Value) when is_integer(Value) -> integer_to_binary(Value);
 to_binary(Value) when is_atom(Value) -> atom_to_binary(Value,latin1);

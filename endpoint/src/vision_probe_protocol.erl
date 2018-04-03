@@ -184,6 +184,10 @@ handle_message_from_probe({summary_info, Info}, State) ->
   #{dependency_in := _, probe_version := _} = Info,
   {ok, State};
 
+handle_message_from_probe({shell_input, Status}, State) ->
+  lager:info("shell input staus ~p", [Status]),
+  {ok, State};
+
 handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
   % [lager:info("event: ~p", [E]) || E <- Events],
   Events1 = vision_event:transform(Events, #{instance_id => InstanceId}),
@@ -291,5 +295,5 @@ mention_used_atoms() ->
     host,method,path,port,request_id,
     req_headers,resp_headers,resp_code,
     resp_body_size,plug,halted,
-    reason,mfa
+    reason,mfa,prompt,input,output
   ].
