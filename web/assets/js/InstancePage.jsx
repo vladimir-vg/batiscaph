@@ -81,18 +81,18 @@ export default class InstancePage extends React.Component {
     // for some reason setting viewportHeight for div height creates scrollbar
     // make it disappear using overflow: hidden
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
+      <div className="extra-info-container">
+        <RequestsList
+          reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
+          selectedRequestId={this.props.store.selectedRequestId} hoveredRequestId={this.props.store.hoveredRequestId}
+          onRequestSelect={this.onRequestSelect} onRequestHover={this.onRequestHover} />
+      </div>
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>
           {this.renderGrid()}
           <g>{reqs.map(this.renderElement)}</g>
           <g>{procs.map(this.renderElement)}</g>
         </SvgView>
-      </div>
-      <div className="extra-info-container">
-        <RequestsList
-          reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
-          selectedRequestId={this.props.store.selectedRequestId} hoveredRequestId={this.props.store.hoveredRequestId}
-          onRequestSelect={this.onRequestSelect} onRequestHover={this.onRequestHover} />
       </div>
     </div>;
   }

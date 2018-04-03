@@ -27,19 +27,19 @@ code {
 .InstancePage .extra-info-container {
   flex: 0.1 0 500px;
   min-height: 300px;
-  border-left: 1px solid #E5E5E5;
+  border-right: 1px solid #E5E5E5;
   /*background-color: rgba(0, 0, 255, 0.1);*/
 }
 
 @media (max-width: 960px) {
   .InstancePage {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
   .InstancePage .map-container {
     flex: 1 1 100%;
   }
   .InstancePage .extra-info-container {
-    flex: 0.25 0 300px;
+    flex: 1 0 40%;
     border-top: 1px solid #E5E5E5;
   }
 }
@@ -53,16 +53,20 @@ code {
   padding-left: 20px;
 }
 .RequestsInfo .table-container {
-  margin-left: 20px;
+  /*margin-left: 20px;*/
   overflow-y: scroll;
   width: 100%;
 }
 .RequestsInfo table {
   width: 100%;
   border-collapse: collapse;
+  margin-left: 15px;
 }
 .RequestsInfo table td {
   padding: 3px 5px;
+}
+.RequestsInfo table tr {
+  padding-right: 5px;
 }
 .RequestsInfo table tr.hovered {
   background-color: #2F80ED;
