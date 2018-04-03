@@ -10,11 +10,13 @@ export default class Store {
   constructor() {
     extendObservable(this, {
       currentInstanceId: null,
+      isShellConnected: false,
       instancesList: [],
       delta: {
         'plug-requests': null,
         'cowboy-requests': null,
         'erlang-processes': null,
+        'shell-events': null,
       },
       selectedRequestId: null,
       hoveredRequestId: null,
@@ -142,11 +144,20 @@ export default class Store {
   @action
   unsubscribeFromInstance(id) {
     if (this.currentInstanceId == id) { this.currentInstanceId = null; }
-    this.wsSend('unsubscribe_from_instance', {id: id});
+    this.wsSend('unsubscribe_from_instance', { id });
   }
 
   ensureShellConnected() {
-    //
+    if (!this.currentInstanceId) {
+      throw {
+        message: "Expected instance id to be present while connecting to shell",
+        instanceId: this.currentInstanceId
+      };
+    }
+
+    if (!this.isShellConnected) {
+      this.wsSend('connect_to_shell', {id: this.currentInstanceId});
+    }
   }
 
   connectToWebsocket() {
@@ -158,15 +169,22 @@ export default class Store {
     this.socket.addEventListener('open', this.onWSOpen);
   }
 
+  @action
   onWSMessage({ data }) {
     const re = /^([^ ]+) (.*)/; // split by only one space
     const match = re.exec(data);
-    const [_, method, payload] = match;
-    // const method = match[1];
-    // const payload = match[2];
+    let method, payload;
+    if (match) {
+      method = match[1];
+      payload = match[2];
+    } else {
+      method = data;
+      payload = null;
+    }
 
     switch (method) {
     case 'delta': this.consumeDelta(JSON.parse(payload)); break;
+    case 'connected_to_shell': this.isShellConnected = true; break;
 
     default:
       throw {

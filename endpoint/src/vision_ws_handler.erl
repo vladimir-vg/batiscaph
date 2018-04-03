@@ -29,6 +29,9 @@ websocket_handle({text, <<"subscribe_to_instance ", Rest/binary>>}, Req, State) 
   {ok, State1} = subscribe_to_instance(jsx:decode(Rest, [return_maps]), State),
   {ok, Req, State1};
 
+websocket_handle({text, <<"connect_to_shell ", Rest/binary>>}, Req, State) ->
+  connect_to_shell(jsx:decode(Rest, [return_maps]), Req, State);
+
 websocket_handle(Data, Req, State) ->
   lager:error("Unknown websocket message: ~p", [Data]),
   {ok, Req, State}.
@@ -50,3 +53,15 @@ subscribe_to_instance(#{<<"id">> := Id}, State) ->
   DeltaPid ! {delta_query, chunk_from_now},
   State1 = State#ws_state{delta_pid = DeltaPid},
   {ok, State1}.
+
+
+
+connect_to_shell(#{<<"id">> := Id}, Req, State) ->
+  case gen_tracker:find(probes, Id) of
+    undefined -> {ok, Req, State}; % do nothing for now, TODO: report about disconnect
+    {ok, Pid} ->
+      % shell might be already existing
+      % then we will just receive all previous shell events
+      {ok, _} = vision_probe_protocol:remote_request(Pid, ensure_shell_started, []),
+      {reply, {text, <<"connected_to_shell">>}, Req, State}
+  end.

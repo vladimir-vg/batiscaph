@@ -4,6 +4,12 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
 -export([after_terminate/2]). % gen_tracker callback
 -export([mention_used_atoms/0]).
+-export([remote_request/3]).
+
+
+
+remote_request(Pid, Method, Arg) ->
+  gen_server:call(Pid, {request, Method, Arg}).
 
 
 
