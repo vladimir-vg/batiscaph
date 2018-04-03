@@ -24,9 +24,9 @@ COPY before-test-run.sh before-test-run.sh
 # first add only rebar config and download deps,
 # to make stage of bulding image reusable.
 # to avoid downloading deps on every source change
-COPY rebar.config rebar.config
 COPY rebar3 rebar3
-RUN ./rebar3 get-deps
+COPY rebar-without-probe.config rebar.config
+RUN ./rebar3 deps
 RUN ./rebar3 compile
 
 COPY priv/pg_queries.sql priv/pg_queries.sql

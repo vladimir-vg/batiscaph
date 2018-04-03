@@ -3,7 +3,7 @@
   {vsn, "0.1.0"},
   {registered, []},
   {mod, {vision_app, []}},
-  {applications, [kernel,stdlib,lager,cowboy,hackney,vision_probe]},
+  {applications, [kernel,stdlib,lager,cowboy,hackney]},
   {env,[]},
   {modules, []},
 

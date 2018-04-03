@@ -11,6 +11,13 @@ stop(_State) ->
 
 
 start(_StartType, _StartArgs) ->
+
+  % start vision probe only is it's provided as dependency
+  try vision_probe_app:module_info() of
+  [_ | _] -> application:ensure_all_started(vision_probe)
+  catch error:undef -> ok
+  end,
+
   [_ | _] = vision_probe_protocol:mention_used_atoms(),
   ok = read_config(),
   vision_web:start_cowboy(),
