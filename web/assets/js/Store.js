@@ -145,6 +145,10 @@ export default class Store {
     this.wsSend('unsubscribe_from_instance', {id: id});
   }
 
+  ensureShellConnected() {
+    //
+  }
+
   connectToWebsocket() {
     const url = new URL(window.API_URL);
     const proto = url.protocol === 'http:' ? 'ws' : 'wss';

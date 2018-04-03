@@ -45,12 +45,23 @@ code {
 }
 
 
+.Tabs {
+  margin: 20px;
+}
+.Tabs .item {
+  padding-right: 20px;
+  font-size: 2em;
+  font-weight: 700;
+  font-family: 'PT Serif', serif;
+  color: #ccc;
+}
+.Tabs .item.active {
+  color: black;
+  /*color: #2F80ED;*/
+}
 
 .RequestsInfo {
-  padding-top: 20px;
-}
-.RequestsInfo > h1 {
-  padding-left: 20px;
+  /*padding-top: 20px;*/
 }
 .RequestsInfo .table-container {
   /*margin-left: 20px;*/

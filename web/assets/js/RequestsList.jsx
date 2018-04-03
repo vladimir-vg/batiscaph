@@ -202,12 +202,12 @@ export default class RequestsList extends React.Component {
     }
   }
 
-  onRequestSelect(id) { this.props.onRequestSelect(id); }
-  onRequestHover(id) { this.props.onRequestHover(id); }
+  onRequestSelect(id) { this.props.store.onRequestSelect(id); }
+  onRequestHover(id) { this.props.store.onRequestHover(id); }
 
   renderItem({ Id, Method, Path, RespCode }) {
     let className = "";
-    if (Id === this.props.hoveredRequestId) {
+    if (Id === this.props.store.hoveredRequestId) {
       className += " hovered";
     }
 
@@ -223,16 +223,14 @@ export default class RequestsList extends React.Component {
   }
 
   render() {
-    const topOffset = 90;
     return <div className="RequestsInfo" style={{position: 'relative', height: '100%'}}>
-      <h1>Requests</h1>
       <SelectedRequestInfo
-        selectedReqInfo={this.props.selectedReqInfo}
+        selectedReqInfo={this.props.store.selectedReqInfo}
         clearSelection={this.onRequestSelect.bind(this, null)} />
-      <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: topOffset}}>
+      <div ref={(ref) => { this.containerRef = ref }} className="table-container" style={{position: 'absolute', bottom: 0, top: 0}}>
         <table>
           <tbody>
-            {this.props.reqs.map(this.renderItem)}
+            {this.props.store.httpRequestsList.map(this.renderItem)}
           </tbody>
         </table>
 
@@ -243,10 +241,5 @@ export default class RequestsList extends React.Component {
   }
 }
 RequestsList.propTypes = {
-  reqs: PropTypes.array.isRequired,
-  onRequestSelect: PropTypes.func.isRequired,
-  onRequestHover: PropTypes.func.isRequired,
-  selectedRequestId: PropTypes.string,
-  hoveredRequestId: PropTypes.string,
-  selectedReqInfo: PropTypes.any // null, 'loading' or actual request object
+  store: PropTypes.object.isRequired,
 }

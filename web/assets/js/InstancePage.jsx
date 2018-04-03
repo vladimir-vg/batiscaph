@@ -1,9 +1,11 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
 import SvgView from './SvgView';
 import RequestsList from './RequestsList';
+import ShellPanel from './ShellPanel';
 
 
 
@@ -19,6 +21,40 @@ const grid = {
 
 
 
+class Tabs extends React.Component {
+  constructor() {
+    super();
+
+    this.renderItem = this.renderItem.bind(this);
+  }
+
+  renderItem({ id, text }) {
+    let className = "item";
+    if (id === this.props.selectedId) {
+      className += " active";
+    }
+
+    return <span key={id} className={className} onClick={this.props.onSelect.bind(this, id)}>
+      {text}
+    </span>;
+  }
+
+  render() {
+    return <div className="Tabs">
+      {this.props.choices.map(this.renderItem)}
+    </div>;
+  }
+}
+Tabs.propTypes = {
+  selectedId: PropTypes.string.isRequired,
+  choices: PropTypes.array.isRequired,
+  onSelect: PropTypes.func.isRequired,
+}
+
+
+
+const TAB_CHOICES = [{id: 'requests', text: "Requests"}, {id: 'shell', text: "Shell"}];
+
 @inject("store") @observer
 export default class InstancePage extends React.Component {
   constructor() {
@@ -26,12 +62,14 @@ export default class InstancePage extends React.Component {
 
     this.onRequestSelect = this.onRequestSelect.bind(this);
     this.onRequestHover = this.onRequestHover.bind(this);
+    this.onTabSelect = this.onTabSelect.bind(this);
     this.renderElement = this.renderElement.bind(this);
 
     // TODO: listen to resize event, update height accordingly
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
     this.state = {
-      viewportHeight
+      viewportHeight,
+      tabId: TAB_CHOICES[0].id,
     };
   }
 
@@ -45,6 +83,10 @@ export default class InstancePage extends React.Component {
 
   onRequestSelect(id) { this.props.store.onRequestSelect(id); }
   onRequestHover(id) { this.props.store.onRequestHover(id); }
+
+  onTabSelect(tabId) {
+    this.setState({ tabId });
+  }
 
   renderGrid() {
     if (!this.props.store.gridEnabled) { return null; }
@@ -75,6 +117,13 @@ export default class InstancePage extends React.Component {
   }
 
   render() {
+    let tabContent = null;
+    if (this.state.tabId === 'requests') {
+      tabContent = <RequestsList store={this.props.store} />;
+    } else if (this.state.tabId === 'shell') {
+      tabContent = <ShellPanel store={this.props.store} />
+    }
+
     const reqs = this.props.store.layout.HttpReq || [];
     const procs = this.props.store.layout.Process || [];
 
@@ -82,10 +131,8 @@ export default class InstancePage extends React.Component {
     // make it disappear using overflow: hidden
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
       <div className="extra-info-container">
-        <RequestsList
-          reqs={this.props.store.httpRequestsList} selectedReqInfo={this.props.store.selectedReqInfo}
-          selectedRequestId={this.props.store.selectedRequestId} hoveredRequestId={this.props.store.hoveredRequestId}
-          onRequestSelect={this.onRequestSelect} onRequestHover={this.onRequestHover} />
+        <Tabs choices={TAB_CHOICES} selectedId={this.state.tabId} onSelect={this.onTabSelect} />
+        {tabContent}
       </div>
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>
