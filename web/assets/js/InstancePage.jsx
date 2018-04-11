@@ -10,7 +10,7 @@ import ShellPanel from './ShellPanel';
 
 
 const hGap = 4;
-const colWidth = 10;
+const colWidth = 12;
 const rowHeight = 3;
 const grid = {
   xColStart: (x) => { return x*(colWidth+hGap) + hGap },
@@ -137,8 +137,8 @@ export default class InstancePage extends React.Component {
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>
           {this.renderGrid()}
-          <g>{reqs.map(this.renderElement)}</g>
           <g>{procs.map(this.renderElement)}</g>
+          <g>{reqs.map(this.renderElement)}</g>
         </SvgView>
       </div>
     </div>;

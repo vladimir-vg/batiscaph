@@ -75,8 +75,14 @@ ws_send(Pid, subscribe_to_instance, InstanceId) ->
   gun:ws_send(Pid, {text, Body}),
   ok;
 
+ws_send(Pid, connect_to_shell, InstanceId) ->
+  Body = iolist_to_binary([<<"connect_to_shell ">>, jsx:encode(#{id => InstanceId})]),
+  gun:ws_send(Pid, {text, Body}),
+  ok;
+
 ws_send(_Pid, Method, Arg) ->
   error({unknown_ws_method, Method, Arg}).
+
 
 
 ws_delivered(Pid, Method) when is_atom(Method) ->
@@ -88,9 +94,12 @@ ws_delivered(Pid, Method) when is_binary(Method) ->
     {gun_ws, Pid, {text, <<Method:Length/binary, " ", Payload/binary>>}} ->
       jsx:decode(Payload, [return_maps]);
 
-    {gun_ws, Pid, Frame} ->
-      ct:pal("got unknown frame: ~p", [Frame]),
-      {error, Frame}
+    {gun_ws, Pid, {text, <<Method:Length/binary>>}} ->
+      erlang:binary_to_atom(Method, latin1)
+
+    % {gun_ws, Pid, Frame} ->
+    %   ct:pal("got unknown frame: ~p", [Frame]),
+    %   {error, Frame}
 
   after 5000 ->
     ct:pal("messages: ~p", [erlang:process_info(self(), messages)]),

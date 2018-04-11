@@ -5,7 +5,7 @@ import c from '../constraint';
 
 
 
-const PROC_WIDTH = 4;
+const PROC_WIDTH = 6;
 const EXIT_HEIGHT = 2;
 class Component extends React.Component {
   render() {

@@ -32,6 +32,9 @@ websocket_handle({text, <<"subscribe_to_instance ", Rest/binary>>}, Req, State) 
 websocket_handle({text, <<"connect_to_shell ", Rest/binary>>}, Req, State) ->
   connect_to_shell(jsx:decode(Rest, [return_maps]), Req, State);
 
+websocket_handle({text, <<"shell_input ", Rest/binary>>}, Req, State) ->
+  shell_input(jsx:decode(Rest, [return_maps]), Req, State);
+
 websocket_handle(Data, Req, State) ->
   lager:error("Unknown websocket message: ~p", [Data]),
   {ok, Req, State}.
@@ -64,4 +67,14 @@ connect_to_shell(#{<<"id">> := Id}, Req, State) ->
       % then we will just receive all previous shell events
       {ok, _} = vision_probe_protocol:remote_request(Pid, ensure_shell_started, []),
       {reply, {text, <<"connected_to_shell">>}, Req, State}
+  end.
+
+
+
+shell_input(#{<<"id">> := Id, <<"text">> := Text}, Req, State) ->
+  case gen_tracker:find(probes, Id) of
+    undefined -> {ok, Req, State}; % do nothing if disconnected
+    {ok, Pid} ->
+      {ok, _} = vision_probe_protocol:remote_request(Pid, shell_input, [Text]),
+      {ok, Req, State}
   end.

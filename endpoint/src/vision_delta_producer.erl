@@ -153,7 +153,7 @@ delta_attrs() ->
   end, delta_modules())).
 
 delta_modules() ->
-  [vision_delta_plug, vision_delta_cowboy, vision_delta_procs].
+  [vision_delta_plug, vision_delta_cowboy, vision_delta_procs, vision_delta_shell].
 
 delta_init() ->
   lists:foldl(fun (Mod, Acc) ->

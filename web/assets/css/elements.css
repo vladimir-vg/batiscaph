@@ -1,7 +1,8 @@
 rect.HttpReq {
   stroke: #C4C4C4;
   stroke-width: 1px;
-  fill: #F2F2F2;
+  /*fill: #F2F2F2;*/
+  fill: transparent;
 }
 
 rect.HttpReq.current,

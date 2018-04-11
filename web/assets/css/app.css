@@ -8,7 +8,20 @@ h1, h2 {
 }
 
 code {
-  font-family: 'PT Mono', monospace;
+  font-family: 'Fira Mono', monospace;
+}
+
+
+
+/*https://stackoverflow.com/a/4407335/614661*/
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
 }
 
 
@@ -104,4 +117,43 @@ code {
 .RequestsInfo .SelectedRequestInfo svg rect.plug.hovered {
   stroke: #2F80ED;
   stroke-width: 3px;
+}
+
+
+
+
+.Command {
+  margin: 20px;
+  font-family: 'Fira Mono', monospace;
+  font-size: 14px;
+}
+.Command .input-container {
+  display: flex;
+}
+.Command .input-container .prompt {
+  flex: 0 0 40px;
+}
+.Command .input-container .input {
+  flex: 1;
+}
+.Command .input-container .prompt,
+.Command .outputs {
+  color: #828282;
+}
+.Command .outputs > span {
+  margin-left: 40px;
+}
+
+
+
+.ShellPanel .current-input {
+  display: flex;
+  margin-left: 60px; /* 20px outer margin + 40px prompt width */
+  margin-right: 20px;
+}
+.ShellPanel .current-input > textarea {
+  flex: 1;
+}
+.ShellPanel .current-input > button {
+  flex: 0 0 50px;
 }

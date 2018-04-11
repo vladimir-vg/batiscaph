@@ -160,6 +160,23 @@ export default class Store {
     }
   }
 
+  sendShellInput(text) {
+    this.wsSend('shell_input', { id: this.currentInstanceId, text });
+  }
+
+  @computed
+  get shellCommands() {
+    const cmds = Object.values(this.delta['shell-commands'] || {});
+    cmds.sort((a, b) => a.At > b.At ? 1 : -1);
+    const cmds1 = cmds.map((e) => {
+      const values = Object.values(e.Outputs);
+      values.sort((a, b) => a.At > b.At ? 1 : -1);
+      e.Outputs = values;
+      return e;
+    })
+    return cmds1;
+  }
+
   connectToWebsocket() {
     const url = new URL(window.API_URL);
     const proto = url.protocol === 'http:' ? 'ws' : 'wss';
