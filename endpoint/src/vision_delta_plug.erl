@@ -11,6 +11,18 @@
 
 
 
+% TODO: it's not clear how to produce correct delta
+% when start and stop of request are in different chunks
+% but we can't give good id from single event
+% because request_id appears only at second event
+% and pid may be reused by other requests.
+% There must be some kind of continuation, in deltas.
+% Or just store incomplete requests separately, where their pids gonna be unique?
+%
+% merge callback for chunks?
+
+
+
 % this id is used only on client side and not stored anywere
 % can be safely changed
 format_id(Pid, StartedAt, StoppedAt) ->

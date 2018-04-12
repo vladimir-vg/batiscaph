@@ -34,6 +34,8 @@ start(_StartType, _StartArgs) ->
   % web_page_cache = ets:new(web_page_cache, [public, named_table, set]),
   test_subscriptions = ets:new(test_subscriptions, [public, named_table, bag]),
 
+  delta_subscribers = ets:new(delta_subscribers, [public, named_table, bag]),
+
   vision_sup:start_link().
 
 

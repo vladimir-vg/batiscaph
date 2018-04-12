@@ -9,7 +9,7 @@
 
 -record(ws_state, {
   % pending_delta_query :: undefined | {from_now, N :: non_neg_integer()}, % N events from now
-  delta_pid
+  % delta_pid
 }).
 
 
@@ -52,10 +52,12 @@ websocket_info(Msg, Req, State) ->
 
 
 subscribe_to_instance(#{<<"id">> := Id}, State) ->
-  {ok, DeltaPid} = vision_delta_producer:start_link(self(), Id),
-  DeltaPid ! {delta_query, chunk_from_now},
-  State1 = State#ws_state{delta_pid = DeltaPid},
-  {ok, State1}.
+  ok = vision_delta_producer:subscribe_to_delta(Id),
+  % delta_producers
+  % {ok, DeltaPid} = vision_delta_producer:start_link(self(), Id),
+  % DeltaPid ! {delta_query, chunk_from_now},
+  % State1 = State#ws_state{delta_pid = DeltaPid},
+  {ok, State}.
 
 
 

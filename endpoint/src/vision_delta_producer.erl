@@ -1,7 +1,9 @@
 -module(vision_delta_producer).
 -behaviour(gen_server).
--export([start_link/2]). % supervisor callback
+-export([start_link/1]). % supervisor callback
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
+
+-export([subscribe_to_delta/1]).
 
 % how many events to retreive for single delta chunk
 -define(CHUNK_SIZE, 1000).
@@ -14,18 +16,6 @@
 
 
 
-% TODO: it's not clear how to produce correct delta
-% when start and stop of request are in different chunks
-% but we can't give good id from single event
-% because request_id appears only at second event
-% and pid may be reused by other requests.
-% There must be some kind of continuation, in deltas.
-% Or just store incomplete requests separately, where their pids gonna be unique?
-%
-% merge callback for chunks?
-
-
-
 % interface that different trace features should implement to produce delta
 -callback desired_types() -> [binary()].
 % actually it might be convenient to fetch attrs
@@ -35,6 +25,14 @@
 -callback consume(Event :: map(), State :: any()) -> State :: any().
 % returns delta that going to be merged with deltas frm other features
 -callback finalize(State :: any()) -> Delta :: map().
+
+
+
+subscribe_to_delta(InstanceId) ->
+  Spec = {InstanceId, {?MODULE, start_link, [InstanceId]}, permanent, 5000, worker, [?MODULE]},
+  {ok, ProducerPid} = gen_tracker:find_or_open(delta_producers, Spec),
+  ok = gen_server:call(ProducerPid, subscribe),
+  ok.
 
 
 
@@ -52,7 +50,7 @@
 
 
 -record(delta, {
-  ws_pid,
+  % ws_pid,
   instance_id
 
   % should be kept sorted by 'from'
@@ -62,24 +60,33 @@
 
 
 
-start_link(WebsocketPid, InstanceId) ->
-  gen_server:start_link(?MODULE, [WebsocketPid, InstanceId], []).
+start_link(InstanceId) ->
+  gen_server:start_link(?MODULE, [InstanceId], []).
 
-init([WebsocketPid, InstanceId]) ->
-  {ok, #delta{instance_id = InstanceId, ws_pid = WebsocketPid}}.
+init([InstanceId]) ->
+  self() ! delta_for_old_subscribers,
+  {ok, #delta{instance_id = InstanceId}}.
 
 
 
+% 
+% handle_info({delta_query, chunk_from_now}, #delta{ws_pid = Pid} = State) ->
+%   {ok, Result, State1} = delta_chunk_from_now(State),
+%   Pid ! {delta_query_result, Result},
+%   {noreply, State1};
 
-handle_info({delta_query, chunk_from_now}, #delta{ws_pid = Pid} = State) ->
-  {ok, Result, State1} = delta_chunk_from_now(State),
-  Pid ! {delta_query_result, Result},
+handle_info(delta_for_old_subscribers, State) ->
+  {ok, State1} = delta_for_old_subscribers(State),
   {noreply, State1};
 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
 
+
+handle_call(subscribe, {Pid, _Ref}, State) ->
+  {ok, State1} = subscribe_to_delta1(Pid, State),
+  {reply, ok, State1};
 
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
@@ -94,6 +101,28 @@ handle_cast(Cast, State) ->
 %
 %
 %
+
+
+
+subscribe_to_delta1(Pid, #delta{instance_id = InstanceId} = State) when is_pid(Pid) ->
+  ets:insert(delta_subscribers, {InstanceId, Pid}),
+  {ok, Delta, State1} = delta_chunk_from_now(State),
+  Pid ! {delta_query_result, Delta},
+  {ok, State1}.
+
+
+
+% if process crashed, then we should send new delta
+% to subscribers in case if new events appeared when
+% producer was down
+delta_for_old_subscribers(#delta{instance_id = InstanceId} = State) ->
+  {ok, Delta, State1} = delta_chunk_from_now(State),
+
+  lists:foreach(fun ({_, P}) ->
+    P ! {delta_query_result, Delta}
+  end, ets:lookup(delta_subscribers, InstanceId)),
+
+  {ok, State1}.
 
 
 
