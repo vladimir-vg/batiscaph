@@ -80,6 +80,11 @@ ws_send(Pid, connect_to_shell, InstanceId) ->
   gun:ws_send(Pid, {text, Body}),
   ok;
 
+ws_send(Pid, Atom, Arg) when is_map(Arg) andalso is_atom(Atom) ->
+  Body = iolist_to_binary([erlang:atom_to_binary(Atom,latin1), <<" ">>, jsx:encode(Arg)]),
+  gun:ws_send(Pid, {text, Body}),
+  ok;
+
 ws_send(_Pid, Method, Arg) ->
   error({unknown_ws_method, Method, Arg}).
 

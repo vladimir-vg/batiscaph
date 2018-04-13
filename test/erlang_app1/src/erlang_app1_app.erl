@@ -31,6 +31,7 @@ start_cowboy(Port) ->
       {"/rest_stream_response/[:v1]", [{v1, int}], rest_stream_response, Table},
 
       {"/spawn_process", spawn_process, []},
+      {"/subscribe_to_process_info", subscribe_to_process_info, []},
       {"/hello_world", hello_world, []}
     ]}
   ]),

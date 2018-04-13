@@ -53,6 +53,7 @@ welcome_output(Config) ->
   connected_to_shell = vt_endpoint:ws_delivered(Ws, connected_to_shell),
 
   ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
+  % _ = vt_endpoint:ws_delivered(Ws, delta),
   #{<<"shell-commands">> := Cmds} = vt_endpoint:ws_delivered(Ws, delta),
 
   [{_, Cmd}] = maps:to_list(Cmds),

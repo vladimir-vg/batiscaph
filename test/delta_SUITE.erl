@@ -1,7 +1,8 @@
 -module(delta_SUITE).
 -export([all/0, init_per_suite/1, end_per_suite/1]).
 -export([
-  spawn_process/1
+  spawn_process/1,
+  subscribe_to_process_info/1
 ]).
 
 
@@ -13,7 +14,8 @@
 
 all() ->
   [
-    spawn_process
+    spawn_process,
+    subscribe_to_process_info
   ].
 
 
@@ -88,10 +90,9 @@ spawn_process(Config) ->
   {ok, Ws} = vt_endpoint:ws_connect(),
   ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
 
-  #{<<"cowboy-requests">> := Reqs, <<"erlang-processes">> := Procs} = vt_endpoint:ws_delivered(Ws, delta),
-  [ReqPid] = [P || {_, #{<<"Path">> := <<"/spawn_process">>, <<"Pid">> := P}} <- maps:to_list(Reqs)],
-  Proc = maps:get(ReqPid, Procs),
-  #{} = Proc,
+  #{<<"erlang-processes">> := Procs} = Delta = vt_endpoint:ws_delivered(Ws, delta),
+  {ok, ReqPid, _From, _To} = pid_for_request_path(<<"/spawn_process">>, Delta),
+  #{} = maps:get(ReqPid, Procs),
 
   % child process should exist
   [_] = [P || {_, #{<<"ParentPid">> := Pid1} = P} <- maps:to_list(Procs), Pid1 =:= ReqPid],
@@ -100,3 +101,64 @@ spawn_process(Config) ->
 
 
 
+subscribe_to_process_info(Config) ->
+  % spawn two processes, receive delta
+  % subscribe to process_info of first process
+  % receive detailed updates for it
+  % unsubscribe, subscribe to other
+  % receive detailed updates for other
+
+  InstanceId = proplists:get_value(app_instance_id, Config),
+  UserId = proplists:get_value(app_user_id, Config),
+
+  ok = vt_endpoint:subscribe_to_session(#{user_id => UserId}),
+  BaseUrl = proplists:get_value(app_base_url, Config),
+
+  {ok, 200, _RespHeaders, ClientRef} = hackney:request(get, <<BaseUrl/binary, "/subscribe_to_process_info">>, [], <<>>, []),
+  ok = hackney:skip_body(ClientRef),
+
+  {events, _} = vt_endpoint:received_from_probe(events),
+  {ok, Ws} = vt_endpoint:ws_connect(),
+  ok = vt_endpoint:ws_send(Ws, subscribe_to_instance, InstanceId),
+
+  #{<<"erlang-processes">> := Procs} = Delta1 = vt_endpoint:ws_delivered(Ws, delta),
+  {ok, ReqPid, From, _To} = pid_for_request_path(<<"/subscribe_to_process_info">>, Delta1),
+  #{} = maps:get(ReqPid, Procs),
+
+  % two children should be spawned
+  [ChildPid1, ChildPid2] = [P || {_, #{<<"ParentPid">> := Pid1, <<"SpawnedAt">> := At1} = P} <- maps:to_list(Procs), Pid1 =:= ReqPid, At1 > From],
+
+  % no detailed info in original delta
+  0 = maps:size(maps:get(<<"erlang-processes-info">>, Delta1, #{})),
+
+  ok = vt_endpoint:ws_send(Ws, subscribe_to_process_info, #{instance_id => InstanceId, pid => ChildPid1}),
+
+  % expect to receive detailed info for one of the children
+  #{<<"erlang-processes-info">> := #{ChildPid1 := Details1}} = Delta2 = vt_endpoint:ws_delivered(Ws, delta),
+  1 = maps:size(maps:get(<<"erlang-processes-info">>, Delta2, #{})),
+
+  % only one entry in changes
+  #{<<"Pid">> := ChildPid1, <<"Changes">> := Changes1} = Details1,
+  [{_, #{<<"trap_exit">> := false, <<"message_queue_len">> := 0}}] = maps:to_list(Changes1),
+
+  % subscribe to second child
+  ok = vt_endpoint:ws_send(Ws, unsubscribe_from_process_info, #{instance_id => InstanceId, pid => ChildPid1}),
+  ok = vt_endpoint:ws_send(Ws, subscribe_to_process_info, #{instance_id => InstanceId, pid => ChildPid2}),
+
+  % expect to receive detailed info for one of the children
+  #{<<"erlang-processes-info">> := #{ChildPid2 := Details2}} = Delta3 = vt_endpoint:ws_delivered(Ws, delta),
+  1 = maps:size(maps:get(<<"erlang-processes-info">>, Delta3, #{})),
+
+  % only one entry in changes
+  #{<<"Pid">> := ChildPid2, <<"Changes">> := Changes2} = Details2,
+  [{_, #{<<"trap_exit">> := false, <<"message_queue_len">> := 0}}] = maps:to_list(Changes2),
+
+  ok.
+
+
+
+pid_for_request_path(Path, Delta) ->
+  #{<<"cowboy-requests">> := Reqs} = Delta,
+  [Req] = [R || {_, #{<<"Path">> := Path1, <<"Pid">> := _} = R} <- maps:to_list(Reqs), Path =:= Path1],
+  #{<<"Pid">> := Pid, <<"init">> := #{<<"StartedAt">> := From}, <<"handle">> := #{<<"StoppedAt">> := To}} = Req,
+  {ok, Pid, From, To}.
