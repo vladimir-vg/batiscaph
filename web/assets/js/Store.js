@@ -168,11 +168,10 @@ export default class Store {
   get shellCommands() {
     const cmds = Object.values(this.delta['shell-commands'] || {});
     cmds.sort((a, b) => a.At > b.At ? 1 : -1);
-    const cmds1 = cmds.map((e) => {
-      const values = Object.values(e.Outputs);
-      values.sort((a, b) => a.At > b.At ? 1 : -1);
-      e.Outputs = values;
-      return e;
+    const cmds1 = cmds.map(({ At, Input, Outputs, Pid, Prompt }) => {
+      const Outputs1 = Object.values(Outputs);
+      Outputs1.sort((a, b) => a.At > b.At ? 1 : -1);
+      return { Outputs: Outputs1, At, Input, Pid, Prompt };
     })
     return cmds1;
   }

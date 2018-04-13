@@ -76,7 +76,16 @@ init([InstanceId]) ->
 %   {noreply, State1};
 
 handle_info(delta_for_old_subscribers, State) ->
+  % if process crashed, then we should send new delta
+  % to subscribers in case if new events appeared when
+  % producer was down
   {ok, State1} = delta_for_old_subscribers(State),
+  {noreply, State1};
+
+handle_info(new_events_saved, State) ->
+  % when new events arrived, we should fetch
+  % new events from last time and send to subscribers
+  {ok, State1} = send_recent_delta_for_subscribers(State),
   {noreply, State1};
 
 handle_info(Msg, State) ->
@@ -112,9 +121,6 @@ subscribe_to_delta1(Pid, #delta{instance_id = InstanceId} = State) when is_pid(P
 
 
 
-% if process crashed, then we should send new delta
-% to subscribers in case if new events appeared when
-% producer was down
 delta_for_old_subscribers(#delta{instance_id = InstanceId} = State) ->
   {ok, Delta, State1} = delta_chunk_from_now(State),
 
@@ -123,6 +129,13 @@ delta_for_old_subscribers(#delta{instance_id = InstanceId} = State) ->
   end, ets:lookup(delta_subscribers, InstanceId)),
 
   {ok, State1}.
+
+
+
+send_recent_delta_for_subscribers(State) ->
+  % for now delta is not saved,
+  % simply recalculate from scratch and send it
+  delta_for_old_subscribers(State).
 
 
 

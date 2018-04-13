@@ -192,6 +192,7 @@ handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId
   % [lager:info("event: ~p", [E]) || E <- Events],
   Events1 = vision_event:transform(Events, #{instance_id => InstanceId}),
   ok = vision_clk_events:insert(Events1),
+  ok = notify_delta_producer(InstanceId),
   {ok, State};
 
 handle_message_from_probe(Message, State) ->
@@ -203,6 +204,16 @@ handle_message_from_probe(Message, State) ->
 %
 %
 %
+
+
+
+notify_delta_producer(InstanceId) ->
+  case gen_tracker:find(delta_producers, InstanceId) of
+    undefined -> ok;
+    {ok, Pid} ->
+      Pid ! new_events_saved,
+      ok
+  end.
 
 
 
