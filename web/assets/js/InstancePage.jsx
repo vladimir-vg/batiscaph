@@ -1,11 +1,13 @@
 import React from 'react';
+import { Route, Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
 import SvgView from './SvgView';
-import RequestsList from './RequestsList';
-import ShellPanel from './ShellPanel';
+import RequestsListPage from './RequestsListPage';
+import ShellPanelPage from './ShellPanelPage';
+import ProcessPanelPage from './ProcessPanelPage';
 
 
 
@@ -21,39 +23,37 @@ const grid = {
 
 
 
-class Tabs extends React.Component {
-  constructor() {
-    super();
+// class Tabs extends React.Component {
+//   constructor() {
+//     super();
+// 
+//     this.renderItem = this.renderItem.bind(this);
+//   }
+// 
+//   renderItem({ id, text }) {
+//     let className = "item";
+//     if (id === this.props.selectedId) {
+//       className += " active";
+//     }
+// 
+//     return <span key={id} className={className} onClick={this.props.onSelect.bind(this, id)}>
+//       {text}
+//     </span>;
+//   }
+// 
+//   render() {
+//     return <div className="Tabs">
+//       {this.props.choices.map(this.renderItem)}
+//     </div>;
+//   }
+// }
+// Tabs.propTypes = {
+//   selectedId: PropTypes.string.isRequired,
+//   choices: PropTypes.array.isRequired,
+//   onSelect: PropTypes.func.isRequired,
+// }
 
-    this.renderItem = this.renderItem.bind(this);
-  }
 
-  renderItem({ id, text }) {
-    let className = "item";
-    if (id === this.props.selectedId) {
-      className += " active";
-    }
-
-    return <span key={id} className={className} onClick={this.props.onSelect.bind(this, id)}>
-      {text}
-    </span>;
-  }
-
-  render() {
-    return <div className="Tabs">
-      {this.props.choices.map(this.renderItem)}
-    </div>;
-  }
-}
-Tabs.propTypes = {
-  selectedId: PropTypes.string.isRequired,
-  choices: PropTypes.array.isRequired,
-  onSelect: PropTypes.func.isRequired,
-}
-
-
-
-const TAB_CHOICES = [{id: 'requests', text: "Requests"}, {id: 'shell', text: "Shell"}];
 
 @inject("store") @observer
 export default class InstancePage extends React.Component {
@@ -62,6 +62,7 @@ export default class InstancePage extends React.Component {
 
     this.onRequestSelect = this.onRequestSelect.bind(this);
     this.onRequestHover = this.onRequestHover.bind(this);
+    this.selectProcess = this.selectProcess.bind(this);
     this.onTabSelect = this.onTabSelect.bind(this);
     this.renderElement = this.renderElement.bind(this);
 
@@ -69,7 +70,6 @@ export default class InstancePage extends React.Component {
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
     this.state = {
       viewportHeight,
-      tabId: TAB_CHOICES[0].id,
     };
   }
 
@@ -83,6 +83,12 @@ export default class InstancePage extends React.Component {
 
   onRequestSelect(id) { this.props.store.onRequestSelect(id); }
   onRequestHover(id) { this.props.store.onRequestHover(id); }
+
+  selectProcess(pid) {
+    const { id } = this.props.match.params;
+    const newPath = `/instances/${id}/process_info/${encodeURIComponent(pid)}`;
+    this.props.history.push(newPath);
+  }
 
   onTabSelect(tabId) {
     this.setState({ tabId });
@@ -110,29 +116,35 @@ export default class InstancePage extends React.Component {
 
   renderElement(e) {
     const { selectedRequestId, hoveredRequestId } = this.props.store;
-    const { onRequestSelect, onRequestHover } = this; // take wrapped functions
-    const storeProps = { onRequestSelect, onRequestHover, selectedRequestId, hoveredRequestId };
+    const { onRequestSelect, onRequestHover, selectProcess } = this; // take wrapped functions
+    const storeProps = { onRequestSelect, onRequestHover, selectedRequestId, hoveredRequestId, selectProcess };
     const { id, key, Component, ...elementProps} = e;
     return <Component key={key} grid={grid} {...storeProps} id={id} {...elementProps} />;
   }
 
   render() {
-    let tabContent = null;
-    if (this.state.tabId === 'requests') {
-      tabContent = <RequestsList store={this.props.store} />;
-    } else if (this.state.tabId === 'shell') {
-      tabContent = <ShellPanel store={this.props.store} />
-    }
-
     const reqs = this.props.store.layout.HttpReq || [];
     const procs = this.props.store.layout.Process || [];
+
+    // Display process link, if it is currently selected
+    let processLink = null;
+    if (/\/process_info\//.test(this.props.location.pathname)) {
+      processLink = <Link to={this.props.location.pathname} activeClassName="active">Process</Link>
+    }
 
     // for some reason setting viewportHeight for div height creates scrollbar
     // make it disappear using overflow: hidden
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
       <div className="extra-info-container">
-        <Tabs choices={TAB_CHOICES} selectedId={this.state.tabId} onSelect={this.onTabSelect} />
-        {tabContent}
+        <div className="Tabs">
+          <Link to={`${this.props.match.url}/requests`} activeClassName="active">Requests</Link>
+          <Link to={`${this.props.match.url}/shell`} activeClassName="active">Shell</Link>
+          {processLink}
+        </div>
+
+        <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
+        <Route exact path={`${this.props.match.path}/shell`} component={ShellPanelPage} />
+        <Route exact path={`${this.props.match.path}/process_info/:pid`} component={ProcessPanelPage} />
       </div>
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>

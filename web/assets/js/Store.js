@@ -18,6 +18,7 @@ export default class Store {
         'erlang-processes': null,
         'shell-events': null,
       },
+      // selectedProcessPid: null,
       selectedRequestId: null,
       hoveredRequestId: null,
       gridEnabled: false,
@@ -132,6 +133,17 @@ export default class Store {
     return this.reqsDetails.get(this.selectedRequestId);
   }
 
+  @action
+  subscribeToProcessInfo(pid) {
+    // this.selectedProcessPid = pid;
+    this.wsSend('subscribe_to_process_info', { pid, instance_id: this.currentInstanceId });
+  }
+
+  @computed
+  get selectedProcessInfo() {
+    return {};
+  }
+
 
 
   @action
@@ -175,6 +187,8 @@ export default class Store {
     })
     return cmds1;
   }
+
+
 
   connectToWebsocket() {
     const url = new URL(window.API_URL);

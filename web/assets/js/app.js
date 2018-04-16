@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <BrowserRouter>
           <Switch>
             <Route exact path="/" component={InstancesListPage} />
-            <Route exact path="/instances/:id" component={InstancePage} />
+            <Route path="/instances/:id" component={InstancePage} />
           </Switch>
         </BrowserRouter>
       </Provider>

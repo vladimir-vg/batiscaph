@@ -1,3 +1,6 @@
+import { observer, inject } from 'mobx-react';
+void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
+
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -23,7 +26,8 @@ Command.propTypes = {
 
 
 
-export default class ShellPanel extends React.Component {
+@inject("store") @observer
+export default class ShellPanelPage extends React.Component {
   constructor() {
     super();
 
@@ -70,7 +74,4 @@ export default class ShellPanel extends React.Component {
       </div>
     </div>;
   }
-}
-ShellPanel.propTypes = {
-  store: PropTypes.object.isRequired,
 }

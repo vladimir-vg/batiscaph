@@ -1,3 +1,6 @@
+import { observer, inject } from 'mobx-react';
+void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import { scaleLinear } from 'd3-scale';
@@ -172,7 +175,8 @@ SelectedRequestInfo.propTypes = {
 
 
 
-export default class RequestsList extends React.Component {
+@inject("store") @observer
+export default class RequestsListPage extends React.Component {
   constructor() {
     super();
 
@@ -239,7 +243,4 @@ export default class RequestsList extends React.Component {
       </div>
     </div>;
   }
-}
-RequestsList.propTypes = {
-  store: PropTypes.object.isRequired,
 }

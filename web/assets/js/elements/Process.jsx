@@ -8,6 +8,16 @@ import c from '../constraint';
 const PROC_WIDTH = 6;
 const EXIT_HEIGHT = 2;
 class Component extends React.Component {
+  constructor() {
+    super();
+
+    this.onClick = this.onClick.bind(this);
+  }
+
+  onClick() {
+    this.props.selectProcess(this.props.id);
+  }
+
   render() {
     const g = this.props.grid;
     const sideOffset = (g.xColWidth - PROC_WIDTH)/2;
@@ -33,7 +43,7 @@ class Component extends React.Component {
     }
 
     return <g className="Process">
-      <rect className="body" x={x} y={y} width={width} height={height} />
+      <rect onClick={this.onClick} className="body" x={x} y={y} width={width} height={height} />
       {exit}
       {spawnLines}
     </g>;
@@ -46,6 +56,8 @@ Component.propTypes = {
   exitedY: PropTypes.number,
   continueY: PropTypes.number,
   parentX: PropTypes.number,
+
+  selectProcess: PropTypes.func.isRequired,
 }
 
 
