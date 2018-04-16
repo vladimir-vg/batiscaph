@@ -7,7 +7,12 @@ import React from 'react';
 
 @inject("store") @observer
 export default class ProcessPanelPage extends React.Component {
-  componentDidMount() {
+  constructor() {
+    super();
+    this.renderAttr = this.renderAttr.bind(this);
+  }
+
+  componentWillMount() {
     this.props.store.subscribeToProcessInfo(this.props.match.params.pid);
   }
 
@@ -17,7 +22,22 @@ export default class ProcessPanelPage extends React.Component {
     }
   }
 
+  renderAttr([key, value]) {
+    return <div key={key}>{key}: {value}</div>;
+  }
+
   render() {
-    return <div />;
+    const info = this.props.store.currentProcessInfo;
+
+    if (!info) {
+      return <div>Loading...</div>;
+    }
+
+    return <div className="ProcessPanel">
+      <code>
+        {this.renderAttr(['pid', this.props.match.params.pid])}
+        {Object.entries(info).map(this.renderAttr)}
+      </code>
+    </div>;
   }
 }

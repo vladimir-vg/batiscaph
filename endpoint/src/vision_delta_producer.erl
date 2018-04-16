@@ -3,7 +3,11 @@
 -export([start_link/1]). % supervisor callback
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
 
--export([subscribe_to_delta/1]).
+-export([
+  subscribe_to_delta/1,
+  subscribe_to_process_info/2,
+  unsubscribe_from_process_info/2
+]).
 
 % how many events to retreive for single delta chunk
 -define(CHUNK_SIZE, 1000).
@@ -13,6 +17,13 @@
 % This process is a way to abstract work with delta
 % probably in future each instance would have such a process (share delta between clients)
 % and websockets will subscribe to them (one websocket to many delta processes)
+
+
+
+-record(delta_subscriber, {
+  id :: {InstanceId :: binary(), Subscriber :: pid()},
+  process_info_remote_pid
+}).
 
 
 
@@ -32,6 +43,18 @@ subscribe_to_delta(InstanceId) ->
   Spec = {InstanceId, {?MODULE, start_link, [InstanceId]}, permanent, 5000, worker, [?MODULE]},
   {ok, ProducerPid} = gen_tracker:find_or_open(delta_producers, Spec),
   ok = gen_server:call(ProducerPid, subscribe),
+  ok.
+
+
+
+subscribe_to_process_info(InstanceId, RemotePid) ->
+  {ok, ProducerPid} = gen_tracker:find(delta_producers, InstanceId),
+  ok = gen_server:call(ProducerPid, {subscribe_to_process_info, RemotePid}),
+  ok.
+
+unsubscribe_from_process_info(InstanceId, RemotePid) ->
+  {ok, ProducerPid} = gen_tracker:find(delta_producers, InstanceId),
+  ok = gen_server:call(ProducerPid, {unsubscribe_from_process_info, RemotePid}),
   ok.
 
 
@@ -75,6 +98,10 @@ init([InstanceId]) ->
 %   Pid ! {delta_query_result, Result},
 %   {noreply, State1};
 
+handle_info(check_subscribers, State) ->
+  {ok, State1} = check_subscribers(State),
+  {noreply, State1};
+
 handle_info(delta_for_old_subscribers, State) ->
   % if process crashed, then we should send new delta
   % to subscribers in case if new events appeared when
@@ -97,6 +124,14 @@ handle_call(subscribe, {Pid, _Ref}, State) ->
   {ok, State1} = subscribe_to_delta1(Pid, State),
   {reply, ok, State1};
 
+handle_call({subscribe_to_process_info, RemotePid}, {Pid, _Ref}, State) ->
+  {ok, State1} = subscribe_to_process_info1(Pid, RemotePid, State),
+  {reply, ok, State1};
+
+handle_call({unsubscribe_from_process_info, RemotePid}, {Pid, _Ref}, State) ->
+  {ok, State1} = unsubscribe_from_process_info1(Pid, RemotePid, State),
+  {reply, ok, State1};
+
 handle_call(Call, _From, State) ->
   {stop, {unknown_call, Call}, State}.
 
@@ -114,17 +149,44 @@ handle_cast(Cast, State) ->
 
 
 subscribe_to_delta1(Pid, #delta{instance_id = InstanceId} = State) when is_pid(Pid) ->
-  ets:insert(delta_subscribers, {InstanceId, Pid}),
+  ets:insert(delta_subscribers, #delta_subscriber{id = {InstanceId, Pid}}),
   {ok, Delta, State1} = delta_chunk_from_now(State),
   Pid ! {delta_query_result, Delta},
   {ok, State1}.
 
 
 
+subscribe_to_process_info1(Pid, RemotePid, #delta{instance_id = InstanceId} = State) ->
+  case gen_tracker:find(probes, InstanceId) of
+    undefined -> {ok, State};
+    {ok, ProbePid} ->
+      % update delta_subscriber record
+      % send subscribe to remote probe
+      true = ets:update_element(delta_subscribers, {InstanceId, Pid}, [{#delta_subscriber.process_info_remote_pid, RemotePid}]),
+      ok = vision_probe_protocol:send_to_remote(ProbePid, {ensure_subscribed_to_process_info, RemotePid}),
+      {ok, State}
+  end.
+
+unsubscribe_from_process_info1(Pid, _RemotePid, #delta{instance_id = InstanceId} = State) ->
+  % update delta_subscriber record
+  % send unsubscribe to remote probe if no other subscribers left
+  true = ets:update_element(delta_subscribers, {InstanceId, Pid}, [{#delta_subscriber.process_info_remote_pid, undefined}]),
+  self() ! check_subscribers,
+  {ok, State}.
+
+
+
+check_subscribers(State) ->
+  % TODO: fetch current subscribers, remove dead
+  % unsubscribe from process_info if need
+  {ok, State}.
+
+
+
 delta_for_old_subscribers(#delta{instance_id = InstanceId} = State) ->
   {ok, Delta, State1} = delta_chunk_from_now(State),
 
-  lists:foreach(fun ({_, P}) ->
+  lists:foreach(fun (#delta_subscriber{id = {_, P}}) ->
     P ! {delta_query_result, Delta}
   end, ets:lookup(delta_subscribers, InstanceId)),
 
@@ -195,7 +257,10 @@ delta_attrs() ->
   end, delta_modules())).
 
 delta_modules() ->
-  [vision_delta_plug, vision_delta_cowboy, vision_delta_procs, vision_delta_shell].
+  [
+    vision_delta_plug, vision_delta_cowboy, vision_delta_procs,
+    vision_delta_shell, vision_delta_process_info
+  ].
 
 delta_init() ->
   lists:foldl(fun (Mod, Acc) ->

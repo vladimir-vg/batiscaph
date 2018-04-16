@@ -16,9 +16,13 @@ export default class Store {
         'plug-requests': null,
         'cowboy-requests': null,
         'erlang-processes': null,
-        'shell-events': null,
+        'shell-commands': null, // replace with (new Map())
+
+        // initialize as Map, in order to be able to listen
+        // for new item
+        'erlang-processes-info': (new Map()),
       },
-      // selectedProcessPid: null,
+      selectedProcessPid: null,
       selectedRequestId: null,
       hoveredRequestId: null,
       gridEnabled: false,
@@ -135,13 +139,34 @@ export default class Store {
 
   @action
   subscribeToProcessInfo(pid) {
-    // this.selectedProcessPid = pid;
+    this.selectedProcessPid = pid;
     this.wsSend('subscribe_to_process_info', { pid, instance_id: this.currentInstanceId });
   }
 
   @computed
-  get selectedProcessInfo() {
-    return {};
+  get currentProcessInfo() {
+    if (!this.selectedProcessPid) {
+      throw {
+        message: "Expected selected process pid to be present while fetching current process info",
+        selectedProcessPid: this.selectedProcessPid
+      };
+    }
+
+    const info = this.delta['erlang-processes-info'].get(this.selectedProcessPid);
+    if (!info) return null;
+
+    const { Changes } = info;
+    const timestamps = Object.keys(Changes);
+    timestamps.sort();
+
+    // collapse all changes into latest one
+    let result = {};
+    for (const i in timestamps) {
+      const key = timestamps[i];
+      result = Object.assign(result, Changes[key]);
+    }
+
+    return result;
   }
 
 

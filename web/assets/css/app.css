@@ -152,9 +152,23 @@ code {
   margin-left: 60px; /* 20px outer margin + 40px prompt width */
   margin-right: 20px;
 }
+.ShellPanel .current-input textarea {
+  font-family: 'Fira Mono', monospace;
+  font-size: 14px;
+}
 .ShellPanel .current-input > textarea {
   flex: 1;
 }
 .ShellPanel .current-input > button {
   flex: 0 0 50px;
+}
+
+
+
+.ProcessPanel {
+  margin: 0 20px;
+}
+
+.ProcessPanel code div {
+  margin: 5px 0;
 }

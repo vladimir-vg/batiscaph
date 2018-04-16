@@ -4,12 +4,16 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
 -export([after_terminate/2]). % gen_tracker callback
 -export([mention_used_atoms/0]).
--export([remote_request/3]).
+-export([remote_request/3, send_to_remote/2]).
 
 
 
 remote_request(Pid, Method, Arg) ->
   gen_server:call(Pid, {request, Method, Arg}).
+
+send_to_remote(Pid, Message) ->
+  Pid ! {send_to_remote, Message},
+  ok.
 
 
 
@@ -129,6 +133,10 @@ after_terminate(InstanceId, _Attrs) ->
 % request by this process itself
 handle_info({probe_request, Method, Arg}, State) ->
   {ok, State1} = request_probe(probe_request, Method, Arg, State),
+  {noreply, State1};
+
+handle_info({send_to_remote, Message}, State) ->
+  {ok, State1} = send_to_probe(Message, State),
   {noreply, State1};
 
 handle_info({tcp_closed, Socket}, #persistent{socket = Socket} = State) ->

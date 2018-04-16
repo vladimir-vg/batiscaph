@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Link } from 'react-router-dom';
+import { Route, NavLink } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
@@ -129,7 +129,7 @@ export default class InstancePage extends React.Component {
     // Display process link, if it is currently selected
     let processLink = null;
     if (/\/process_info\//.test(this.props.location.pathname)) {
-      processLink = <Link to={this.props.location.pathname} activeClassName="active">Process</Link>
+      processLink = <NavLink to={this.props.location.pathname}>Process</NavLink>
     }
 
     // for some reason setting viewportHeight for div height creates scrollbar
@@ -137,8 +137,8 @@ export default class InstancePage extends React.Component {
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
       <div className="extra-info-container">
         <div className="Tabs">
-          <Link to={`${this.props.match.url}/requests`} activeClassName="active">Requests</Link>
-          <Link to={`${this.props.match.url}/shell`} activeClassName="active">Shell</Link>
+          <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>
+          <NavLink to={`${this.props.match.url}/shell`}>Shell</NavLink>
           {processLink}
         </div>
 

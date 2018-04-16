@@ -26,14 +26,19 @@ websocket_terminate(_Reason, _Req, _State) ->
 
 
 websocket_handle({text, <<"subscribe_to_instance ", Rest/binary>>}, Req, State) ->
-  {ok, State1} = subscribe_to_instance(jsx:decode(Rest, [return_maps]), State),
-  {ok, Req, State1};
+  subscribe_to_instance(jsx:decode(Rest, [return_maps]), Req, State);
 
 websocket_handle({text, <<"connect_to_shell ", Rest/binary>>}, Req, State) ->
   connect_to_shell(jsx:decode(Rest, [return_maps]), Req, State);
 
 websocket_handle({text, <<"shell_input ", Rest/binary>>}, Req, State) ->
   shell_input(jsx:decode(Rest, [return_maps]), Req, State);
+
+websocket_handle({text, <<"subscribe_to_process_info ", Rest/binary>>}, Req, State) ->
+  subscribe_to_process_info(jsx:decode(Rest, [return_maps]), Req, State);
+
+websocket_handle({text, <<"unsubscribe_from_process_info ", Rest/binary>>}, Req, State) ->
+  unsubscribe_from_process_info(jsx:decode(Rest, [return_maps]), Req, State);
 
 websocket_handle(Data, Req, State) ->
   lager:error("Unknown websocket message: ~p", [Data]),
@@ -51,13 +56,9 @@ websocket_info(Msg, Req, State) ->
 
 
 
-subscribe_to_instance(#{<<"id">> := Id}, State) ->
+subscribe_to_instance(#{<<"id">> := Id}, Req, State) ->
   ok = vision_delta_producer:subscribe_to_delta(Id),
-  % delta_producers
-  % {ok, DeltaPid} = vision_delta_producer:start_link(self(), Id),
-  % DeltaPid ! {delta_query, chunk_from_now},
-  % State1 = State#ws_state{delta_pid = DeltaPid},
-  {ok, State}.
+  {ok, Req, State}.
 
 
 
@@ -77,6 +78,17 @@ shell_input(#{<<"id">> := Id, <<"text">> := Text}, Req, State) ->
   case gen_tracker:find(probes, Id) of
     undefined -> {ok, Req, State}; % do nothing if disconnected
     {ok, Pid} ->
-      {ok, _} = vision_probe_protocol:remote_request(Pid, shell_input, [Text]),
+      ok = vision_probe_protocol:send_to_remote(Pid, {shell_input, Text}),
       {ok, Req, State}
   end.
+
+
+
+subscribe_to_process_info(#{<<"instance_id">> := Id, <<"pid">> := Pid}, Req, State) ->
+  ok = vision_delta_producer:subscribe_to_process_info(Id, Pid),
+  {ok, Req, State}.
+
+unsubscribe_from_process_info(#{<<"instance_id">> := Id, <<"pid">> := Pid}, Req, State) ->
+  ok = vision_delta_producer:unsubscribe_from_process_info(Id, Pid),
+  {ok, Req, State}.
+
