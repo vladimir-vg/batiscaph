@@ -67,6 +67,9 @@ function produceElements(delta) {
 
   for (const pid in delta['erlang-processes']) {
     const proc = delta['erlang-processes'][pid];
+
+    if (!proc.SpawnedAt && !proc.TraceStartedAt) { continue; }
+
     const constraints = {
       x: c.xPid(proc.Pid),
       startedY: c.yTimestamp(proc.SpawnedAt || proc.TraceStartedAt),

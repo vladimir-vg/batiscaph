@@ -24,7 +24,7 @@ export function produceLayout(delta) {
   // here we should consider all generated elements and their
   // constrains, and produce resolve function
   // that can turn each constraint field into actual numeric value
-  const resolve = produceResolveFunc({ HttpReq: reqs, Process: procs });
+  const resolve = produceResolveFunc(delta, { HttpReq: reqs, Process: procs });
 
   // now when we got clear coordinate transforms
   // just generate ready-to-render tree with coords
@@ -50,7 +50,7 @@ function resolveConstraints({ elements, resolve }) {
 
 
 
-function produceResolveFunc({ HttpReq: reqs, Process: procs }) {
+function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   let timestamps = [];
   let pids = [];
 
@@ -80,15 +80,25 @@ function produceResolveFunc({ HttpReq: reqs, Process: procs }) {
 
   timestamps1.sort();
 
+  // to ensure that all spawns happen from left to right
+  // create a tree of spawns, and simply walk it
+  // poping out each node as column
+  const spawnTree = {};
+  for (const i in pids1) {
+    const proc = delta['erlang-processes'][pids1[i]];
+    ensureSavedInSpawnTree(spawnTree, delta['erlang-processes'], proc);
+  }
+  const pids2 = enumerateSpawnTree(spawnTree);
+
   console.log("timestamps", timestamps1);
-  console.log("timestamps", pids1);
+  console.log("pids", pids2);
 
   return (constraint, element) => {
     if (constraint.type === 'timestamp') {
       if (constraint.value === 'now') { return timestamps1.length + 1; }
       return timestamps1.indexOf(constraint.value)+1;
     } else if (constraint.type === 'pid') {
-      return pids1.indexOf(constraint.value);
+      return pids2.indexOf(constraint.value);
     } else {
       throw {
         message: "Unknown constraint type",
@@ -97,3 +107,29 @@ function produceResolveFunc({ HttpReq: reqs, Process: procs }) {
     }
   };
 };
+
+
+
+function ensureSavedInSpawnTree(tree, procs, proc) {
+  // TODO: might be sped up by using table of previously calculated trees for pids
+
+  if (!proc.ParentPid || !procs[proc.ParentPid]) {
+    if (!tree[proc.Pid]) { tree[proc.Pid] = {}; }
+    return tree[proc.Pid];
+  }
+
+  const parentTree = ensureSavedInSpawnTree(tree, procs, procs[proc.ParentPid]);
+  if (!parentTree[proc.Pid]) { parentTree[proc.Pid] = {}; }
+  return parentTree[proc.Pid];
+}
+
+
+
+function enumerateSpawnTree(tree, stack) {
+  if (!stack) { stack = []; }
+  for (const pid in tree) {
+    stack.push(pid);
+    enumerateSpawnTree(tree[pid], stack);
+  }
+  return stack;
+}

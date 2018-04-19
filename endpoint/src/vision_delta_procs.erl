@@ -23,7 +23,7 @@ consume(#{<<"Type">> := <<"p1 erlang:process trace start">>} = E, #{procs := Pro
 consume(#{<<"Type">> := <<"p2 erlang:process spawn">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := ParentPid, <<"Pid2">> := ChildPid} = E,
   P = #{<<"SpawnedAt">> => At, <<"Pid">> => ChildPid, <<"ParentPid">> => ParentPid},
-  ParentP = maps:get(ParentPid, Procs, #{}), % make at least empty map, just to indicate that pid existed
+  ParentP = maps:get(ParentPid, Procs, #{<<"Pid">> => ParentPid}), % make at least empty map, just to indicate that pid existed
   State#{procs => Procs#{ChildPid => P, ParentPid => ParentP}};
 
 consume(#{<<"Type">> := <<"p1 erlang:process exit">>} = E, #{procs := Procs} = State) ->

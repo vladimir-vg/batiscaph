@@ -16,10 +16,10 @@ export default class Store {
         'plug-requests': null,
         'cowboy-requests': null,
         'erlang-processes': null,
-        'shell-commands': null, // replace with (new Map())
 
         // initialize as Map, in order to be able to listen
         // for new item
+        'shell-commands': (new Map()),
         'erlang-processes-info': (new Map()),
       },
       selectedProcessPid: null,
@@ -203,7 +203,7 @@ export default class Store {
 
   @computed
   get shellCommands() {
-    const cmds = Object.values(this.delta['shell-commands'] || {});
+    const cmds = Array.from(this.delta['shell-commands'].values() || []);
     cmds.sort((a, b) => a.At > b.At ? 1 : -1);
     const cmds1 = cmds.map(({ At, Input, Outputs, Pid, Prompt }) => {
       const Outputs1 = Object.values(Outputs);
