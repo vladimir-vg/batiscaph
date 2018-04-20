@@ -32,6 +32,8 @@ export function produceLayout(delta) {
   return {
     HttpReq: resolveAttrs({ elements: reqs, resolve }),
     Process: resolveAttrs({ elements: procs, resolve }),
+    xColsLength: resolve('xColsLength'),
+    yRowsLength: resolve('yRowsLength'),
   };
 }
 
@@ -95,6 +97,9 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   console.log("pids", pids2);
 
   return (attr, element) => {
+    if (attr === 'xColsLength') { return pids2.length; }
+    if (attr === 'yRowsLength') { return timestamps1.length; }
+
     if (attr.type === 'timestamp') {
       if (attr.value === 'now') { return timestamps1.length + 1; }
       return timestamps1.indexOf(attr.value)+1;

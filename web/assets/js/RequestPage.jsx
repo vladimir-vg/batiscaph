@@ -190,7 +190,7 @@ export default class RequestPage extends React.Component {
       plugInfo = <PlugsInfo barHeight={20} selectedReqInfo={this.props.store.selectedReqInfo} />;
     }
 
-    return <div className="SelectedRequestInfo" style={{position: 'absolute', bottom: 0, top: 0, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
+    return <div className="RequestPage" style={{position: 'absolute', bottom: 0, top: 0, backgroundColor: 'white', zIndex: 1, width: '100%'}}>
       <div>
         <div style={{display: 'flex'}}>
           <div style={{flex: '1'}}>{Method} {Path} {RespCode}</div>

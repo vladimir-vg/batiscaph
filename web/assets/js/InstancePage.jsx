@@ -35,6 +35,10 @@ export default class InstancePage extends React.Component {
     this.onTabSelect = this.onTabSelect.bind(this);
     this.renderElement = this.renderElement.bind(this);
 
+    // only affects scroll, shouldn't be put into state
+    // not part of the renderable state
+    this.wasScrolledToBottom = true;
+
     // TODO: listen to resize event, update height accordingly
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
     this.state = {
@@ -46,8 +50,36 @@ export default class InstancePage extends React.Component {
     this.props.store.subscribeToInstance(this.props.match.params.id);
   }
 
+
+  // keep scrolled down, even if new content is added
+  // if was scrolled down before
+  componentDidMount() {
+    this.containerRef.addEventListener("scroll", () => {
+      const fullScroll = this.containerRef.scrollHeight - this.containerRef.clientHeight;
+      const { scrollTop } = this.containerRef;
+    
+      // stick to bottom, if we scrolled to very bottom
+      // if was scrolled up, then unstick
+      this.wasScrolledToBottom = (scrollTop === fullScroll);
+    });
+  }
+
+  componentDidUpdate() {
+    if (this.wasScrolledToBottom && this.shouldStickToBottom()) {
+      this.containerRef.scrollTop = this.containerRef.scrollHeight - this.containerRef.clientHeight;
+    }
+  }
+
+
+
   componentWillUnmount() {
     this.props.store.unsubscribeFromInstance(this.props.match.params.id);
+  }
+
+  shouldStickToBottom() {
+    const { pathname } = this.props.location;
+    if (/\/requests$/.test(pathname)) { return true; }
+    return false;
   }
 
   // onRequestSelect(id) { this.props.store.onRequestSelect(id); }
@@ -101,6 +133,9 @@ export default class InstancePage extends React.Component {
     const reqs = this.props.store.layout.HttpReq || [];
     const procs = this.props.store.layout.Process || [];
 
+    const usedWidth = grid.xColStart(this.props.store.layout.xColsLength+1);
+    const usedHeight = grid.yRowAt(this.props.store.layout.yRowsLength);
+
     // Display process link, if it is currently selected
     let processLink = null;
     if (/\/process_info\//.test(this.props.location.pathname)) {
@@ -117,7 +152,7 @@ export default class InstancePage extends React.Component {
           {processLink}
         </div>
 
-        <div className="tab-container">
+        <div className="tab-container" ref={(ref) => { this.containerRef = ref }}>
           <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
           <Route exact path={`${this.props.match.path}/shell`} component={ShellPanelPage} />
           <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPanelPage} />
@@ -126,7 +161,7 @@ export default class InstancePage extends React.Component {
         </div>
       </div>
       <div className="map-container">
-        <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>
+        <SvgView padding={100} paddingLeft={100} paddedWidth={usedWidth} paddedHeight={usedHeight}>
           {this.renderGrid()}
           <g>{procs.map(this.renderElement)}</g>
           <g>{reqs.map(this.renderElement)}</g>

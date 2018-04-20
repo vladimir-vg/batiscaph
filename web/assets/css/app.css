@@ -84,26 +84,26 @@ code {
   /*color: #2F80ED;*/
 }
 
-.RequestsInfo {
+.RequestsListPage {
+  margin-left: 15px;
   /*padding-top: 20px;*/
 }
-.RequestsInfo .table-container {
-  /*margin-left: 20px;*/
+/*.RequestsListPage .table-container {
   overflow-y: scroll;
   width: 100%;
-}
-.RequestsInfo table {
+}*/
+.RequestsListPage table {
   width: 100%;
   border-collapse: collapse;
-  margin-left: 15px;
+  /*margin-left: 15px;*/
 }
-.RequestsInfo table td {
+.RequestsListPage table td {
   padding: 3px 5px;
 }
-.RequestsInfo table tr {
+.RequestsListPage table tr {
   padding-right: 5px;
 }
-.RequestsInfo table tr.hovered {
+.RequestsListPage table tr.hovered {
   background-color: #2F80ED;
   color: white;
   cursor: pointer;
@@ -111,21 +111,21 @@ code {
 
 
 
-.RequestsInfo .SelectedRequestInfo > div {
+.RequestPage > div {
   padding: 20px;
 }
-.RequestsInfo .SelectedRequestInfo code {
+.RequestPage code {
   word-wrap: break-word;
 }
-.RequestsInfo .SelectedRequestInfo code > div {
+.RequestPage code > div {
   line-height: 1.3em;
 }
-.RequestsInfo .SelectedRequestInfo svg rect.plug {
+.RequestPage svg rect.plug {
   stroke: #C4C4C4;
   stroke-width: 1px;
   fill: #F2F2F2;
 }
-.RequestsInfo .SelectedRequestInfo svg rect.plug.hovered {
+.RequestPage svg rect.plug.hovered {
   stroke: #2F80ED;
   stroke-width: 3px;
 }

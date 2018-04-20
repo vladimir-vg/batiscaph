@@ -12,30 +12,9 @@ export default class RequestsListPage extends React.Component {
   constructor() {
     super();
 
-    // only affects scroll, shouldn't be put into state
-    // not part of the renderable state
-    this.stickToBottom = true;
-
     this.renderItem = this.renderItem.bind(this);
     this.selectRequest = this.selectRequest.bind(this);
     this.onRequestHover = this.onRequestHover.bind(this);
-  }
-
-  componentDidMount() {
-    this.containerRef.addEventListener("scroll", () => {
-      const fullScroll = this.containerRef.scrollHeight - this.containerRef.clientHeight;
-      const { scrollTop } = this.containerRef;
-
-      // stick to bottom, if we scrolled to very bottom
-      // if was scrolled up, then unstick
-      this.stickToBottom = (scrollTop === fullScroll);
-    });
-  }
-
-  componentDidUpdate() {
-    if (this.stickToBottom) {
-      this.containerRef.scrollTop = this.containerRef.scrollHeight - this.containerRef.clientHeight;
-    }
   }
 
   onRequestHover(id) { this.props.store.onRequestHover(id); }
@@ -64,8 +43,7 @@ export default class RequestsListPage extends React.Component {
   }
 
   render() {
-    return <div className="RequestsInfo">
-      <div ref={(ref) => { this.containerRef = ref }} className="table-container">
+    return <div className="RequestsListPage">
         <table>
           <tbody>
             {this.props.store.httpRequestsList.map(this.renderItem)}
@@ -73,8 +51,7 @@ export default class RequestsListPage extends React.Component {
         </table>
 
         {/* add some space on the bottom, make it easier to read */}
-        <div style={{height: '50%'}} />
-      </div>
+        <div style={{height: 300}} />
     </div>;
   }
 }
