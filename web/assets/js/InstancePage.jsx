@@ -79,6 +79,7 @@ export default class InstancePage extends React.Component {
   shouldStickToBottom() {
     const { pathname } = this.props.location;
     if (/\/requests$/.test(pathname)) { return true; }
+    if (/\/shell$/.test(pathname)) { return true; }
     return false;
   }
 
