@@ -83,12 +83,13 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   // to ensure that all spawns happen from left to right
   // create a tree of spawns, and simply walk it
   // poping out each node as column
-  const spawnTree = {};
+  let spawnTree = {};
   for (const i in pids1) {
     const proc = delta['erlang-processes'][pids1[i]];
     ensureSavedInSpawnTree(spawnTree, delta['erlang-processes'], proc);
   }
   const pids2 = enumerateSpawnTree(spawnTree);
+  spawnTree = null; // not needed anymore, free memory
 
   console.log("timestamps", timestamps1);
   console.log("pids", pids2);

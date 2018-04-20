@@ -62,8 +62,7 @@ Component.propTypes = {
 function produceElements(delta) {
   const result = [];
 
-  for (const id in delta['plug-requests']) {
-    const req = delta['plug-requests'][id];
+  delta['plug-requests'].forEach((req, id) => {
     result.push({
       id: id,
       key: id,
@@ -74,10 +73,9 @@ function produceElements(delta) {
         y2: c.yTimestamp(req.StoppedAt),
       }
     });
-  }
+  });
 
-  for (const id in delta['cowboy-requests']) {
-    const req = delta['cowboy-requests'][id];
+  delta['cowboy-requests'].forEach((req, id) => {
     result.push({
       id: id,
       key: `init ${id}`,
@@ -98,7 +96,7 @@ function produceElements(delta) {
         y2: c.yTimestamp(req.handle.StoppedAt),
       }
     });
-  }
+  });
 
   return result;
 };

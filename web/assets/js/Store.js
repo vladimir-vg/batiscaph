@@ -13,9 +13,9 @@ export default class Store {
       isShellConnected: false,
       instancesList: [],
       delta: {
-        'plug-requests': null,
-        'cowboy-requests': null,
-        'erlang-processes': null,
+        'plug-requests': (new Map()),
+        'cowboy-requests': (new Map()),
+        'erlang-processes': (new Map()),
 
         // initialize as Map, in order to be able to listen
         // for new item
@@ -64,8 +64,8 @@ export default class Store {
   // sorted list of ready to display reqs
   @computed
   get httpRequestsList() {
-    const reqs1 = Object.values(this.delta['plug-requests'] || {});
-    const reqs2 = Object.values(this.delta['cowboy-requests'] || {});
+    const reqs1 = Array.from(this.delta['plug-requests'].values());
+    const reqs2 = Array.from(this.delta['cowboy-requests'].values());
     const reqs = reqs1.concat(reqs2);
     reqs.sort((a, b) => {
       let aAt, bAt;
@@ -116,9 +116,9 @@ export default class Store {
     }
 
     let url = null;
-    if (id in this.delta['plug-requests']) {
+    if (this.delta['plug-requests'].has(id)) {
       url = `${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`;
-    } else if (id in this.delta['cowboy-requests']) {
+    } else if (this.delta['cowboy-requests'].has(id)) {
       url = `${window.API_URL}/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
     }
 
@@ -203,7 +203,7 @@ export default class Store {
 
   @computed
   get shellCommands() {
-    const cmds = Array.from(this.delta['shell-commands'].values() || []);
+    const cmds = Array.from(this.delta['shell-commands'].values());
     cmds.sort((a, b) => a.At > b.At ? 1 : -1);
     const cmds1 = cmds.map(({ At, Input, Outputs, Pid, Prompt }) => {
       const Outputs1 = Object.values(Outputs);

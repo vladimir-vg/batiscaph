@@ -65,10 +65,9 @@ Component.propTypes = {
 function produceElements(delta) {
   const result = [];
 
-  for (const pid in delta['erlang-processes']) {
-    const proc = delta['erlang-processes'][pid];
-
-    if (!proc.SpawnedAt && !proc.TraceStartedAt) { continue; }
+  delta['erlang-processes'].forEach((proc, pid) => {
+    // skip
+    if (!proc.SpawnedAt && !proc.TraceStartedAt) { return; }
 
     const constraints = {
       x: c.xPid(proc.Pid),
@@ -85,7 +84,8 @@ function produceElements(delta) {
     }
 
     result.push({ id: pid, key: pid, Component, constraints });
-  }
+  });
+
   return result;
 };
 
