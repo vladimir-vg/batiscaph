@@ -14,7 +14,7 @@ class Command extends React.Component {
         <div className="input">{this.props.cmd.Input}</div>
       </div>
       <div className="outputs">
-        {this.props.cmd.Outputs.map(({ At, Text }) => <span key={At}>{Text}</span>)}
+        {this.props.cmd.Outputs.map(({ At, Text }) => <pre key={At}>{Text}</pre>)}
       </div>
     </div>;
     return null;

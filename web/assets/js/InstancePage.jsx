@@ -6,6 +6,7 @@ void(inject); void(observer); // just to silence eslint, which cannot detect dec
 
 import SvgView from './SvgView';
 import RequestsListPage from './RequestsListPage';
+import RequestPage from './RequestPage';
 import ShellPanelPage from './ShellPanelPage';
 import ProcessPanelPage from './ProcessPanelPage';
 
@@ -23,44 +24,12 @@ const grid = {
 
 
 
-// class Tabs extends React.Component {
-//   constructor() {
-//     super();
-// 
-//     this.renderItem = this.renderItem.bind(this);
-//   }
-// 
-//   renderItem({ id, text }) {
-//     let className = "item";
-//     if (id === this.props.selectedId) {
-//       className += " active";
-//     }
-// 
-//     return <span key={id} className={className} onClick={this.props.onSelect.bind(this, id)}>
-//       {text}
-//     </span>;
-//   }
-// 
-//   render() {
-//     return <div className="Tabs">
-//       {this.props.choices.map(this.renderItem)}
-//     </div>;
-//   }
-// }
-// Tabs.propTypes = {
-//   selectedId: PropTypes.string.isRequired,
-//   choices: PropTypes.array.isRequired,
-//   onSelect: PropTypes.func.isRequired,
-// }
-
-
-
 @inject("store") @observer
 export default class InstancePage extends React.Component {
   constructor() {
     super();
 
-    this.onRequestSelect = this.onRequestSelect.bind(this);
+    this.selectRequest = this.selectRequest.bind(this);
     this.onRequestHover = this.onRequestHover.bind(this);
     this.selectProcess = this.selectProcess.bind(this);
     this.onTabSelect = this.onTabSelect.bind(this);
@@ -81,12 +50,18 @@ export default class InstancePage extends React.Component {
     this.props.store.unsubscribeFromInstance(this.props.match.params.id);
   }
 
-  onRequestSelect(id) { this.props.store.onRequestSelect(id); }
+  // onRequestSelect(id) { this.props.store.onRequestSelect(id); }
   onRequestHover(id) { this.props.store.onRequestHover(id); }
+
+  selectRequest(reqId, type) {
+    const { id } = this.props.match.params;
+    const newPath = `/instances/${id}/${type}-request-info/${encodeURIComponent(reqId)}`;
+    this.props.history.push(newPath);
+  }
 
   selectProcess(pid) {
     const { id } = this.props.match.params;
-    const newPath = `/instances/${id}/process_info/${encodeURIComponent(pid)}`;
+    const newPath = `/instances/${id}/process-info/${encodeURIComponent(pid)}`;
     this.props.history.push(newPath);
   }
 
@@ -116,8 +91,8 @@ export default class InstancePage extends React.Component {
 
   renderElement(e) {
     const { selectedRequestId, hoveredRequestId } = this.props.store;
-    const { onRequestSelect, onRequestHover, selectProcess } = this; // take wrapped functions
-    const storeProps = { onRequestSelect, onRequestHover, selectedRequestId, hoveredRequestId, selectProcess };
+    const { selectRequest, onRequestHover, selectProcess } = this; // take wrapped functions
+    const storeProps = { selectRequest, onRequestHover, selectedRequestId, hoveredRequestId, selectProcess };
     const { id, key, Component, ...elementProps} = e;
     return <Component key={key} grid={grid} {...storeProps} id={id} {...elementProps} />;
   }
@@ -142,9 +117,13 @@ export default class InstancePage extends React.Component {
           {processLink}
         </div>
 
-        <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
-        <Route exact path={`${this.props.match.path}/shell`} component={ShellPanelPage} />
-        <Route exact path={`${this.props.match.path}/process_info/:pid`} component={ProcessPanelPage} />
+        <div className="tab-container">
+          <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
+          <Route exact path={`${this.props.match.path}/shell`} component={ShellPanelPage} />
+          <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPanelPage} />
+          <Route exact path={`${this.props.match.path}/plug-request-info/:reqId`} component={RequestPage} />
+          <Route exact path={`${this.props.match.path}/cowboy-request-info/:reqId`} component={RequestPage} />
+        </div>
       </div>
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={300} paddedHeight={1000}>

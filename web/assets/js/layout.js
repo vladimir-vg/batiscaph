@@ -101,10 +101,11 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
     } else if (constraint.type === 'pid') {
       return pids2.indexOf(constraint.value);
     } else {
-      throw {
-        message: "Unknown constraint type",
-        constraint, element
-      };
+      return constraint;
+      // throw {
+      //   message: "Unknown constraint type",
+      //   constraint, element
+      // };
     }
   };
 };

@@ -86,15 +86,23 @@ export default class Store {
 
   @action
   consumeDelta(delta) {
+    // to distinguish requests, when they are merged into one list
+    for (const id in delta['cowboy-requests']) {
+      delta['cowboy-requests'][id]._type = 'cowboy';
+    }
+    for (const id in delta['plug-requests']) {
+      delta['plug-requests'][id]._type = 'plug';
+    }
+
     // make new delta also observable, to avoid having unobserved parts
     // in observed delta
     mergeDelta({oldDelta: this.delta, newDelta: observable(delta)});
   }
 
   @action
-  onRequestSelect(id) {
+  onRequestSelect(id, type) {
     this.selectedRequestId = id;
-    if (id) { this.ensureRequestInfoFetch(id); }
+    if (id) { this.ensureRequestInfoFetch(id, type); }
   }
 
   @action
@@ -103,7 +111,7 @@ export default class Store {
   }
 
   @action
-  ensureRequestInfoFetch(id) {
+  ensureRequestInfoFetch(id, type) {
     if (!this.currentInstanceId) {
       throw {
         message: "Undefined current instance while fetching request info",
@@ -116,9 +124,9 @@ export default class Store {
     }
 
     let url = null;
-    if (this.delta['plug-requests'].has(id)) {
+    if (type === 'plug') {
       url = `${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`;
-    } else if (this.delta['cowboy-requests'].has(id)) {
+    } else if (type === 'cowboy') {
       url = `${window.API_URL}/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
     }
 

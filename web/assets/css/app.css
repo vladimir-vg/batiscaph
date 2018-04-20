@@ -42,6 +42,16 @@ code {
   min-height: 300px;
   border-right: 1px solid #E5E5E5;
   /*background-color: rgba(0, 0, 255, 0.1);*/
+
+  position: relative;
+}
+.InstancePage .tab-container {
+  position: absolute;
+  top: 70px; /* for tabs */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow-y: scroll;
 }
 
 @media (max-width: 960px) {
@@ -147,10 +157,23 @@ code {
 
 
 
+.ShellPanel {
+  /*position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;*/
+
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
 .ShellPanel .current-input {
   display: flex;
   margin-left: 60px; /* 20px outer margin + 40px prompt width */
   margin-right: 20px;
+  margin-bottom: 20px;
 }
 .ShellPanel .current-input textarea {
   font-family: 'Fira Mono', monospace;

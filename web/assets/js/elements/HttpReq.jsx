@@ -10,11 +10,11 @@ class Component extends React.Component {
   constructor() {
     super();
 
-    this.onRequestSelect = this.onRequestSelect.bind(this);
+    this.selectRequest = this.selectRequest.bind(this);
     this.onRequestHover = this.onRequestHover.bind(this);
   }
 
-  onRequestSelect(id) { this.props.onRequestSelect(id); }
+  selectRequest(id, type) { this.props.selectRequest(id, type); }
   onRequestHover(id) { this.props.onRequestHover(id); }
 
   render() {
@@ -39,12 +39,13 @@ class Component extends React.Component {
     return <rect className={className} style={{strokeWidth: borderWidth}}
       onMouseEnter={this.onRequestHover.bind(this, this.props.id)}
       onMouseLeave={this.onRequestHover.bind(this, null)}
-      onClick={this.onRequestSelect.bind(this, this.props.id)}
+      onClick={this.selectRequest.bind(this, this.props.id, this.props.type)}
       x={x-borderWidth/2} y={y-borderWidth/2} width={width+borderWidth} height={height+borderWidth} />;
   }
 }
 Component.propTypes = {
   id: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
   x: PropTypes.number.isRequired,
   y1: PropTypes.number.isRequired,
   y2: PropTypes.number.isRequired,
@@ -52,7 +53,7 @@ Component.propTypes = {
   grid: PropTypes.object.isRequired,
   selectedRequestId: PropTypes.string,
   hoveredRequestId: PropTypes.string,
-  onRequestSelect: PropTypes.func.isRequired,
+  selectRequest: PropTypes.func.isRequired,
   onRequestHover: PropTypes.func.isRequired,
 }
 
@@ -68,6 +69,7 @@ function produceElements(delta) {
       key: id,
       Component,
       constraints: {
+        type: req._type,
         x: c.xPid(req.Pid),
         y1: c.yTimestamp(req.StartedAt),
         y2: c.yTimestamp(req.StoppedAt),
@@ -81,6 +83,7 @@ function produceElements(delta) {
       key: `init ${id}`,
       Component,
       constraints: {
+        type: req._type,
         x: c.xPid(req.Pid),
         y1: c.yTimestamp(req.init.StartedAt),
         y2: c.yTimestamp(req.init.StoppedAt),
@@ -91,6 +94,7 @@ function produceElements(delta) {
       key: `handle ${id}`,
       Component,
       constraints: {
+        type: req._type,
         x: c.xPid(req.Pid),
         y1: c.yTimestamp(req.handle.StartedAt),
         y2: c.yTimestamp(req.handle.StoppedAt),
