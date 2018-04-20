@@ -60,8 +60,9 @@ export default class SvgView extends React.Component {
 
   // do not allow to move out of padded space
   sanitizeXY(x,y) {
-    const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-    const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    const rect = this.svgRef.getBoundingClientRect();
+    const viewportWidth = Math.floor(rect.width); // Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    const viewportHeight = Math.floor(rect.height); // Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
     const paddingLeft = this.props.paddingLeft || this.props.padding;
 
@@ -107,6 +108,7 @@ export default class SvgView extends React.Component {
   render() {
     // Commented out code that was handling dragging and scrolling inside <svg>
     return <svg className={this.props.className}
+        ref={(ref) => { this.svgRef = ref; }}
         style={{width: '100%', height: '100%'}}
         onWheel={this.onWheel.bind(this)}
         onMouseMove={this.onMouseMove.bind(this)} onMouseDown={this.onMouseDown.bind(this)}
