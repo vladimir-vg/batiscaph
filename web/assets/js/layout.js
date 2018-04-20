@@ -6,7 +6,7 @@
 
 import HttpReq from './elements/HttpReq';
 import Process from './elements/Process';
-import c from './constraint';
+import attr from './attr';
 
 
 
@@ -30,19 +30,19 @@ export function produceLayout(delta) {
   // just generate ready-to-render tree with coords
 
   return {
-    HttpReq: resolveConstraints({ elements: reqs, resolve }),
-    Process: resolveConstraints({ elements: procs, resolve }),
+    HttpReq: resolveAttrs({ elements: reqs, resolve }),
+    Process: resolveAttrs({ elements: procs, resolve }),
   };
 }
 
 
 
-function resolveConstraints({ elements, resolve }) {
+function resolveAttrs({ elements, resolve }) {
   return elements.map((e) => {
-    const { id, key, constraints, Component } = e;
+    const { id, key, attrs, Component } = e;
     const result = { id, key, Component };
-    for (const ckey in constraints) {
-      result[ckey] = resolve(constraints[ckey], e);
+    for (const ckey in attrs) {
+      result[ckey] = resolve(attrs[ckey], e);
     }
     return result;
   });
@@ -55,22 +55,22 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   let pids = [];
 
   for (const i in reqs) {
-    const cons = reqs[i].constraints;
+    const cons = reqs[i].attrs;
     for (const key in cons) {
       // walk through all constrains of all elements
       // and extract pids and timestamps
-      pids = pids.concat(c.getPids(cons[key]));
-      timestamps = timestamps.concat(c.getTimestamps(cons[key]));
+      pids = pids.concat(attr.getPids(cons[key]));
+      timestamps = timestamps.concat(attr.getTimestamps(cons[key]));
     }
   }
 
   for (const i in procs) {
-    const cons = procs[i].constraints;
+    const cons = procs[i].attrs;
     for (const key in cons) {
       // walk through all constrains of all elements
       // and extract pids and timestamps
-      pids = pids.concat(c.getPids(cons[key]));
-      timestamps = timestamps.concat(c.getTimestamps(cons[key]));
+      pids = pids.concat(attr.getPids(cons[key]));
+      timestamps = timestamps.concat(attr.getTimestamps(cons[key]));
     }
   }
 
@@ -94,18 +94,14 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   console.log("timestamps", timestamps1);
   console.log("pids", pids2);
 
-  return (constraint, element) => {
-    if (constraint.type === 'timestamp') {
-      if (constraint.value === 'now') { return timestamps1.length + 1; }
-      return timestamps1.indexOf(constraint.value)+1;
-    } else if (constraint.type === 'pid') {
-      return pids2.indexOf(constraint.value);
+  return (attr, element) => {
+    if (attr.type === 'timestamp') {
+      if (attr.value === 'now') { return timestamps1.length + 1; }
+      return timestamps1.indexOf(attr.value)+1;
+    } else if (attr.type === 'pid') {
+      return pids2.indexOf(attr.value);
     } else {
-      return constraint;
-      // throw {
-      //   message: "Unknown constraint type",
-      //   constraint, element
-      // };
+      return attr;
     }
   };
 };

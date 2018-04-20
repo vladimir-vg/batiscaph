@@ -2,7 +2,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import c from '../constraint';
+import attr from '../attr';
 
 
 
@@ -68,11 +68,11 @@ function produceElements(delta) {
       id: id,
       key: id,
       Component,
-      constraints: {
+      attrs: {
         type: req._type,
-        x: c.xPid(req.Pid),
-        y1: c.yTimestamp(req.StartedAt),
-        y2: c.yTimestamp(req.StoppedAt),
+        x: attr.xPid(req.Pid),
+        y1: attr.yTimestamp(req.StartedAt),
+        y2: attr.yTimestamp(req.StoppedAt),
       }
     });
   });
@@ -82,22 +82,22 @@ function produceElements(delta) {
       id: id,
       key: `init ${id}`,
       Component,
-      constraints: {
+      attrs: {
         type: req._type,
-        x: c.xPid(req.Pid),
-        y1: c.yTimestamp(req.init.StartedAt),
-        y2: c.yTimestamp(req.init.StoppedAt),
+        x: attr.xPid(req.Pid),
+        y1: attr.yTimestamp(req.init.StartedAt),
+        y2: attr.yTimestamp(req.init.StoppedAt),
       }
     });
     result.push({
       id: id,
       key: `handle ${id}`,
       Component,
-      constraints: {
+      attrs: {
         type: req._type,
-        x: c.xPid(req.Pid),
-        y1: c.yTimestamp(req.handle.StartedAt),
-        y2: c.yTimestamp(req.handle.StoppedAt),
+        x: attr.xPid(req.Pid),
+        y1: attr.yTimestamp(req.handle.StartedAt),
+        y2: attr.yTimestamp(req.handle.StoppedAt),
       }
     });
   });

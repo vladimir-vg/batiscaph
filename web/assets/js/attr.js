@@ -1,6 +1,7 @@
 
-// This module provides interface to work with constraints.
+// This module provides interface to work with attributes.
 // Elements use this modules to define dependencies from other elements and values.
+// In future it may evolve into some constraint logic facts and rules.
 
 
 

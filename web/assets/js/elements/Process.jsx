@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import c from '../constraint';
+import attr from '../attr';
 
 
 
@@ -69,21 +69,21 @@ function produceElements(delta) {
     // skip
     if (!proc.SpawnedAt && !proc.TraceStartedAt) { return; }
 
-    const constraints = {
-      x: c.xPid(proc.Pid),
-      startedY: c.yTimestamp(proc.SpawnedAt || proc.TraceStartedAt),
+    const attrs = {
+      x: attr.xPid(proc.Pid),
+      startedY: attr.yTimestamp(proc.SpawnedAt || proc.TraceStartedAt),
     }
     if (proc.SpawnedAt) {
-      constraints.parentX = c.xPid(proc.ParentPid);
+      attrs.parentX = attr.xPid(proc.ParentPid);
     }
 
     if (proc.ExitedAt) {
-      constraints.exitedY = c.yTimestamp(proc.ExitedAt);
+      attrs.exitedY = attr.yTimestamp(proc.ExitedAt);
     } else {
-      constraints.continueY = c.yTimestampNow();
+      attrs.continueY = attr.yTimestampNow();
     }
 
-    result.push({ id: pid, key: pid, Component, constraints });
+    result.push({ id: pid, key: pid, Component, attrs });
   });
 
   return result;
