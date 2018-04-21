@@ -27,7 +27,7 @@ Command.propTypes = {
 
 
 @inject("store") @observer
-export default class ShellPanelPage extends React.Component {
+export default class ShellPage extends React.Component {
   constructor() {
     super();
 

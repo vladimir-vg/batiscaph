@@ -6,7 +6,7 @@ import React from 'react';
 
 
 @inject("store") @observer
-export default class ProcessPanelPage extends React.Component {
+export default class ProcessPage extends React.Component {
   constructor() {
     super();
     this.renderAttr = this.renderAttr.bind(this);

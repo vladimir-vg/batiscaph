@@ -7,8 +7,8 @@ void(inject); void(observer); // just to silence eslint, which cannot detect dec
 import SvgView from './SvgView';
 import RequestsListPage from './RequestsListPage';
 import RequestPage from './RequestPage';
-import ShellPanelPage from './ShellPanelPage';
-import ProcessPanelPage from './ProcessPanelPage';
+import ShellPage from './ShellPage';
+import ProcessPage from './ProcessPage';
 
 import Layout from './svgLayout';
 
@@ -173,8 +173,8 @@ export default class InstancePage extends React.Component {
 
         <div className="tab-container" ref={(ref) => { this.containerRef = ref }}>
           <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
-          <Route exact path={`${this.props.match.path}/shell`} component={ShellPanelPage} />
-          <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPanelPage} />
+          <Route exact path={`${this.props.match.path}/shell`} component={ShellPage} />
+          <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPage} />
           <Route exact path={`${this.props.match.path}/plug-request-info/:reqId`} component={RequestPage} />
           <Route exact path={`${this.props.match.path}/cowboy-request-info/:reqId`} component={RequestPage} />
         </div>
