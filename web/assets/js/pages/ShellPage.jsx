@@ -4,9 +4,23 @@ void(inject); void(observer); // just to silence eslint, which cannot detect dec
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import util from '../util';
+
 
 
 class Command extends React.Component {
+  constructor() {
+    super();
+
+    this.renderOutput = this.renderOutput.bind(this);
+  }
+
+  renderOutput({ At, Text }) {
+    const { instanceId } = this.props;
+    const TextNodes = util.addLinksIntoText(Text, { instanceId });
+    return <pre key={At}>{TextNodes}</pre>;
+  }
+
   render() {
     return <div className="Command">
       <div className="input-container">
@@ -14,7 +28,7 @@ class Command extends React.Component {
         <div className="input">{this.props.cmd.Input}</div>
       </div>
       <div className="outputs">
-        {this.props.cmd.Outputs.map(({ At, Text }) => <pre key={At}>{Text}</pre>)}
+        {this.props.cmd.Outputs.map(this.renderOutput)}
       </div>
     </div>;
     return null;
@@ -22,6 +36,7 @@ class Command extends React.Component {
 }
 Command.propTypes = {
   cmd: PropTypes.object.isRequired,
+  instanceId: PropTypes.string.isRequired,
 }
 
 
@@ -59,7 +74,7 @@ export default class ShellPage extends React.Component {
     const cmds = this.props.store.shellCommands;
     for (const i in cmds) {
       const cmd = cmds[i];
-      result.push(<Command key={i} cmd={cmds[i]} />);
+      result.push(<Command key={i} cmd={cmds[i]} instanceId={this.props.match.params.id} />);
     }
 
     return result;

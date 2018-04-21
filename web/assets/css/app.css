@@ -150,6 +150,12 @@ code {
   margin-top: 0;
   margin-bottom: 0;
 }
+.Command .outputs > pre a {
+  color: #828282;
+}
+.Command .outputs > pre a:hover {
+  color: #2F80ED;
+}
 
 
 
