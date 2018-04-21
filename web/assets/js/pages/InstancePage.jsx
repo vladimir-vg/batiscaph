@@ -4,13 +4,13 @@ import PropTypes from 'prop-types';
 import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
-import SvgView from './SvgView';
+import Layout from '../svgLayout';
+import SvgView from '../SvgView';
+
 import RequestsListPage from './RequestsListPage';
 import RequestPage from './RequestPage';
 import ShellPage from './ShellPage';
 import ProcessPage from './ProcessPage';
-
-import Layout from './svgLayout';
 
 
 

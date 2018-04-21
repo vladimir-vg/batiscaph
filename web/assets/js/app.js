@@ -30,8 +30,8 @@ import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import { Provider } from 'mobx-react';
 
 import Store from './Store';
-import InstancesListPage from './InstancesListPage';
-import InstancePage from './InstancePage';
+import InstancesListPage from './pages/InstancesListPage';
+import InstancePage from './pages/InstancePage';
 
 // for debugging
 window.mobx = mobx;
