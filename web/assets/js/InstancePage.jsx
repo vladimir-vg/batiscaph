@@ -154,9 +154,11 @@ export default class InstancePage extends React.Component {
     const usedHeight = grid.yRowAt(this.props.store.layout.yRowsLength);
 
     // Display process link, if it is currently selected
-    let processLink = null;
-    if (/\/process_info\//.test(this.props.location.pathname)) {
-      processLink = <NavLink to={this.props.location.pathname}>Process</NavLink>
+    let selectedItemLink = null;
+    if (/\/process-info\//.test(this.props.location.pathname)) {
+      selectedItemLink = <NavLink to={this.props.location.pathname}>Process</NavLink>
+    } else if (/-request-info\//.test(this.props.location.pathname)) {
+      selectedItemLink = <NavLink to={this.props.location.pathname}>Request</NavLink>
     }
 
     // for some reason setting viewportHeight for div height creates scrollbar
@@ -166,7 +168,7 @@ export default class InstancePage extends React.Component {
         <div className="Tabs">
           <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>
           <NavLink to={`${this.props.match.url}/shell`}>Shell</NavLink>
-          {processLink}
+          {selectedItemLink}
         </div>
 
         <div className="tab-container" ref={(ref) => { this.containerRef = ref }}>
