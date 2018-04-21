@@ -10,6 +10,8 @@ import RequestPage from './RequestPage';
 import ShellPanelPage from './ShellPanelPage';
 import ProcessPanelPage from './ProcessPanelPage';
 
+import Layout from './svgLayout';
+
 
 
 const hGap = 4;
@@ -43,6 +45,13 @@ export default class InstancePage extends React.Component {
     const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
     this.state = {
       viewportHeight,
+      layoutRefs: {
+        callbackRects: React.createRef(),
+        callbackActiveRects: React.createRef(),
+        procBody: React.createRef(),
+        procSpawnLines: React.createRef(),
+        procSpawnLinesOverBody: React.createRef(),
+      }
     };
   }
 
@@ -100,6 +109,13 @@ export default class InstancePage extends React.Component {
 
   onTabSelect(tabId) {
     this.setState({ tabId });
+  }
+
+  saveLayoutRef(ref, key) {
+    console.log('saveLayoutRef', 'key', this.state.layoutRefs);
+    const layoutRefs = Object.assign({}, this.state.layoutRefs);
+    layoutRefs[key] = ref;
+    this.setState({ layoutRefs });
   }
 
   renderGrid() {
@@ -164,8 +180,17 @@ export default class InstancePage extends React.Component {
       <div className="map-container">
         <SvgView padding={100} paddingLeft={100} paddedWidth={usedWidth} paddedHeight={usedHeight}>
           {this.renderGrid()}
-          <g>{procs.map(this.renderElement)}</g>
-          <g>{reqs.map(this.renderElement)}</g>
+
+          <Layout.Provider value={this.state.layoutRefs}>
+            <g>{procs.map(this.renderElement)}</g>
+            <g>{reqs.map(this.renderElement)}</g>
+          </Layout.Provider>
+
+          <g ref={this.state.layoutRefs.callbackRects} />
+          <g ref={this.state.layoutRefs.procSpawnLines} />
+          <g ref={this.state.layoutRefs.procBody} />
+          <g ref={this.state.layoutRefs.procSpawnLinesOverBody} />
+          <g ref={this.state.layoutRefs.callbackActiveRects} />
         </SvgView>
       </div>
     </div>;

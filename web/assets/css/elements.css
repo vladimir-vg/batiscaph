@@ -12,13 +12,13 @@ rect.HttpReq.hovered {
 
 
 
-.Process .body {
+.process-body {
   fill: #D9D9D9;
 }
-.Process .exit {
+.process-exit {
   fill: #FC8888;
 }
-.Process .spawn {
+.spawn {
   stroke: #828282;
   stroke-width: 1px;
 }

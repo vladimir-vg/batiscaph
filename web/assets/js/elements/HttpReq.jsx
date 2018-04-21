@@ -3,6 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import attr from '../attr';
+import Layout from '../svgLayout';
 
 
 
@@ -27,20 +28,33 @@ class Component extends React.Component {
     const height = (g.yRowAt(this.props.y2) - g.yRowAt(this.props.y1))+2*VPADDING_OFFSET;
 
     let className = "HttpReq";
+    let highlighted = false;
     if (this.props.id === this.props.selectedRequestId) {
       className += " current";
+      highlighted = true;
     } else if (this.props.id === this.props.hoveredRequestId) {
       className += " hovered";
+      highlighted = true;
     }
 
     // currently not possble to draw border inside rect
     // have to correct offset by hand
     const borderWidth = 1;
-    return <rect className={className} style={{strokeWidth: borderWidth}}
+
+    const content = <rect className={className} style={{strokeWidth: borderWidth}}
       onMouseEnter={this.onRequestHover.bind(this, this.props.id)}
       onMouseLeave={this.onRequestHover.bind(this, null)}
       onClick={this.selectRequest.bind(this, this.props.id, this.props.type)}
       x={x-borderWidth/2} y={y-borderWidth/2} width={width+borderWidth} height={height+borderWidth} />;
+
+    return [
+      <Layout.WithLayout key="callbackRects" name="callbackRects">
+        {!highlighted && content}
+      </Layout.WithLayout>,
+      <Layout.WithLayout key="callbackActiveRects" name="callbackActiveRects">
+        {highlighted && content}
+      </Layout.WithLayout>,
+    ];
   }
 }
 Component.propTypes = {
