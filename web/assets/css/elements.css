@@ -15,6 +15,10 @@ rect.HttpReq.hovered {
 .process-body {
   fill: #D9D9D9;
 }
+.process-body.selected {
+  stroke: #2F80ED;
+  stroke-width: 1px;
+}
 .process-exit {
   fill: #FC8888;
 }

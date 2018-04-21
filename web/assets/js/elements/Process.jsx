@@ -46,9 +46,16 @@ class Component extends React.Component {
       </React.Fragment>;
     }
 
+    let bodyRect = null;
+    if (this.props.selectedProcessPid === this.props.id) {
+      bodyRect = <rect onClick={this.onClick} className="process-body selected" x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />;
+    } else {
+      bodyRect = <rect onClick={this.onClick} className="process-body" x={x} y={y} width={width} height={height} />;
+    }
+
     return [
       <Layout.WithLayout key="procBody" name="procBody">
-        <rect onClick={this.onClick} className="process-body" x={x} y={y} width={width} height={height} />
+        {bodyRect}
         {exit}
       </Layout.WithLayout>,
 
@@ -71,6 +78,7 @@ Component.propTypes = {
   parentX: PropTypes.number,
 
   selectProcess: PropTypes.func.isRequired,
+  selectedProcessPid: PropTypes.string,
 }
 
 

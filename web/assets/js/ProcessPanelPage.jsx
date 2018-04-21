@@ -13,16 +13,23 @@ export default class ProcessPanelPage extends React.Component {
   }
 
   componentWillMount() {
-    this.props.store.subscribeToProcessInfo(this.props.match.params.pid);
+    this.props.store.selectProcess(this.props.match.params.pid);
+  }
+
+  componentWillUnmount() {
+    this.props.store.selectProcess(null);
   }
 
   componentWillReceiveProps(props) {
     if (props.match.params.pid != this.props.match.params.pid) {
-      this.props.store.subscribeToProcessInfo(props.match.params.pid);
+      this.props.store.selectProcess(props.match.params.pid);
     }
   }
 
   renderAttr([key, value]) {
+    if (key === 'dictionary') {
+      return <div key={key}>{key}: <pre>{value}</pre></div>;
+    }
     return <div key={key}>{key}: {value}</div>;
   }
 

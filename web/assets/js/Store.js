@@ -146,9 +146,13 @@ export default class Store {
   }
 
   @action
-  subscribeToProcessInfo(pid) {
+  selectProcess(pid) {
     this.selectedProcessPid = pid;
-    this.wsSend('subscribe_to_process_info', { pid, instance_id: this.currentInstanceId });
+    if (pid) {
+      this.wsSend('subscribe_to_process_info', { pid, instance_id: this.currentInstanceId });
+    } else {
+      // TODO: unsubscribe from process_info
+    }
   }
 
   @computed
