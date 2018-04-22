@@ -26,6 +26,22 @@ code {
 
 
 
+.marked-up-term-output {
+  color: #828282;
+}
+.marked-up-term-output .pid-link {
+  color: #828282;
+}
+
+.marked-up-term-output a:hover.pid-link,
+.marked-up-term-output .pid-link.hovered {
+  color: #2F80ED;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+
+
 /***************/
 
 
@@ -141,20 +157,11 @@ code {
 .Command .input-container .input {
   flex: 1;
 }
-.Command .input-container .prompt,
-.Command .outputs {
-  color: #828282;
-}
+
 .Command .outputs > pre {
   margin-left: 40px;
   margin-top: 0;
   margin-bottom: 0;
-}
-.Command .outputs > pre a {
-  color: #828282;
-}
-.Command .outputs > pre a:hover {
-  color: #2F80ED;
 }
 
 

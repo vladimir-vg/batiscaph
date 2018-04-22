@@ -26,7 +26,11 @@ class Command extends React.Component {
       onText: (text, i) => { nodes.push(<span key={i}>{text}</span>) },
       onPid: (pid, i) => {
         const path = `/instances/${instanceId}/process-info/${pid}`;
-        nodes.push(<Link key={i} to={path}
+        let className = "pid-link";
+        if (this.props.hoveredProcessPid === pid) {
+          className += " hovered";
+        }
+        nodes.push(<Link key={i} to={path} className={className}
           onMouseEnter={this.hoverProcess.bind(this, pid)} 
           onMouseLeave={this.hoverProcess.bind(this, null)}>
 
@@ -34,7 +38,7 @@ class Command extends React.Component {
         </Link>);
       },
     });
-    return <pre key={At}>{nodes}</pre>;
+    return <pre key={At} className="marked-up-term-output">{nodes}</pre>;
   }
 
   render() {
@@ -54,6 +58,7 @@ Command.propTypes = {
   cmd: PropTypes.object.isRequired,
   instanceId: PropTypes.string.isRequired,
   hoverProcess: PropTypes.func.isRequired,
+  hoveredProcessPid: PropTypes.string,
 }
 
 
@@ -96,7 +101,8 @@ export default class ShellPage extends React.Component {
       const cmd = cmds[i];
       result.push(<Command key={i}
         cmd={cmds[i]} instanceId={this.props.match.params.id}
-        hoverProcess={this.hoverProcess} />);
+        hoverProcess={this.hoverProcess}
+        hoveredProcessPid={this.props.store.hoveredProcessPid} />);
     }
 
     return result;
