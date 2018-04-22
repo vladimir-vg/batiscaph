@@ -129,17 +129,17 @@ export default class RequestPage extends React.Component {
 
   componentWillMount() {
     const { reqId } = this.props.match.params;
-    this.props.store.onRequestSelect(reqId, this.getRequestType());
+    this.props.store.selectRequest(reqId, this.getRequestType());
   }
 
   componentWillReceiveProps(props) {
     if (props.match.params.reqId !== this.props.match.params.reqId) {
-      this.props.store.onRequestSelect(props.match.params.reqId, this.getRequestType(props));
+      this.props.store.selectRequest(props.match.params.reqId, this.getRequestType(props));
     }
   }
 
   componentWillUnmount() {
-    this.props.store.onRequestSelect(null);
+    this.props.store.selectRequest(null);
   }
 
   getRequestType(props) {

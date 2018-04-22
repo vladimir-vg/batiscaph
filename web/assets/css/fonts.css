@@ -1,25 +1,25 @@
 
 @font-face {
   font-family: 'Fira Mono';
-  src: url(/fonts/Fira_Mono/FiraMono-Regular.ttf);
+  src: url(/fonts/Fira_Mono/FiraMono-Regular.ttf) format('truetype');
 }
 @font-face {
   font-family: 'Fira Mono';
-  src: url(/fonts/Fira_Mono/FiraMono-Bold.ttf);
+  src: url(/fonts/Fira_Mono/FiraMono-Bold.ttf) format('truetype');
   font-weight: bold;
 }
 
 @font-face {
   font-family: 'PT Serif';
-  src: url(/fonts/PT_Serif/PT_Serif-Web-Regular.ttf);
+  src: url(/fonts/PT_Serif/PT_Serif-Web-Regular.ttf) format('truetype');
 }
 @font-face {
   font-family: 'PT Serif';
-  src: url(/fonts/PT_Serif/PT_Serif-Web-Bold.ttf);
+  src: url(/fonts/PT_Serif/PT_Serif-Web-Bold.ttf) format('truetype');
   font-weight: bold;
 }
 
 @font-face {
   font-family: 'PT Sans';
-  src: url(/fonts/PT_Sans/PT_Sans-Web-Regular.ttf);
+  src: url(/fonts/PT_Sans/PT_Sans-Web-Regular.ttf) format('truetype');
 }

@@ -17,6 +17,10 @@ export default class RequestsListPage extends React.Component {
     this.hoverRequest = this.hoverRequest.bind(this);
   }
 
+  componentWillUnmount() {
+    this.props.store.hoverRequest(null);
+  }
+
   hoverRequest(id) { this.props.store.hoverRequest(id); }
 
   selectRequest(reqId, type) {

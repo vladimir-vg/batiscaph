@@ -3,7 +3,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import attr from '../attr';
-import Layout from '../svgLayout';
+import Layout from '../components/svgLayout';
 
 
 

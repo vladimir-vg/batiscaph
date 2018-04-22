@@ -101,7 +101,7 @@ export default class Store {
   }
 
   @action
-  onRequestSelect(id, type) {
+  selectRequest(id, type) {
     this.selectedRequestId = id;
     if (id) { this.ensureRequestInfoFetch(id, type); }
   }
