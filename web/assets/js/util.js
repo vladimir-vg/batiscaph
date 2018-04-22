@@ -1,5 +1,3 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
 
 
 
@@ -29,20 +27,6 @@ function eachToken(text, { onText, onPid }) {
 
 
 
-function addLinksIntoText(text, { instanceId }) {
-  const result = [];
-  eachToken(text, {
-    onText: (text, i) => { result.push(<span key={i}>{text}</span>) },
-    onPid: (pid, i) => {
-      const path = `/instances/${instanceId}/process-info/${pid}`;
-      result.push(<Link key={i} to={path}>{pid}</Link>);
-    },
-  });
-  return result;
-}
-
-
-
 export default {
-  addLinksIntoText
+  eachToken
 };
