@@ -1,0 +1,25 @@
+
+@font-face {
+  font-family: 'Fira Mono';
+  src: url(/fonts/Fira_Mono/FiraMono-Regular.ttf);
+}
+@font-face {
+  font-family: 'Fira Mono';
+  src: url(/fonts/Fira_Mono/FiraMono-Bold.ttf);
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'PT Serif';
+  src: url(/fonts/PT_Serif/PT_Serif-Web-Regular.ttf);
+}
+@font-face {
+  font-family: 'PT Serif';
+  src: url(/fonts/PT_Serif/PT_Serif-Web-Bold.ttf);
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: 'PT Sans';
+  src: url(/fonts/PT_Sans/PT_Sans-Web-Regular.ttf);
+}
