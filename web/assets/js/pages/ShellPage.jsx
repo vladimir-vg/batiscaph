@@ -2,10 +2,9 @@ import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
 import React from 'react';
-import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-import util from '../util';
+import MarkedOutput from '../components/MarkedOutput';
 
 
 
@@ -20,25 +19,9 @@ class Command extends React.Component {
   hoverProcess(id) { this.props.hoverProcess(id); }
 
   renderOutput({ At, Text }) {
-    const { instanceId } = this.props;
-    const nodes = [];
-    util.eachToken(Text, {
-      onText: (text, i) => { nodes.push(<span key={i}>{text}</span>) },
-      onPid: (pid, i) => {
-        const path = `/instances/${instanceId}/process-info/${pid}`;
-        let className = "pid-link";
-        if (this.props.hoveredProcessPid === pid) {
-          className += " hovered";
-        }
-        nodes.push(<Link key={i} to={path} className={className}
-          onMouseEnter={this.hoverProcess.bind(this, pid)} 
-          onMouseLeave={this.hoverProcess.bind(this, null)}>
-
-          {pid}
-        </Link>);
-      },
-    });
-    return <pre key={At} className="marked-up-term-output">{nodes}</pre>;
+    const { instanceId, hoveredProcessPid, hoverProcess } = this.props;
+    const props = { instanceId, hoveredProcessPid, hoverProcess };
+    return <MarkedOutput key={At} text={Text} {...props} />;
   }
 
   render() {

@@ -18,8 +18,8 @@ export function produceLayout(delta) {
   // but I want it to be flexible in future
   const reqs = HttpReq.produceElements(delta);
   const procs = Process.produceElements(delta);
-  console.log('reqs', reqs);
-  console.log('procs', procs);
+  // console.log('reqs', reqs);
+  // console.log('procs', procs);
 
   // here we should consider all generated elements and their
   // constrains, and produce resolve function
@@ -93,8 +93,8 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   const pids2 = enumerateSpawnTree(spawnTree);
   spawnTree = null; // not needed anymore, free memory
 
-  console.log("timestamps", timestamps1);
-  console.log("pids", pids2);
+  // console.log("timestamps", timestamps1);
+  // console.log("pids", pids2);
 
   return (attr, element) => {
     if (attr === 'xColsLength') { return pids2.length; }

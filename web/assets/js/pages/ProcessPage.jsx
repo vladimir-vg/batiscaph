@@ -3,6 +3,8 @@ void(inject); void(observer); // just to silence eslint, which cannot detect dec
 
 import React from 'react';
 
+import MarkedOutput from '../components/MarkedOutput';
+
 
 
 @inject("store") @observer
@@ -10,6 +12,7 @@ export default class ProcessPage extends React.Component {
   constructor() {
     super();
     this.renderAttr = this.renderAttr.bind(this);
+    this.hoverProcess = this.hoverProcess.bind(this);
   }
 
   componentWillMount() {
@@ -26,9 +29,15 @@ export default class ProcessPage extends React.Component {
     }
   }
 
+  hoverProcess(id) { this.props.store.hoverProcess(id); }
+
   renderAttr([key, value]) {
     if (key === 'dictionary') {
-      return <div key={key}>{key}: <pre>{value}</pre></div>;
+      const instanceId = this.props.match.params.id;
+      const { hoveredProcessPid } = this.props.store;
+      const { hoverProcess } = this;
+      const props = { instanceId, hoveredProcessPid, hoverProcess };
+      return <MarkedOutput key={key} text={value} {...props} />;
     }
     return <div key={key}>{key}: {value}</div>;
   }

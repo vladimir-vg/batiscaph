@@ -26,15 +26,15 @@ code {
 
 
 
-.marked-up-term-output {
+.MarkedOutput {
   color: #828282;
 }
-.marked-up-term-output .pid-link {
+.MarkedOutput .pid-link {
   color: #828282;
 }
 
-.marked-up-term-output a:hover.pid-link,
-.marked-up-term-output .pid-link.hovered {
+.MarkedOutput a:hover.pid-link,
+.MarkedOutput .pid-link.hovered {
   color: #2F80ED;
   font-weight: bold;
   text-decoration: none;
