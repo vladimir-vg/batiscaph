@@ -13,18 +13,23 @@ export default class MarkedOutput extends React.Component {
     this.hoverProcess = this.hoverProcess.bind(this);
   }
 
-  hoverProcess(id) { this.props.hoverProcess(id); }
+  hoverProcess(id) { this.props.store.hoverProcess(id); }
 
   render() {
     const { instanceId } = this.props;
+    const { hoveredProcessPid, selectedProcessPid } = this.props.store;
+
     const nodes = [];
     util.eachToken(this.props.text, {
       onText: (text, i) => { nodes.push(<span key={i}>{text}</span>) },
       onPid: (pid, i) => {
         const path = `/instances/${instanceId}/process-info/${pid}`;
         let className = "pid-link";
-        if (this.props.hoveredProcessPid === pid) {
+        if (hoveredProcessPid === pid) {
           className += " hovered";
+        }
+        if (selectedProcessPid === pid) {
+          className += " selected";
         }
         nodes.push(<Link key={i} to={path} className={className}
           onMouseEnter={this.hoverProcess.bind(this, pid)} 
@@ -34,12 +39,21 @@ export default class MarkedOutput extends React.Component {
         </Link>);
       },
     });
-    return <pre className="MarkedOutput">{nodes}</pre>;
+
+    if (this.props.isBlock) {
+      return <pre className="MarkedOutput">{nodes}</pre>;
+    } else {
+      return <code className="MarkedOutput">{nodes}</code>;
+    }
   }
 }
 MarkedOutput.propTypes = {
-  hoverProcess: PropTypes.func.isRequired,
-  hoveredProcessPid: PropTypes.string,
   text: PropTypes.string.isRequired,
   instanceId: PropTypes.string.isRequired,
+  store: PropTypes.object.isRequired,
+
+  isBlock: PropTypes.bool,
+};
+MarkedOutput.defaultProps = {
+  isBlock: true
 };

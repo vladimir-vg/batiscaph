@@ -19,9 +19,8 @@ class Command extends React.Component {
   hoverProcess(id) { this.props.hoverProcess(id); }
 
   renderOutput({ At, Text }) {
-    const { instanceId, hoveredProcessPid, hoverProcess } = this.props;
-    const props = { instanceId, hoveredProcessPid, hoverProcess };
-    return <MarkedOutput key={At} text={Text} {...props} />;
+    const { instanceId } = this.props;
+    return <MarkedOutput key={At} text={Text} instanceId={instanceId} store={this.props.store} />;
   }
 
   render() {
@@ -40,8 +39,7 @@ class Command extends React.Component {
 Command.propTypes = {
   cmd: PropTypes.object.isRequired,
   instanceId: PropTypes.string.isRequired,
-  hoverProcess: PropTypes.func.isRequired,
-  hoveredProcessPid: PropTypes.string,
+  store: PropTypes.object.isRequired,
 }
 
 
@@ -84,8 +82,7 @@ export default class ShellPage extends React.Component {
       const cmd = cmds[i];
       result.push(<Command key={i}
         cmd={cmds[i]} instanceId={this.props.match.params.id}
-        hoverProcess={this.hoverProcess}
-        hoveredProcessPid={this.props.store.hoveredProcessPid} />);
+        store={this.props.store} />);
     }
 
     return result;

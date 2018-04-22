@@ -32,14 +32,16 @@ export default class ProcessPage extends React.Component {
   hoverProcess(id) { this.props.store.hoverProcess(id); }
 
   renderAttr([key, value]) {
+    const instanceId = this.props.match.params.id;
+
     if (key === 'dictionary') {
-      const instanceId = this.props.match.params.id;
-      const { hoveredProcessPid } = this.props.store;
-      const { hoverProcess } = this;
-      const props = { instanceId, hoveredProcessPid, hoverProcess };
-      return <MarkedOutput key={key} text={value} {...props} />;
+      return <div key={key}>
+        {key}: <MarkedOutput key={key} text={value} instanceId={instanceId} store={this.props.store} />
+      </div>;
     }
-    return <div key={key}>{key}: {value}</div>;
+    return <div key={key}>
+      {key}: <MarkedOutput key={key} isBlock={false} text={value} instanceId={instanceId} store={this.props.store} />
+    </div>;
   }
 
   render() {

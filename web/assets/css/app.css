@@ -28,16 +28,20 @@ code {
 
 .MarkedOutput {
   color: #828282;
+  white-space: pre-wrap;
 }
 .MarkedOutput .pid-link {
   color: #828282;
 }
-
 .MarkedOutput a:hover.pid-link,
-.MarkedOutput .pid-link.hovered {
+.MarkedOutput .pid-link.hovered,
+.MarkedOutput .pid-link.selected {
   color: #2F80ED;
   font-weight: bold;
   text-decoration: none;
+}
+.MarkedOutput > span {
+  white-space: pre-wrap;
 }
 
 
