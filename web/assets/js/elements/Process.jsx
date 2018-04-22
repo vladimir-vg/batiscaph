@@ -12,16 +12,18 @@ class Component extends React.Component {
   constructor() {
     super();
 
-    this.onClick = this.onClick.bind(this);
+    this.selectProcess = this.selectProcess.bind(this);
   }
 
-  onClick() {
+  selectProcess() {
     if (this.props.selectedProcessPid === this.props.id) {
       this.props.selectProcess(null);
     } else {
       this.props.selectProcess(this.props.id);
     }
   }
+
+  hoverProcess(id) { this.props.hoverProcess(id); }
 
   render() {
     const g = this.props.grid;
@@ -52,9 +54,23 @@ class Component extends React.Component {
 
     let bodyRect = null;
     if (this.props.selectedProcessPid === this.props.id) {
-      bodyRect = <rect onClick={this.onClick} className="process-body selected" x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />;
+      bodyRect = <rect className="process-body selected"
+        onClick={this.selectProcess}
+        onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
+        onMouseLeave={this.hoverProcess.bind(this, null)}
+        x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />;
+    } else if (this.props.hoveredProcessPid === this.props.id) {
+        bodyRect = <rect className="process-body hovered"
+        onClick={this.selectProcess}
+        onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
+        onMouseLeave={this.hoverProcess.bind(this, null)}
+        x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />;
     } else {
-      bodyRect = <rect onClick={this.onClick} className="process-body" x={x} y={y} width={width} height={height} />;
+      bodyRect = <rect className="process-body"
+        onClick={this.selectProcess}
+        onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
+        onMouseLeave={this.hoverProcess.bind(this, null)}
+        x={x} y={y} width={width} height={height} />;
     }
 
     return [
@@ -82,7 +98,9 @@ Component.propTypes = {
   parentX: PropTypes.number,
 
   selectProcess: PropTypes.func.isRequired,
+  hoverProcess: PropTypes.func.isRequired,
   selectedProcessPid: PropTypes.string,
+  hoveredProcessPid: PropTypes.string,
 }
 
 

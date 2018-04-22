@@ -23,6 +23,7 @@ export default class Store {
         'erlang-processes-info': (new Map()),
       },
       selectedProcessPid: null,
+      hoveredProcessPid: null,
       selectedRequestId: null,
       hoveredRequestId: null,
       gridEnabled: false,
@@ -106,7 +107,7 @@ export default class Store {
   }
 
   @action
-  onRequestHover(id) {
+  hoverRequest(id) {
     this.hoveredRequestId = id;
   }
 
@@ -153,6 +154,11 @@ export default class Store {
     } else {
       // TODO: unsubscribe from process_info
     }
+  }
+
+  @action
+  hoverProcess(id) {
+    this.hoveredProcessPid = id;
   }
 
   @computed

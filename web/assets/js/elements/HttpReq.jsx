@@ -12,11 +12,18 @@ class Component extends React.Component {
     super();
 
     this.selectRequest = this.selectRequest.bind(this);
-    this.onRequestHover = this.onRequestHover.bind(this);
+    this.hoverRequest = this.hoverRequest.bind(this);
   }
 
-  selectRequest(id, type) { this.props.selectRequest(id, type); }
-  onRequestHover(id) { this.props.onRequestHover(id); }
+  selectRequest() {
+    if (this.props.selectedRequestId === this.props.id) {
+      this.props.selectRequest(null);
+    } else {
+      this.props.selectRequest(this.props.id, this.props.type);
+    }
+  }
+
+  hoverRequest(id) { this.props.hoverRequest(id); }
 
   render() {
     const g = this.props.grid;
@@ -42,9 +49,9 @@ class Component extends React.Component {
     const borderWidth = 1;
 
     const content = <rect className={className} style={{strokeWidth: borderWidth}}
-      onMouseEnter={this.onRequestHover.bind(this, this.props.id)}
-      onMouseLeave={this.onRequestHover.bind(this, null)}
-      onClick={this.selectRequest.bind(this, this.props.id, this.props.type)}
+      onMouseEnter={this.hoverRequest.bind(this, this.props.id)}
+      onMouseLeave={this.hoverRequest.bind(this, null)}
+      onClick={this.selectRequest}
       x={x-borderWidth/2} y={y-borderWidth/2} width={width+borderWidth} height={height+borderWidth} />;
 
     return [
@@ -68,7 +75,7 @@ Component.propTypes = {
   selectedRequestId: PropTypes.string,
   hoveredRequestId: PropTypes.string,
   selectRequest: PropTypes.func.isRequired,
-  onRequestHover: PropTypes.func.isRequired,
+  hoverRequest: PropTypes.func.isRequired,
 }
 
 

@@ -32,8 +32,9 @@ export default class InstancePage extends React.Component {
     super();
 
     this.selectRequest = this.selectRequest.bind(this);
-    this.onRequestHover = this.onRequestHover.bind(this);
+    this.hoverRequest = this.hoverRequest.bind(this);
     this.selectProcess = this.selectProcess.bind(this);
+    this.hoverProcess = this.hoverProcess.bind(this);
     this.onTabSelect = this.onTabSelect.bind(this);
     this.renderElement = this.renderElement.bind(this);
 
@@ -92,13 +93,18 @@ export default class InstancePage extends React.Component {
     return false;
   }
 
-  // onRequestSelect(id) { this.props.store.onRequestSelect(id); }
-  onRequestHover(id) { this.props.store.onRequestHover(id); }
+  hoverRequest(id) { this.props.store.hoverRequest(id); }
+  hoverProcess(id) { this.props.store.hoverProcess(id); }
 
   selectRequest(reqId, type) {
     const { id } = this.props.match.params;
-    const newPath = `/instances/${id}/${type}-request-info/${encodeURIComponent(reqId)}`;
-    this.props.history.push(newPath);
+    if (!reqId) {
+      const newPath = `/instances/${id}/requests`;
+      this.props.history.push(newPath);
+    } else {
+      const newPath = `/instances/${id}/${type}-request-info/${encodeURIComponent(reqId)}`;
+      this.props.history.push(newPath);
+    }
   }
 
   selectProcess(pid) {
@@ -144,9 +150,14 @@ export default class InstancePage extends React.Component {
   }
 
   renderElement(e) {
-    const { selectedRequestId, hoveredRequestId, selectedProcessPid } = this.props.store;
-    const { selectRequest, onRequestHover, selectProcess } = this; // take wrapped functions
-    const storeProps = { selectRequest, onRequestHover, selectedRequestId, hoveredRequestId, selectProcess, selectedProcessPid };
+    const { selectedRequestId, hoveredRequestId, selectedProcessPid, hoveredProcessPid } = this.props.store;
+    const { selectRequest, hoverRequest, selectProcess, hoverProcess } = this; // take wrapped functions
+    const storeProps = {
+      selectRequest, selectProcess,
+      hoverRequest, hoverProcess,
+      selectedRequestId, hoveredRequestId,
+      selectedProcessPid, hoveredProcessPid
+    };
     const { id, key, Component, ...elementProps} = e;
     return <Component key={key} grid={grid} {...storeProps} id={id} {...elementProps} />;
   }

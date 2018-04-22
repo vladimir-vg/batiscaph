@@ -14,10 +14,10 @@ export default class RequestsListPage extends React.Component {
 
     this.renderItem = this.renderItem.bind(this);
     this.selectRequest = this.selectRequest.bind(this);
-    this.onRequestHover = this.onRequestHover.bind(this);
+    this.hoverRequest = this.hoverRequest.bind(this);
   }
 
-  onRequestHover(id) { this.props.store.onRequestHover(id); }
+  hoverRequest(id) { this.props.store.hoverRequest(id); }
 
   selectRequest(reqId, type) {
     const { id } = this.props.match.params;
@@ -33,8 +33,8 @@ export default class RequestsListPage extends React.Component {
 
     return <tr key={Id} className={className}
         onClick={this.selectRequest.bind(this, Id, _type)}
-        onMouseEnter={this.onRequestHover.bind(this, Id)}
-        onMouseLeave={this.onRequestHover.bind(this, null)}>
+        onMouseEnter={this.hoverRequest.bind(this, Id)}
+        onMouseLeave={this.hoverRequest.bind(this, null)}>
 
       <td>{Method}</td>
       <td>{Path}</td>
