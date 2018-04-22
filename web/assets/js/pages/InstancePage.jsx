@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, NavLink } from 'react-router-dom';
+import { Route, NavLink, Switch, Redirect } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
@@ -103,8 +103,13 @@ export default class InstancePage extends React.Component {
 
   selectProcess(pid) {
     const { id } = this.props.match.params;
-    const newPath = `/instances/${id}/process-info/${encodeURIComponent(pid)}`;
-    this.props.history.push(newPath);
+    if (!pid) {
+      const newPath = `/instances/${id}`;
+      this.props.history.push(newPath);
+    } else {
+      const newPath = `/instances/${id}/process-info/${encodeURIComponent(pid)}`;
+      this.props.history.push(newPath);
+    }
   }
 
   onTabSelect(tabId) {
@@ -166,17 +171,20 @@ export default class InstancePage extends React.Component {
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
       <div className="extra-info-container">
         <div className="Tabs">
-          <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>
           <NavLink to={`${this.props.match.url}/shell`}>Shell</NavLink>
+          <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>
           {selectedItemLink}
         </div>
 
         <div className="tab-container" ref={(ref) => { this.containerRef = ref }}>
-          <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
-          <Route exact path={`${this.props.match.path}/shell`} component={ShellPage} />
-          <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPage} />
-          <Route exact path={`${this.props.match.path}/plug-request-info/:reqId`} component={RequestPage} />
-          <Route exact path={`${this.props.match.path}/cowboy-request-info/:reqId`} component={RequestPage} />
+          <Switch>
+            <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
+            <Route exact path={`${this.props.match.path}/shell`} component={ShellPage} />
+            <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPage} />
+            <Route exact path={`${this.props.match.path}/plug-request-info/:reqId`} component={RequestPage} />
+            <Route exact path={`${this.props.match.path}/cowboy-request-info/:reqId`} component={RequestPage} />
+            <Redirect to={`/instances/${this.props.match.params.id}/shell`} />
+          </Switch>
         </div>
       </div>
       <div className="map-container">

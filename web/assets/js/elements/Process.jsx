@@ -16,7 +16,11 @@ class Component extends React.Component {
   }
 
   onClick() {
-    this.props.selectProcess(this.props.id);
+    if (this.props.selectedProcessPid === this.props.id) {
+      this.props.selectProcess(null);
+    } else {
+      this.props.selectProcess(this.props.id);
+    }
   }
 
   render() {
