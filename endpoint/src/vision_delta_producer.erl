@@ -186,9 +186,10 @@ check_subscribers(State) ->
 delta_for_old_subscribers(#delta{instance_id = InstanceId} = State) ->
   {ok, Delta, State1} = delta_chunk_from_now(State),
 
-  lists:foreach(fun (#delta_subscriber{id = {_, P}}) ->
+  Pids = ets:match(delta_subscribers, #delta_subscriber{id = {InstanceId, '$1'}, _ = '_'}),
+  lists:foreach(fun ([P]) ->
     P ! {delta_query_result, Delta}
-  end, ets:lookup(delta_subscribers, InstanceId)),
+  end, Pids),
 
   {ok, State1}.
 

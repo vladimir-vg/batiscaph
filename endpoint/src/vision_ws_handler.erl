@@ -78,7 +78,10 @@ shell_input(#{<<"id">> := Id, <<"text">> := Text}, Req, State) ->
   case gen_tracker:find(probes, Id) of
     undefined -> {ok, Req, State}; % do nothing if disconnected
     {ok, Pid} ->
-      ok = vision_probe_protocol:send_to_remote(Pid, {shell_input, Text}),
+      % input is read by shell only after newline
+      % so add one
+      Text1 = <<Text/binary, "\n">>,
+      ok = vision_probe_protocol:send_to_remote(Pid, {shell_input, Text1}),
       {ok, Req, State}
   end.
 
