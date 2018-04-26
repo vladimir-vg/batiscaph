@@ -20,11 +20,22 @@ function yTimestampNow() {
 
 
 function getPids(con) {
+  if (Array.isArray(con)) {
+    const values = con.map(getPids);
+    // flatten
+    return values.reduce((acc, val) => acc.concat(val), []);
+  }
   if (con.type === 'pid') { return [con.value]; }
   return [];
 }
 
 function getTimestamps(con) {
+  if (Array.isArray(con)) {
+    const values = con.map(getTimestamps);
+    // flatten
+    return values.reduce((acc, val) => acc.concat(val), []);
+  }
+
   if (con.type === 'timestamp' && con.value !== 'now') { return [con.value]; }
   return [];
 }

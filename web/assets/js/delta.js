@@ -47,3 +47,14 @@ function assign(key, old, new1) {
     set(old, key, new1[key]);
   }
 }
+
+
+
+export function isTracedAt({ at, pid, delta }) {
+  if (!delta[pid]) { return false; }
+  const proc = delta[pid];
+
+  if (proc.SpawnedAt && proc.SpawnedAt < at) { return true; }
+
+  return false;
+}

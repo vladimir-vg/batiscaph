@@ -59,7 +59,7 @@ export default class ProcessPage extends React.Component {
     return <div className="ProcessPanel">
       <code>
         <div>
-          pid:
+          pid:&nbsp;
           <MarkedOutput isBlock={false}
             text={this.props.match.params.pid}
             instanceId={this.props.match.params.id} store={this.props.store} />

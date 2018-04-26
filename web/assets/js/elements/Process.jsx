@@ -2,13 +2,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import attr from '../attr';
+import { isTracedAt } from '../delta';
 import Layout from '../components/svgLayout';
 
 
 
+// process body consists of several traced segments
+// and mentions
 const PROC_WIDTH = 6;
 const EXIT_HEIGHT = 2;
-class Component extends React.Component {
+class ProcessBody extends React.Component {
   constructor() {
     super();
 
@@ -30,26 +33,18 @@ class Component extends React.Component {
     const sideOffset = (g.xColWidth - PROC_WIDTH)/2;
     const x = g.xColStart(this.props.x) + sideOffset;
     const width = PROC_WIDTH;
-    const y = g.yRowAt(this.props.startedY);
-    const height = (g.yRowAt(this.props.continueY || this.props.exitedY) - g.yRowAt(this.props.startedY));
+
+    // for now only first segment is drawn
+    // TODO: generalize it to several segments
+    const [[startedY, continueY]] = this.props.tracedSegments;
+
+    const y = g.yRowAt(startedY);
+    const height = (g.yRowAt(continueY) - g.yRowAt(startedY));
 
     let exit = null;
     if (this.props.exitedY) {
       const y1 = g.yRowAt(this.props.exitedY)-EXIT_HEIGHT/2;
       exit = <rect className="process-exit" x={x} y={y1} width={width} height={EXIT_HEIGHT} />
-    }
-
-    let spawnLines = null;
-    let spawnOverBody = null;
-    if (typeof this.props.parentX === 'number') { // might be zero
-      const parentX = Math.floor(g.xColWidth/2) + g.xColStart(this.props.parentX);
-      const parentY1 = y - g.yRowHeight;
-      spawnLines = <line className="spawn" x1={x} y1={y+0.5} x2={parentX} y2={y+0.5} />;
-      spawnOverBody = <React.Fragment>
-        <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+0.5} y2={parentY1+0.5} />
-        <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+PROC_WIDTH/2+0.5} y2={y+0.5} />
-        <line className="spawn" x1={x} y1={y+0.5} x2={x+PROC_WIDTH} y2={y+0.5} />
-      </React.Fragment>;
     }
 
     let bodyRect = null;
@@ -78,24 +73,15 @@ class Component extends React.Component {
         {bodyRect}
         {exit}
       </Layout.WithLayout>,
-
-      <Layout.WithLayout key="procSpawnLinesOverBody" name="procSpawnLinesOverBody">
-        {spawnOverBody}
-      </Layout.WithLayout>,
-
-      <Layout.WithLayout key="procSpawnLines" name="procSpawnLines">
-        {spawnLines}
-      </Layout.WithLayout>,
     ];
   }
 }
-Component.propTypes = {
+ProcessBody.propTypes = {
   id: PropTypes.string.isRequired,
+  grid: PropTypes.object.isRequired,
   x: PropTypes.number.isRequired,
-  startedY: PropTypes.number.isRequired,
+  tracedSegments: PropTypes.array.isRequired,
   exitedY: PropTypes.number,
-  continueY: PropTypes.number,
-  parentX: PropTypes.number,
 
   selectProcess: PropTypes.func.isRequired,
   hoverProcess: PropTypes.func.isRequired,
@@ -105,34 +91,87 @@ Component.propTypes = {
 
 
 
+class SpawnLine extends React.Component {
+  render() {
+    const g = this.props.grid;
+    const sideOffset = (g.xColWidth - PROC_WIDTH)/2;
+
+    const y = g.yRowAt(this.props.y);
+    const childX = g.xColStart(this.props.childX) + sideOffset;
+    const parentX = Math.floor(g.xColWidth/2) + g.xColStart(this.props.parentX);
+    const parentY1 = y - g.yRowHeight;
+    const spawnOverBody = <React.Fragment>
+      <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+0.5} y2={parentY1+0.5} />
+      <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+PROC_WIDTH/2+0.5} y2={y+0.5} />
+      <line className="spawn" x1={childX} y1={y+0.5} x2={childX+PROC_WIDTH} y2={y+0.5} />
+    </React.Fragment>;
+
+    return [
+      <Layout.WithLayout key="procSpawnLinesOverBody" name="procSpawnLinesOverBody">
+        {spawnOverBody}
+      </Layout.WithLayout>,
+
+      <Layout.WithLayout key="procSpawnLines" name="procSpawnLines">
+        <line className="spawn" x1={childX} y1={y+0.5} x2={parentX} y2={y+0.5} />
+      </Layout.WithLayout>,
+    ];
+  }
+}
+SpawnLine.propTypes = {
+  grid: PropTypes.object.isRequired,
+  parentX: PropTypes.number.isRequired,
+  childX: PropTypes.number.isRequired,
+  y: PropTypes.number.isRequired,
+  isParentTraced: PropTypes.bool,
+}
+
+
+
 function produceElements(delta) {
   const result = [];
 
   delta['erlang-processes'].forEach((proc, pid) => {
+    if (proc.SpawnedAt) {
+      const key = `${proc.ParentPid} ${proc.Pid}`;
+      result.push({
+        id: key, key, Component: SpawnLine,
+        attrs: {
+          isParentTraced: isTracedAt({ delta, at: proc.SpawnedAt, pid: proc.ParentPid }),
+          parentX: attr.xPid(proc.ParentPid),
+          childX: attr.xPid(proc.Pid),
+          y: attr.yTimestamp(proc.SpawnedAt),
+        }
+      });
+    }
+
     // skip
     if (!proc.SpawnedAt && !proc.TraceStartedAt) { return; }
 
     const attrs = {
       x: attr.xPid(proc.Pid),
-      startedY: attr.yTimestamp(proc.SpawnedAt || proc.TraceStartedAt),
+      tracedSegments: [],
     }
-    if (proc.SpawnedAt) {
-      attrs.parentX = attr.xPid(proc.ParentPid);
+    if (proc.SpawnedAt || proc.TraceStartedAt) {
+      // for now process may have only one traced segment
+      // TODO: in future better to learn how to display multiple segments
+      // when process tracing was stopped and started again
+      attrs.tracedSegments.push([
+        attr.yTimestamp(proc.SpawnedAt || proc.TraceStartedAt),
+        (proc.ExitedAt ? attr.yTimestamp(proc.ExitedAt) : attr.yTimestampNow()),
+      ]);
     }
-
     if (proc.ExitedAt) {
       attrs.exitedY = attr.yTimestamp(proc.ExitedAt);
-    } else {
-      attrs.continueY = attr.yTimestampNow();
     }
 
-    result.push({ id: pid, key: pid, Component, attrs });
+    result.push({ id: pid, key: pid, Component: ProcessBody, attrs });
   });
 
   return result;
 };
 
 
+
 export default {
-  produceElements // , Component
+  produceElements
 };

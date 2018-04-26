@@ -129,5 +129,5 @@ function produceElements(delta) {
 
 
 export default {
-  produceElements //, Component
+  produceElements
 };
