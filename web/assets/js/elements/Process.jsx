@@ -35,15 +35,15 @@ class Component extends React.Component {
 
     let exit = null;
     if (this.props.exitedY) {
-      const y = g.yRowAt(this.props.exitedY)-EXIT_HEIGHT/2;
-      exit = <rect className="process-exit" x={x} y={y} width={width} height={EXIT_HEIGHT} />
+      const y1 = g.yRowAt(this.props.exitedY)-EXIT_HEIGHT/2;
+      exit = <rect className="process-exit" x={x} y={y1} width={width} height={EXIT_HEIGHT} />
     }
 
     let spawnLines = null;
     let spawnOverBody = null;
     if (typeof this.props.parentX === 'number') { // might be zero
-      let parentX = Math.floor(g.xColWidth/2) + g.xColStart(this.props.parentX);
-      let parentY1 = y - g.yRowHeight;
+      const parentX = Math.floor(g.xColWidth/2) + g.xColStart(this.props.parentX);
+      const parentY1 = y - g.yRowHeight;
       spawnLines = <line className="spawn" x1={x} y1={y+0.5} x2={parentX} y2={y+0.5} />;
       spawnOverBody = <React.Fragment>
         <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+0.5} y2={parentY1+0.5} />

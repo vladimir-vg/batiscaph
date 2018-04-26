@@ -96,17 +96,17 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
   // console.log("timestamps", timestamps1);
   // console.log("pids", pids2);
 
-  return (attr, element) => {
-    if (attr === 'xColsLength') { return pids2.length; }
-    if (attr === 'yRowsLength') { return timestamps1.length; }
+  return (attr1, _element) => {
+    if (attr1 === 'xColsLength') { return pids2.length; }
+    if (attr1 === 'yRowsLength') { return timestamps1.length; }
 
-    if (attr.type === 'timestamp') {
-      if (attr.value === 'now') { return timestamps1.length + 1; }
-      return timestamps1.indexOf(attr.value)+1;
-    } else if (attr.type === 'pid') {
-      return pids2.indexOf(attr.value);
+    if (attr1.type === 'timestamp') {
+      if (attr1.value === 'now') { return timestamps1.length + 1; }
+      return timestamps1.indexOf(attr1.value)+1;
+    } else if (attr1.type === 'pid') {
+      return pids2.indexOf(attr1.value);
     } else {
-      return attr;
+      return attr1;
     }
   };
 };

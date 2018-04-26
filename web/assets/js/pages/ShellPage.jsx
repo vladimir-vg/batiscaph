@@ -79,7 +79,6 @@ export default class ShellPage extends React.Component {
 
     const cmds = this.props.store.shellCommands;
     for (const i in cmds) {
-      const cmd = cmds[i];
       result.push(<Command key={i}
         cmd={cmds[i]} instanceId={this.props.match.params.id}
         store={this.props.store} />);

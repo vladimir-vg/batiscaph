@@ -2,8 +2,6 @@ import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
 import React from 'react';
-import PropTypes from 'prop-types';
-import { scaleLinear } from 'd3-scale';
 
 
 

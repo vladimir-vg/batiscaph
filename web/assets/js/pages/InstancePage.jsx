@@ -1,6 +1,5 @@
 import React from 'react';
 import { Route, NavLink, Switch, Redirect } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import { observer, inject } from 'mobx-react';
 void(inject); void(observer); // just to silence eslint, which cannot detect decorators usage
 
