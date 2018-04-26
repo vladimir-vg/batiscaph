@@ -31,17 +31,22 @@ export default class ProcessPage extends React.Component {
 
   hoverProcess(id) { this.props.store.hoverProcess(id); }
 
-  renderAttr([key, value]) {
+  renderAttr(info, key) {
+    if (!info[key]) { return null; }
+
     const instanceId = this.props.match.params.id;
 
-    if (key === 'dictionary') {
+    switch (key) {
+    case 'dictionary':
       return <div key={key}>
-        {key}: <MarkedOutput key={key} text={value} instanceId={instanceId} store={this.props.store} />
+        {key}: <MarkedOutput key={key} text={info[key]} instanceId={instanceId} store={this.props.store} />
+      </div>;
+
+    default:
+      return <div key={key}>
+        {key}: <MarkedOutput key={key} isBlock={false} text={info[key]} instanceId={instanceId} store={this.props.store} />
       </div>;
     }
-    return <div key={key}>
-      {key}: <MarkedOutput key={key} isBlock={false} text={value} instanceId={instanceId} store={this.props.store} />
-    </div>;
   }
 
   render() {
@@ -53,8 +58,19 @@ export default class ProcessPage extends React.Component {
 
     return <div className="ProcessPanel">
       <code>
-        {this.renderAttr(['pid', this.props.match.params.pid])}
-        {Object.entries(info).map(this.renderAttr)}
+        <div>
+          pid:
+          <MarkedOutput isBlock={false}
+            text={this.props.match.params.pid}
+            instanceId={this.props.match.params.id} store={this.props.store} />
+        </div>
+        {this.renderAttr(info, 'registered_name')}
+        {this.renderAttr(info, 'initial_call')}
+        {this.renderAttr(info, 'current_function')}
+        {this.renderAttr(info, 'message_queue_len')}
+        {this.renderAttr(info, 'links')}
+        {this.renderAttr(info, 'monitors')}
+        {this.renderAttr(info, 'dictionary')}
       </code>
     </div>;
   }

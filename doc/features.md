@@ -56,16 +56,16 @@ __Current__
 
 Process info is requested by probe every 3 seconds. Only few particular process_info attrs are fetched.
 All sent process_info events are stored, so in future it would allow to observe how it changed.
+`basic_tracing` is automatically started when process is selected.
 
 __Future__
 
 Would be great to have UI (also on map) to show how and when process_info changed.
-Also probably we should automatically start `basic_tracing` when process is selected.
-
 It might be wise to display current `trace_flags`, just to make it more transparent for user.
 
 __Changelog__
 
+26-04-2018 automatic basic_tracing now in Current
 25-04-2018 described current state
 
 
@@ -108,6 +108,9 @@ Also this approach might create too much noise and better to find other way.
 
 Also need to think how to display process with many connected ports.
 This may require some work on map layout, more fine-grained positioning of elements.
+
+Would be good to see clear display which port is socket and which port is file,
+along with other additional info, like path, port number, socket opts.
 
 __Changelog__
 
