@@ -11,6 +11,7 @@ import Layout from '../components/svgLayout';
 // and mentions
 const PROC_WIDTH = 6;
 const EXIT_HEIGHT = 2;
+const MENTION_RADIUS = 4;
 class ProcessBody extends React.Component {
   constructor() {
     super();
@@ -34,43 +35,51 @@ class ProcessBody extends React.Component {
     const x = g.xColStart(this.props.x) + sideOffset;
     const width = PROC_WIDTH;
 
-    // for now only first segment is drawn
-    // TODO: generalize it to several segments
-    const [[startedY, continueY]] = this.props.tracedSegments;
-
-    const y = g.yRowAt(startedY);
-    const height = (g.yRowAt(continueY) - g.yRowAt(startedY));
-
     let exit = null;
     if (this.props.exitedY) {
       const y1 = g.yRowAt(this.props.exitedY)-EXIT_HEIGHT/2;
       exit = <rect className="process-exit" x={x} y={y1} width={width} height={EXIT_HEIGHT} />
     }
 
-    let bodyRect = null;
-    if (this.props.selectedProcessPid === this.props.id) {
-      bodyRect = <rect className="process-body selected"
+    const bodyRects = [];
+    for (const i in this.props.tracedSegments) {
+      const [startedY, continueY] = this.props.tracedSegments[i];
+      const y = g.yRowAt(startedY);
+      const height = (g.yRowAt(continueY) - g.yRowAt(startedY));
+
+      if (this.props.selectedProcessPid === this.props.id) {
+        bodyRects.push(<rect className="process-body selected" key={this.props.id + ' ' + startedY}
+          onClick={this.selectProcess}
+          onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
+          onMouseLeave={this.hoverProcess.bind(this, null)}
+          x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />);
+      } else if (this.props.hoveredProcessPid === this.props.id) {
+        bodyRects.push(<rect className="process-body hovered" key={this.props.id + ' ' + startedY}
+          onClick={this.selectProcess}
+          onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
+          onMouseLeave={this.hoverProcess.bind(this, null)}
+          x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />);
+      } else {
+        bodyRects.push(<rect className="process-body" key={this.props.id + ' ' + startedY}
+          onClick={this.selectProcess}
+          onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
+          onMouseLeave={this.hoverProcess.bind(this, null)}
+          x={x} y={y} width={width} height={height} />);
+      }
+    }
+
+    const mentionCircles = [];
+    for (const i in this.props.mentionedUntracedPoints) {
+      const y = g.yRowAt(this.props.mentionedUntracedPoints[i]);
+      mentionCircles.push(<circle className="process-mention" key={this.props.id + ' ' + this.props.mentionedUntracedPoints[i]}
         onClick={this.selectProcess}
-        onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
-        onMouseLeave={this.hoverProcess.bind(this, null)}
-        x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />;
-    } else if (this.props.hoveredProcessPid === this.props.id) {
-        bodyRect = <rect className="process-body hovered"
-        onClick={this.selectProcess}
-        onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
-        onMouseLeave={this.hoverProcess.bind(this, null)}
-        x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />;
-    } else {
-      bodyRect = <rect className="process-body"
-        onClick={this.selectProcess}
-        onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
-        onMouseLeave={this.hoverProcess.bind(this, null)}
-        x={x} y={y} width={width} height={height} />;
+        cx={x+sideOffset} cy={y} r={MENTION_RADIUS} />);
     }
 
     return [
       <Layout.WithLayout key="procBody" name="procBody">
-        {bodyRect}
+        <g>{mentionCircles}</g>
+        <g>{bodyRects}</g>
         {exit}
       </Layout.WithLayout>,
     ];
@@ -81,6 +90,7 @@ ProcessBody.propTypes = {
   grid: PropTypes.object.isRequired,
   x: PropTypes.number.isRequired,
   tracedSegments: PropTypes.array.isRequired,
+  mentionedUntracedPoints: PropTypes.array.isRequired,
   exitedY: PropTypes.number,
 
   selectProcess: PropTypes.func.isRequired,
@@ -100,11 +110,22 @@ class SpawnLine extends React.Component {
     const childX = g.xColStart(this.props.childX) + sideOffset;
     const parentX = Math.floor(g.xColWidth/2) + g.xColStart(this.props.parentX);
     const parentY1 = y - g.yRowHeight;
-    const spawnOverBody = <React.Fragment>
-      <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+0.5} y2={parentY1+0.5} />
-      <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+PROC_WIDTH/2+0.5} y2={y+0.5} />
-      <line className="spawn" x1={childX} y1={y+0.5} x2={childX+PROC_WIDTH} y2={y+0.5} />
-    </React.Fragment>;
+
+    let spawnOverBody = null;
+    let spawnLine = null
+    if (this.props.isParentTraced) {
+      spawnOverBody = <React.Fragment>
+        <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+0.5} y2={parentY1+0.5} />
+        <line className="spawn" x1={parentX+0.5} y1={y+0.5} x2={parentX+PROC_WIDTH/2+0.5} y2={y+0.5} />
+        <line className="spawn" x1={childX} y1={y+0.5} x2={childX+PROC_WIDTH} y2={y+0.5} />
+      </React.Fragment>;
+      spawnLine = <line className="spawn" x1={childX} y1={y+0.5} x2={parentX} y2={y+0.5} />;
+    } else {
+      spawnOverBody = <React.Fragment>
+        <line className="spawn" x1={childX} y1={y+0.5} x2={childX+PROC_WIDTH} y2={y+0.5} />
+      </React.Fragment>;
+      spawnLine = <line className="spawn" x1={childX} y1={y+0.5} x2={parentX+sideOffset} y2={y+0.5} />;
+    }
 
     return [
       <Layout.WithLayout key="procSpawnLinesOverBody" name="procSpawnLinesOverBody">
@@ -112,7 +133,7 @@ class SpawnLine extends React.Component {
       </Layout.WithLayout>,
 
       <Layout.WithLayout key="procSpawnLines" name="procSpawnLines">
-        <line className="spawn" x1={childX} y1={y+0.5} x2={parentX} y2={y+0.5} />
+        {spawnLine}
       </Layout.WithLayout>,
     ];
   }
@@ -144,13 +165,12 @@ function produceElements(delta) {
       });
     }
 
-    // skip
-    if (!proc.SpawnedAt && !proc.TraceStartedAt) { return; }
-
     const attrs = {
       x: attr.xPid(proc.Pid),
       tracedSegments: [],
+      mentionedUntracedPoints: [],
     }
+
     if (proc.SpawnedAt || proc.TraceStartedAt) {
       // for now process may have only one traced segment
       // TODO: in future better to learn how to display multiple segments
@@ -162,6 +182,12 @@ function produceElements(delta) {
     }
     if (proc.ExitedAt) {
       attrs.exitedY = attr.yTimestamp(proc.ExitedAt);
+    }
+
+    for (const pid in proc.Children) {
+      if (!isTracedAt({ delta, pid: proc.Pid, at: proc.Children[pid] })) {
+        attrs.mentionedUntracedPoints.push(attr.yTimestamp(proc.Children[pid]));
+      }
     }
 
     result.push({ id: pid, key: pid, Component: ProcessBody, attrs });

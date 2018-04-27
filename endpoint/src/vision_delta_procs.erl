@@ -17,18 +17,19 @@ init() ->
 
 consume(#{<<"Type">> := <<"p1 erlang:process trace start">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid} = E,
-  P = #{<<"TraceStartedAt">> => At, <<"Pid">> => Pid},
+  P = #{<<"TraceStartedAt">> => At, <<"Pid">> => Pid, <<"Children">> => #{}},
   State#{procs => Procs#{Pid => P}};
 
 consume(#{<<"Type">> := <<"p2 erlang:process spawn">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := ParentPid, <<"Pid2">> := ChildPid} = E,
-  P = #{<<"SpawnedAt">> => At, <<"Pid">> => ChildPid, <<"ParentPid">> => ParentPid},
-  ParentP = maps:get(ParentPid, Procs, #{<<"Pid">> => ParentPid}), % make at least empty map, just to indicate that pid existed
-  State#{procs => Procs#{ChildPid => P, ParentPid => ParentP}};
+  P = #{<<"SpawnedAt">> => At, <<"Pid">> => ChildPid, <<"ParentPid">> => ParentPid, <<"Children">> => #{}},
+  #{<<"Children">> := Children} = Parent = maps:get(ParentPid, Procs, #{<<"Pid">> => ParentPid, <<"Children">> => #{}}),
+  Parent1 = Parent#{<<"Children">> => Children#{ChildPid => At}},
+  State#{procs => Procs#{ChildPid => P, ParentPid => Parent1}};
 
 consume(#{<<"Type">> := <<"p1 erlang:process exit">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid} = E,
-  P = maps:get(Pid, Procs, #{}),
+  P = maps:get(Pid, Procs, #{<<"Pid">> => Pid, <<"Children">> => #{}}),
   P1 = P#{<<"ExitedAt">> => At},
   State#{procs => Procs#{Pid => P1}};
 

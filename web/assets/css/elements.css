@@ -27,3 +27,9 @@ rect.HttpReq.hovered {
   stroke: #828282;
   stroke-width: 1px;
 }
+
+.process-mention {
+  fill: transparent;
+  stroke: #D9D9D9;
+  stroke-width: 2px;
+}
