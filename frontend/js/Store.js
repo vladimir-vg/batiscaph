@@ -50,7 +50,7 @@ export default class Store {
 
   @action
   fetchInstancesList() {
-    fetch(window.API_URL + '/instances?user_id=1')
+    fetch('/api/instances?user_id=1')
       .then((response) => response.json())
       .then(action((json) => {
         this.instancesList.replace(json);
@@ -126,9 +126,9 @@ export default class Store {
 
     let url = null;
     if (type === 'plug') {
-      url = `${window.API_URL}/instances/${this.currentInstanceId}/plug-requests/${id}`;
+      url = `/api/instances/${this.currentInstanceId}/plug-requests/${id}`;
     } else if (type === 'cowboy') {
-      url = `${window.API_URL}/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
+      url = `/api/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
     }
 
     fetch(url)
@@ -234,7 +234,7 @@ export default class Store {
 
 
   connectToWebsocket() {
-    const url = new URL(window.API_URL);
+    const url = new URL(window.location.href);
     const proto = url.protocol === 'http:' ? 'ws' : 'wss';
     const wsurl = `${proto}://${url.host}/websocket`;
     this.socket = new WebSocket(wsurl);

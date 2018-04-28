@@ -11,10 +11,17 @@ start_cowboy() ->
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/probe", vision_handler_probe, []},
+
       {"/api/instances", vision_res_instances, []},
       {"/api/instances/:instance_id/plug-requests/:req_id", vision_res_plug_requests, []},
       {"/api/instances/:instance_id/cowboy-requests/:req_id", vision_res_cowboy_requests, []},
-      {"/websocket", vision_ws_handler, []}
+      {"/websocket", vision_ws_handler, []},
+
+      {"/static/[...]", cowboy_static, {priv_dir, vision, "compiled_static", [{mimetypes, cow_mimetypes, all}]}},
+      {"/", cowboy_static, {priv_file, vision, "index.html"}},
+      {"/instances/[:instance_id]", cowboy_static, {priv_file, vision, "index.html"}},
+      {"/instances/[:instance_id]/[...]", cowboy_static, {priv_file, vision, "index.html"}}
+
       % {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
       % {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
       % {"/scenarios.json", scenarios_list_handler, []},
