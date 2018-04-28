@@ -36,8 +36,8 @@ defmodule PhoenixApp1.Mixfile do
     # helps to cache docker builds, first build withoit probe
     # then on next stage with it
     probe_dep =
-      if :filelib.is_dir("_checkouts/vision_probe") do
-        [{:vision_probe, path: "_checkouts/vision_probe"}]
+      if :filelib.is_dir("_checkouts/batiscaph_probe") do
+        [{:batiscaph_probe, path: "_checkouts/batiscaph_probe"}]
       else
         []
       end
