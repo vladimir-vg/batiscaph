@@ -37,14 +37,14 @@ content_types_provided(Req, State) ->
 
 
 get_json(Req, State) ->
-  {UserId, Req1} = cowboy_req:qs_val(<<"user_id">>, Req),
+  % {UserId, Req1} = cowboy_req:qs_val(<<"user_id">>, Req),
+  % Ids = batiscaph_db:query(select_instances_for_user_id, fun (C, SQL) ->
+  %   {ok, _Cols, Rows} = epgpool:equery(C, SQL, [binary_to_integer(UserId)]),
+  %   [Id || {Id} <- Rows]
+  % end),
 
-  Ids = batiscaph_db:query(select_instances_for_user_id, fun (C, SQL) ->
-    {ok, _Cols, Rows} = epgpool:equery(C, SQL, [binary_to_integer(UserId)]),
-    [Id || {Id} <- Rows]
-  end),
-
+  {ok, Ids} = batiscaph_clk_events:select_instances_ids(),
   {ok, Instances} = batiscaph_clk_events:select_instances_infos_with_ids(Ids),
 
   Body = jsx:encode(Instances),
-  {Body, Req1, State}.
+  {Body, Req, State}.

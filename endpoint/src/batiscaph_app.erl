@@ -25,9 +25,9 @@ start(_StartType, _StartArgs) ->
   % for now save it as env variable
   % later probably we need to move it into ETS
   % or even generate module at runtime, as Tristan suggested
-  {ok, PgQueries} = eql:compile(code:priv_dir(batiscaph) ++ "/pg_queries.sql"),
+  % {ok, PgQueries} = eql:compile(code:priv_dir(batiscaph) ++ "/pg_queries.sql"),
   {ok, ClkQueries} = eql:compile(code:priv_dir(batiscaph) ++ "/clk_queries.sql"),
-  ok = application:set_env(batiscaph, pg_queries, PgQueries),
+  % ok = application:set_env(batiscaph, pg_queries, PgQueries),
   ok = application:set_env(batiscaph, clk_queries, ClkQueries),
 
   % useful to cache babel output

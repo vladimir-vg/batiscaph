@@ -57,7 +57,7 @@ start_persistent_loop(Env, UserId, Req) ->
   % add necessary dict values to make supervisor happy
   put('$ancestors', [self()]),
   State = #persistent{socket = Socket, transport = Transport, user_id = UserId, instance_id = InstanceId},
-  {ok, State1} = insert_new_instance_into_db(InstanceId, State),
+  % {ok, State1} = insert_new_instance_into_db(InstanceId, State),
   ok = attach_to_gen_tracker(InstanceId),
 
   ok = batiscaph_clk_events:insert([
@@ -66,9 +66,9 @@ start_persistent_loop(Env, UserId, Req) ->
 
   self() ! {probe_request, get_user_config, []},
 
-  {ok, State2} = check_test_subscribers(State1),
-  ok = notify_subscribers_about_connection(State2),
-  gen_server:enter_loop(?MODULE, [], State2).
+  {ok, State1} = check_test_subscribers(State),
+  ok = notify_subscribers_about_connection(State1),
+  gen_server:enter_loop(?MODULE, [], State1).
 
 
 
@@ -225,11 +225,11 @@ notify_delta_producer(InstanceId) ->
 
 
 
-insert_new_instance_into_db(InstanceId, #persistent{user_id = UserId} = State) ->
-  batiscaph_db:query(insert_new_instance, fun (C, SQL) ->
-    {ok, 1} = epgpool:equery(C, SQL, [InstanceId, UserId])
-  end),
-  {ok, State}.
+% insert_new_instance_into_db(InstanceId, #persistent{user_id = UserId} = State) ->
+%   batiscaph_db:query(insert_new_instance, fun (C, SQL) ->
+%     {ok, 1} = epgpool:equery(C, SQL, [InstanceId, UserId])
+%   end),
+%   {ok, State}.
 
 
 

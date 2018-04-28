@@ -37,3 +37,11 @@ WHERE InstanceId = ':instance_id'
   AND At <= :stopped_at
 ORDER BY AtSec, AtMcs, SubId
 FORMAT TabSeparatedWithNamesAndTypes;
+
+
+
+-- :select_instances_ids
+SELECT InstanceId
+FROM `:dbname`.events
+GROUP BY InstanceId
+FORMAT TabSeparatedWithNamesAndTypes;

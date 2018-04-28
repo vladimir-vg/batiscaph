@@ -6,7 +6,8 @@
 -export([
   select_instances_infos_with_ids/1,
   select_events/1,
-  select_plug_request_info/1, select_cowboy_request_info/1
+  select_plug_request_info/1, select_cowboy_request_info/1,
+  select_instances_ids/0
 ]).
 
 
@@ -168,3 +169,14 @@ select_cowboy_request_info(#{
   {ok, Events} = clickhouse:parse_rows(maps, Body),
   Info = batiscaph_delta_cowboy:produce_request_info(Events, #{<<"Pid">> => Pid}),
   {ok, Info}.
+
+
+
+select_instances_ids() ->
+  {ok, Q} = application:get_env(batiscaph, clk_queries),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
+  Params = [{dbname, DBName}],
+  {ok, SQL} = eql:get_query(select_instances_ids, Q, Params),
+  {ok, Body} = clickhouse:execute(SQL),
+  {ok, Ids} = clickhouse:parse_rows(one_column_list, Body),
+  {ok, Ids}.
