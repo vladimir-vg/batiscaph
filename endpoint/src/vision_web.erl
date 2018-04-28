@@ -2,7 +2,6 @@
 -include_lib("kernel/include/file.hrl").
 
 -export([start_cowboy/0]).
--export([setup_access_control_headers/1]).
 
 
 
@@ -31,12 +30,3 @@ start_cowboy() ->
 
   ok.
 
-
-
-setup_access_control_headers(Req) ->
-  Origin = list_to_binary(os:getenv("VISION_ENDPOINT_ALLOW_ORIGIN_URL")),
-  Req1 = cowboy_req:set_resp_header(<<"access-control-max-age">>, <<"1728000">>, Req),
-  Req2 = cowboy_req:set_resp_header(<<"access-control-allow-methods">>, <<"HEAD, GET">>, Req1),
-  Req3 = cowboy_req:set_resp_header(<<"access-control-allow-headers">>, <<"content-type, authorization">>, Req2),
-  Req4 = cowboy_req:set_resp_header(<<"access-control-allow-origin">>, Origin, Req3),
-  {ok, Req4}.

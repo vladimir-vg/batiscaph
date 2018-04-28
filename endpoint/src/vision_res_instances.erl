@@ -18,8 +18,7 @@ init(_Transport, _Req, []) ->
   {upgrade, protocol, cowboy_rest}.
 
 rest_init(Req, _Opts) ->
-  {ok, Req1} = vision_web:setup_access_control_headers(Req),
-  {ok, Req1, no_state}.
+  {ok, Req, no_state}.
 
 terminate(_Reason, _Req, _State) ->
   ok.
