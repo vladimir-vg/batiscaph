@@ -21,39 +21,14 @@ start_cowboy() ->
       {"/", cowboy_static, {priv_file, vision, "index.html"}},
       {"/instances/[:instance_id]", cowboy_static, {priv_file, vision, "index.html"}},
       {"/instances/[:instance_id]/[...]", cowboy_static, {priv_file, vision, "index.html"}}
-
-      % {"/lib/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/lib", [{mimetypes, cow_mimetypes, all}]}},
-      % {"/app/[...]", cowboy_static, {priv_dir, batiscaph, "wwwroot/app", [{mimetypes, cow_mimetypes, all}]}},
-      % {"/scenarios.json", scenarios_list_handler, []},
-      % % {"/scenarios/[:id]/erlmodules", erlmodules_handler, []},
-      % % {"/scenarios/[...]", scenarios_csv_handler, []},
-      % % {"/api/scenarios2/[:id]", scenario_tree_handler, []},
-      % {"/style/app.css", cowboy_static, {priv_file, batiscaph, "wwwroot/app.css"}},
-      % {"/", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
-      % {"/scenarios/[:id]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}},
-      % {"/scenarios/[:id]/[...]", cowboy_static, {priv_file, batiscaph, "wwwroot/index.html"}}
     ]}
   ]),
   Opts = [
     {env, [{dispatch, Dispatch}]}
-    % {onresponse, fun translate_jsx_if_precompiled_unavailable/4}
   ],
   {ok, _} = cowboy:start_http(vision_http, 5, [{port, Port}], Opts),
   lager:info("Started http server on ~p port", [Port]),
 
-  % % if webserver already running
-  % case (catch ranch:get_port(batiscaph_http)) of
-  %   Port ->
-  %     % just refresh routing and loaded modules
-  %     ranch:set_protocol_options(batiscaph_http, Opts),
-  %     ok;
-  % 
-  %   _ ->
-  %     ranch:stop_listener(batiscaph_http),
-  %     {ok, _} = cowboy:start_http(batiscaph_http, 5, [{port, Port}], Opts),
-  %     lager:info("Started http server on ~p port", [Port]),
-  %     ok
-  % end,
   ok.
 
 
