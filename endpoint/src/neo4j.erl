@@ -4,6 +4,14 @@
 
 
 
+% This code is currently unused.
+%
+% Some time ago this project used Neo4J for building and storing graph
+% of processes and their relationships. It was dropped as too early and complicated decision.
+% Turns out that it's easier just to build maps and store them in memory, specific for client requests.
+
+
+
 -spec create_index(binary(), [binary()]) -> ok.
 create_index(Label, Props) ->
   case post_json(<<"db/data/schema/index/", Label/binary>>, #{<<"property_keys">> => Props}) of
