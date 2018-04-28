@@ -9,7 +9,7 @@ if(indexOf(Attrs.Key, ':attr') != 0, arrayElement(Attrs.Value, indexOf(Attrs.Key
 SELECT InstanceId, Type, (toUInt64(AtSec)*1000*1000 + AtMcs) AS At
 FROM `:dbname`.events
 WHERE InstanceId IN :ids
-  AND Type IN ('0 vision connection-start', '0 vision connection-stop')
+  AND Type IN ('0 batiscaph connection-start', '0 batiscaph connection-stop')
 LIMIT 100
 FORMAT TabSeparatedWithNamesAndTypes;
 

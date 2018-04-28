@@ -15,10 +15,6 @@ _build
 .idea
 rebar3.crashdump
 
-node_modules
-
-# generated during run
-priv/scenarios
-priv/batiscaph_drv.so
+priv/compiled_static
 
 _checkouts

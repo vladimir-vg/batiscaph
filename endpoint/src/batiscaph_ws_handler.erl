@@ -1,4 +1,4 @@
--module(vision_ws_handler).
+-module(batiscaph_ws_handler).
 -behaviour(cowboy_websocket_handler).
 -export([
   init/3, websocket_init/3, websocket_handle/3,
@@ -57,7 +57,7 @@ websocket_info(Msg, Req, State) ->
 
 
 subscribe_to_instance(#{<<"id">> := Id}, Req, State) ->
-  ok = vision_delta_producer:subscribe_to_delta(Id),
+  ok = batiscaph_delta_producer:subscribe_to_delta(Id),
   {ok, Req, State}.
 
 
@@ -68,7 +68,7 @@ connect_to_shell(#{<<"id">> := Id}, Req, State) ->
     {ok, Pid} ->
       % shell might be already existing
       % then we will just receive all previous shell events
-      {ok, _} = vision_probe_protocol:remote_request(Pid, ensure_shell_started, []),
+      {ok, _} = batiscaph_probe_protocol:remote_request(Pid, ensure_shell_started, []),
       {reply, {text, <<"connected_to_shell">>}, Req, State}
   end.
 
@@ -81,17 +81,17 @@ shell_input(#{<<"id">> := Id, <<"text">> := Text}, Req, State) ->
       % input is read by shell only after newline
       % so add one
       Text1 = <<Text/binary, "\n">>,
-      ok = vision_probe_protocol:send_to_remote(Pid, {shell_input, Text1}),
+      ok = batiscaph_probe_protocol:send_to_remote(Pid, {shell_input, Text1}),
       {ok, Req, State}
   end.
 
 
 
 subscribe_to_process_info(#{<<"instance_id">> := Id, <<"pid">> := Pid}, Req, State) ->
-  ok = vision_delta_producer:subscribe_to_process_info(Id, Pid),
+  ok = batiscaph_delta_producer:subscribe_to_process_info(Id, Pid),
   {ok, Req, State}.
 
 unsubscribe_from_process_info(#{<<"instance_id">> := Id, <<"pid">> := Pid}, Req, State) ->
-  ok = vision_delta_producer:unsubscribe_from_process_info(Id, Pid),
+  ok = batiscaph_delta_producer:unsubscribe_from_process_info(Id, Pid),
   {ok, Req, State}.
 

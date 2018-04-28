@@ -1,4 +1,4 @@
--module(vision_db).
+-module(batiscaph_db).
 -export([query/2]).
 
 
@@ -11,6 +11,6 @@
 query(Query, Fun) ->
   application:ensure_all_started(epgpool),
 
-  {ok, Q} = application:get_env(vision, pg_queries),
+  {ok, Q} = application:get_env(batiscaph, pg_queries),
   {ok, SQL} = eql:get_query(Query, Q),
   epgpool:with(fun(C) -> Fun(C, SQL) end).

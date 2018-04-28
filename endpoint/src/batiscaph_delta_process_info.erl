@@ -1,5 +1,5 @@
--module(vision_delta_process_info).
--behaviour(vision_delta_producer).
+-module(batiscaph_delta_process_info).
+-behaviour(batiscaph_delta_producer).
 -export([desired_types/0, desired_attrs/0, init/0, consume/2, finalize/1]). % delta producer callbacks
 
 

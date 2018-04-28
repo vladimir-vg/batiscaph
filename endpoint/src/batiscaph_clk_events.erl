@@ -1,4 +1,4 @@
--module(vision_clk_events).
+-module(batiscaph_clk_events).
 -export([create_tables/0, drop_tables/0]).
 -export([insert/1]).
 
@@ -31,7 +31,7 @@ columns() ->
 
 
 create_tables() ->
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
   SQL = iolist_to_binary([
     "CREATE TABLE `", DBName, "`.events (\n",
     "\tAtSec DateTime,\n",
@@ -57,7 +57,7 @@ create_tables() ->
 
 
 drop_tables() ->
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
   SQL = iolist_to_binary([
     "DROP TABLE `", DBName, "`.events\n"
   ]),
@@ -67,7 +67,7 @@ drop_tables() ->
 
 
 insert(Events) ->
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
   ok = clickhouse:insert(DBName, <<"events">>, columns(), Events),
   ok.
 
@@ -75,8 +75,8 @@ insert(Events) ->
 
 select_instances_infos_with_ids([]) -> {ok, []};
 select_instances_infos_with_ids(Ids) ->
-  {ok, Q} = application:get_env(vision, clk_queries),
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, Q} = application:get_env(batiscaph, clk_queries),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
   {ok, SQL} = eql:get_query(select_instances_infos_with_ids, Q, [{dbname, DBName}, {ids, clickhouse:list_sql(Ids)}]),
   {ok, Body} = clickhouse:execute(SQL),
   {ok, Events} = clickhouse:parse_rows(maps, Body),
@@ -84,12 +84,12 @@ select_instances_infos_with_ids(Ids) ->
   CurrentlyConnected = [Id || {Id, _Attrs} <- gen_tracker:list(probes, [])],
 
   Instances = lists:foldl(fun
-    (#{<<"Type">> := <<"0 vision connection-start">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
+    (#{<<"Type">> := <<"0 batiscaph connection-start">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
       Map = maps:get(Id, Acc, #{<<"InstanceId">> => Id}),
       Map1 = Map#{<<"Connected">> => lists:member(Id, CurrentlyConnected)},
       Acc#{Id => maps:put(<<"StartedAt">>, At, Map1)};
 
-    (#{<<"Type">> := <<"0 vision connection-stop">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
+    (#{<<"Type">> := <<"0 batiscaph connection-stop">>, <<"InstanceId">> := Id, <<"At">> := At}, Acc) ->
       Map = maps:get(Id, Acc, #{<<"InstanceId">> => Id}),
       Acc#{Id => maps:put(<<"StoppedAt">>, At, Map)}
   end, #{}, Events),
@@ -102,8 +102,8 @@ select_events(#{
   instance_id := Id, types := Types, attrs := Attrs,
   earlier_than := now, limit := Limit
 }) ->
-  {ok, Q} = application:get_env(vision, clk_queries),
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, Q} = application:get_env(batiscaph, clk_queries),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
   Params = [
     {dbname, DBName}, {types, clickhouse:list_sql(Types)},
     {instance_id, Id}, {limit, integer_to_binary(Limit)},
@@ -129,11 +129,11 @@ select_plug_request_info(#{
   pid := Pid, instance_id := InstanceId,
   started_at := StartedAt, stopped_at := StoppedAt
 }) ->
-  {ok, Q} = application:get_env(vision, clk_queries),
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, Q} = application:get_env(batiscaph, clk_queries),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
 
-  Attrs = vision_delta_plug:desired_request_attrs(),
-  Types = vision_delta_plug:desired_request_types(),
+  Attrs = batiscaph_delta_plug:desired_request_attrs(),
+  Types = batiscaph_delta_plug:desired_request_types(),
   Params = [
     {dbname, DBName}, {instance_id, InstanceId}, {pid, Pid},
     {started_at, integer_to_binary(StartedAt)}, {stopped_at, integer_to_binary(StoppedAt)},
@@ -143,7 +143,7 @@ select_plug_request_info(#{
   {ok, SQL} = eql:get_query(select_request_events, Q, Params),
   {ok, Body} = clickhouse:execute(SQL),
   {ok, Events} = clickhouse:parse_rows(maps, Body),
-  Info = vision_delta_plug:produce_request_info(Events, #{<<"Pid">> => Pid}),
+  Info = batiscaph_delta_plug:produce_request_info(Events, #{<<"Pid">> => Pid}),
   {ok, Info}.
 
 
@@ -152,11 +152,11 @@ select_cowboy_request_info(#{
   pid := Pid, instance_id := InstanceId,
   started_at := StartedAt, stopped_at := StoppedAt
 }) ->
-  {ok, Q} = application:get_env(vision, clk_queries),
-  {ok, DBName} = application:get_env(vision, clickhouse_dbname),
+  {ok, Q} = application:get_env(batiscaph, clk_queries),
+  {ok, DBName} = application:get_env(batiscaph, clickhouse_dbname),
 
-  Attrs = vision_delta_cowboy:desired_request_attrs(),
-  Types = vision_delta_cowboy:desired_request_types(),
+  Attrs = batiscaph_delta_cowboy:desired_request_attrs(),
+  Types = batiscaph_delta_cowboy:desired_request_types(),
   Params = [
     {dbname, DBName}, {instance_id, InstanceId}, {pid, Pid},
     {started_at, integer_to_binary(StartedAt)}, {stopped_at, integer_to_binary(StoppedAt)},
@@ -166,5 +166,5 @@ select_cowboy_request_info(#{
   {ok, SQL} = eql:get_query(select_request_events, Q, Params),
   {ok, Body} = clickhouse:execute(SQL),
   {ok, Events} = clickhouse:parse_rows(maps, Body),
-  Info = vision_delta_cowboy:produce_request_info(Events, #{<<"Pid">> => Pid}),
+  Info = batiscaph_delta_cowboy:produce_request_info(Events, #{<<"Pid">> => Pid}),
   {ok, Info}.

@@ -1,4 +1,4 @@
--module(vision_test).
+-module(batiscaph_test).
 -export([
   subscribe_to_session/2,
   get_subscribers_for_user/1,

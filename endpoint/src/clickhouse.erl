@@ -20,7 +20,7 @@ execute(SQL) ->
   execute(SQL, <<>>).
 
 execute(SQL, Suffix) ->
-  {ok, URL} = application:get_env(vision, clickhouse_url),
+  {ok, URL} = application:get_env(batiscaph, clickhouse_url),
   Body = [SQL, Suffix], % iolist
   % suffix is usually terribly long (inserted rows, etc) and shouldn't be visible in logs
   % lager:info("Clickhouse request:\n~s\n~s", [iolist_to_binary(SQL), Suffix]),

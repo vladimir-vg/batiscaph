@@ -1,4 +1,4 @@
--module(vision_probe_protocol).
+-module(batiscaph_probe_protocol).
 -behaviour(gen_server).
 -export([upgrade/4]). % cowboy callback
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
@@ -31,7 +31,7 @@ send_to_remote(Pid, Message) ->
 
 
 upgrade(Req, Env, _Handler, _HandlerOpts) ->
-  {Token, Req1} = cowboy_req:header(<<"x-runtime-vision-token">>, Req),
+  {Token, Req1} = cowboy_req:header(<<"x-runtime-batiscaph-token">>, Req),
   case authorize_by_token(Token) of
     badtoken ->
       {ok, Req2} = cowboy_req:upgrade_reply(403, [], Req1),
@@ -49,7 +49,7 @@ authorize_by_token(Token) ->
 
 start_persistent_loop(Env, UserId, Req) ->
   ok = remove_from_ranch_connection_pool(Env),
-  InstanceId = vision_util:binary_to_hex(crypto:strong_rand_bytes(32)),
+  InstanceId = batiscaph_util:binary_to_hex(crypto:strong_rand_bytes(32)),
   {ok, Socket, Transport, _Req1} = switch_socket_to_binary_stream(InstanceId, Req),
   lager:info("Socket ~p was open open on id: ~p", [Socket, InstanceId]),
 
@@ -60,8 +60,8 @@ start_persistent_loop(Env, UserId, Req) ->
   {ok, State1} = insert_new_instance_into_db(InstanceId, State),
   ok = attach_to_gen_tracker(InstanceId),
 
-  ok = vision_clk_events:insert([
-    vision_event:event(InstanceId, now, <<"0 vision connection-start">>)
+  ok = batiscaph_clk_events:insert([
+    batiscaph_event:event(InstanceId, now, <<"0 batiscaph connection-start">>)
   ]),
 
   self() ! {probe_request, get_user_config, []},
@@ -80,8 +80,8 @@ remove_from_ranch_connection_pool(Env) ->
 
 switch_socket_to_binary_stream(_InstanceId, Req) ->
   Headers = [
-    {<<"upgrade">>, <<"application/vision-persistent-v0">>}
-    % {<<"x-runtime-vision-instance-id">>, InstanceId}
+    {<<"upgrade">>, <<"application/batiscaph-persistent-v0">>}
+    % {<<"x-runtime-batiscaph-instance-id">>, InstanceId}
   ],
   {ok, Req1} = cowboy_req:upgrade_reply(101, Headers, Req),
   [Socket, Transport] = cowboy_req:get([socket, transport], Req1),
@@ -98,7 +98,7 @@ attach_to_gen_tracker(InstanceId) ->
   % provided start_link function don't even exist
   % MFA provided to give gen_tracker an idea where to search for
   % after_terminate callback
-  ChildSpec = {InstanceId, {vision_probe_protocol, start_link, []}, temporary, 200, worker, []},
+  ChildSpec = {InstanceId, {batiscaph_probe_protocol, start_link, []}, temporary, 200, worker, []},
   gen_tracker:add_existing_child(probes, {self(), ChildSpec}),
   ok.
 
@@ -123,8 +123,8 @@ init(_) ->
 % executed when process is already dead,
 % but its attrs are not removed yet
 after_terminate(InstanceId, _Attrs) ->
-  ok = vision_clk_events:insert([
-    vision_event:event(InstanceId, now, <<"0 vision connection-stop">>)
+  ok = batiscaph_clk_events:insert([
+    batiscaph_event:event(InstanceId, now, <<"0 batiscaph connection-stop">>)
   ]),
   ok.
 
@@ -198,8 +198,8 @@ handle_message_from_probe({shell_input, Status}, State) ->
 
 handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
   % [lager:info("event: ~p", [E]) || E <- Events],
-  Events1 = vision_event:transform(Events, #{instance_id => InstanceId}),
-  ok = vision_clk_events:insert(Events1),
+  Events1 = batiscaph_event:transform(Events, #{instance_id => InstanceId}),
+  ok = batiscaph_clk_events:insert(Events1),
   ok = notify_delta_producer(InstanceId),
   {ok, State};
 
@@ -226,7 +226,7 @@ notify_delta_producer(InstanceId) ->
 
 
 insert_new_instance_into_db(InstanceId, #persistent{user_id = UserId} = State) ->
-  vision_db:query(insert_new_instance, fun (C, SQL) ->
+  batiscaph_db:query(insert_new_instance, fun (C, SQL) ->
     {ok, 1} = epgpool:equery(C, SQL, [InstanceId, UserId])
   end),
   {ok, State}.
@@ -276,7 +276,7 @@ handle_own_request_response(Method, Result, _State) ->
 
 
 check_test_subscribers(#persistent{user_id = UserId, test_subscribers = Pids} = State) ->
-  case vision_test:get_subscribers_for_user(UserId) of
+  case batiscaph_test:get_subscribers_for_user(UserId) of
     none -> {ok, State};
     {ok, Pids1} ->
       State1 = State#persistent{test_subscribers = Pids1 ++ Pids},

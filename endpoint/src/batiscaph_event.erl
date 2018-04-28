@@ -1,4 +1,4 @@
--module(vision_event).
+-module(batiscaph_event).
 -export([event/3, transform/2]).
 
 

@@ -1,12 +1,12 @@
--module(vision_delta_plug).
--behaviour(vision_delta_producer).
+-module(batiscaph_delta_plug).
+-behaviour(batiscaph_delta_producer).
 -export([desired_types/0, desired_attrs/0, init/0, consume/2, finalize/1]). % delta producer callbacks
 -export([parse_id/1]).
 -export([produce_request_info/2, desired_request_types/0, desired_request_attrs/0]).
 
 
 
-% this is a brother-module for vision_probe_feature_phoenix
+% this is a brother-module for batiscaph_probe_feature_plug
 % that takes events and produces delta
 
 

@@ -1,4 +1,4 @@
--module(vision_handler_probe).
+-module(batiscaph_handler_probe).
 
 -export([init/3]).
 -export([handle/2]).
@@ -17,7 +17,7 @@ init(_Transport, Req, []) ->
       {ok, Req1, State};
 
     {upgrade_to_persistent, _Req1} ->
-      {upgrade, protocol, vision_probe_protocol}
+      {upgrade, protocol, batiscaph_probe_protocol}
   end.
 
 terminate(_Reason, _Req, _State) ->
@@ -29,7 +29,7 @@ handle(Req, bad_request) ->
   {ok, Req, bad_request};
 
 handle(Req, {guest_info, _Ip, Info} = State) ->
-  ok = vision_test:notify_guest_info_subscribers(Info),
+  ok = batiscaph_test:notify_guest_info_subscribers(Info),
   {ok, Req1} = cowboy_req:reply(200, Req),
   {ok, Req1, State}.
 
@@ -39,14 +39,14 @@ handle(Req, {guest_info, _Ip, Info} = State) ->
 % for authorized user
 what_kind_of_request(Req) ->
   case cowboy_req:header(<<"content-type">>, Req) of
-    {<<"application/vision-guest-info-v0">>, Req1} ->
+    {<<"application/batiscaph-guest-info-v0">>, Req1} ->
       {ok, Body, Req2} = cowboy_req:body(Req1),
       {{Ip, _Port}, Req3} = cowboy_req:peer(Req2),
       {guest_info, Ip, erlang:binary_to_term(Body), Req3};
 
     {undefined, Req1} ->
       case cowboy_req:header(<<"upgrade">>, Req1) of
-        {<<"application/vision-persistent-v0">>, Req2} ->
+        {<<"application/batiscaph-persistent-v0">>, Req2} ->
           {upgrade_to_persistent, Req2};
 
         {undefined, Req2} ->

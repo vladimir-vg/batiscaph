@@ -1,4 +1,4 @@
--module(vision_util).
+-module(batiscaph_util).
 -export([binary_to_hex/1]).
 
 

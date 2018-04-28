@@ -1,4 +1,4 @@
--module(vision_delta_producer).
+-module(batiscaph_delta_producer).
 -behaviour(gen_server).
 -export([start_link/1]). % supervisor callback
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]). % gen_server callbacks
@@ -163,7 +163,7 @@ subscribe_to_process_info1(Pid, RemotePid, #delta{instance_id = InstanceId} = St
       % update delta_subscriber record
       % send subscribe to remote probe
       true = ets:update_element(delta_subscribers, {InstanceId, Pid}, [{#delta_subscriber.process_info_remote_pid, RemotePid}]),
-      ok = vision_probe_protocol:send_to_remote(ProbePid, {ensure_subscribed_to_process_info, RemotePid}),
+      ok = batiscaph_probe_protocol:send_to_remote(ProbePid, {ensure_subscribed_to_process_info, RemotePid}),
       {ok, State}
   end.
 
@@ -209,7 +209,7 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
   % Do not intersect
 
   % do expect that events are sorted DESC
-  {ok, Events} = vision_clk_events:select_events(#{
+  {ok, Events} = batiscaph_clk_events:select_events(#{
     instance_id => Id, types => delta_types(), attrs => delta_attrs(),
     earlier_than => now, limit => ?CHUNK_SIZE
   }),
@@ -259,8 +259,8 @@ delta_attrs() ->
 
 delta_modules() ->
   [
-    vision_delta_plug, vision_delta_cowboy, vision_delta_procs,
-    vision_delta_shell, vision_delta_process_info
+    batiscaph_delta_plug, batiscaph_delta_cowboy, batiscaph_delta_procs,
+    batiscaph_delta_shell, batiscaph_delta_process_info
   ].
 
 delta_init() ->

@@ -17,8 +17,8 @@ WORKDIR /root
 # ADD dist dist
 # RUN dpkg -i dist/*.deb
 
-ENV VISION_ENDPOINT_CLICKHOUSE_DB batiscaph_test
-ENV VISION_ENDPOINT_CLICKHOUSE_URL http://127.0.0.1:8123/
+ENV BATISCAPH_ENDPOINT_CLICKHOUSE_DB batiscaph_test
+ENV BATISCAPH_ENDPOINT_CLICKHOUSE_URL http://127.0.0.1:8123/
 COPY before-test-run.sh before-test-run.sh
 
 # first add only rebar config and download deps,

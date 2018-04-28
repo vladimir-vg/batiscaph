@@ -1,4 +1,4 @@
--module(vision_res_plug_requests).
+-module(batiscaph_res_instances).
 
 % Cowboy callbacks
 -export([
@@ -37,10 +37,14 @@ content_types_provided(Req, State) ->
 
 
 get_json(Req, State) ->
-  {ReqId, Req1} = cowboy_req:binding(req_id, Req),
-  {InstanceId, Req1} = cowboy_req:binding(instance_id, Req),
-  Opts = vision_delta_plug:parse_id(ReqId),
-  Opts1 = Opts#{instance_id => InstanceId},
-  {ok, Info} = vision_clk_events:select_plug_request_info(Opts1),
-  Body = jsx:encode(Info),
+  {UserId, Req1} = cowboy_req:qs_val(<<"user_id">>, Req),
+
+  Ids = batiscaph_db:query(select_instances_for_user_id, fun (C, SQL) ->
+    {ok, _Cols, Rows} = epgpool:equery(C, SQL, [binary_to_integer(UserId)]),
+    [Id || {Id} <- Rows]
+  end),
+
+  {ok, Instances} = batiscaph_clk_events:select_instances_infos_with_ids(Ids),
+
+  Body = jsx:encode(Instances),
   {Body, Req1, State}.
