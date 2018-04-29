@@ -6,10 +6,11 @@
 
 % different select queries
 -export([
+  select_instances_ids/0,
   select_instances_infos_with_ids/1,
+  select_all_instances_infos/0,
   select_events/1,
-  select_plug_request_info/1, select_cowboy_request_info/1,
-  select_instances_ids/0
+  select_plug_request_info/1, select_cowboy_request_info/1
 ]).
 
 
@@ -98,6 +99,13 @@ select_instances_infos_with_ids(Ids) ->
   end, #{}, Events),
 
   {ok, maps:values(Instances)}.
+
+
+
+select_all_instances_infos() ->
+  {ok, Ids} = batiscaph_events:select_instances_ids(),
+  {ok, Instances} = batiscaph_events:select_instances_infos_with_ids(Ids),
+  {ok, Instances}.
 
 
 

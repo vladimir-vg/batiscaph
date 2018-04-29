@@ -1,6 +1,6 @@
-CLICKHOUSE_DB = batiscaph
+# CLICKHOUSE_DB = batiscaph
 # CLICKHOUSE_TEST_DB = batiscaph_test
-CLICKHOUSE_URL = http://0.0.0.0:8123/
+# CLICKHOUSE_URL = http://0.0.0.0:8123/
 # NEO4J_HTTP_URL = http://neo4j:neo4j@0.0.0.0:7474/
 # POSTGRES_URL = postgres://postgres:postgres@127.0.0.1/vision_dev
 HTTP_PORT = 8099

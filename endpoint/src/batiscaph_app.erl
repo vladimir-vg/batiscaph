@@ -40,9 +40,24 @@ start(_StartType, _StartArgs) ->
 
 
 read_config() ->
-  application:set_env(batiscaph, http_port, list_to_integer(os:getenv("BATISCAPH_ENDPOINT_HTTP_PORT"))),
-  application:set_env(batiscaph, clickhouse_dbname, list_to_binary(os:getenv("BATISCAPH_ENDPOINT_CLICKHOUSE_DB"))),
-  application:set_env(batiscaph, clickhouse_url, list_to_binary(os:getenv("BATISCAPH_ENDPOINT_CLICKHOUSE_URL"))),
+  read_env_and_update("BATISCAPH_ENDPOINT_HTTP_PORT", http_port, fun erlang:list_to_integer/1),
+  read_env_and_update("BATISCAPH_ENDPOINT_CLICKHOUSE_DB", clickhouse_dbname, fun erlang:list_to_binary/1),
+  read_env_and_update("BATISCAPH_ENDPOINT_CLICKHOUSE_URL", clickhouse_url, fun erlang:list_to_binary/1),
+
+  case {application:get_env(batiscaph, clickhouse_dbname), application:get_env(batiscaph, clickhouse_url)} of
+    {{ok, _}, {ok, _}} ->
+      lager:info("Using Clickhouse for storage"),
+      application:set_env(batiscaph, storage_type, clickhouse),
+      ok;
+    _ ->
+      % clickhouse env vars are not defined
+      % use mnesia instead
+      lager:info("Using Mnesia for storage, because no Clickhouse config env was provided"),
+      application:set_env(batiscaph, storage_type, mnesia),
+      ok = batiscaph_events_mnesia:setup(),
+      ok
+  end,
+
   % application:set_env(batiscaph, neo4j_url, list_to_binary(os:getenv("BATISCAPH_ENDPOINT_NEO4J_HTTP_URL"))),
 
   % Url = os:getenv("BATISCAPH_ENDPOINT_POSTGRES_URL"),
@@ -57,3 +72,11 @@ read_config() ->
 
   ok.
 
+read_env_and_update(EnvKey, AppKey, ReadFun) ->
+  case os:getenv(EnvKey) of
+    false -> ok;
+    "" -> ok;
+    Value when is_list(Value) ->
+      application:set_env(batiscaph, AppKey, ReadFun(Value)),
+      ok
+  end.
