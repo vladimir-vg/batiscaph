@@ -45,15 +45,15 @@ read_config() ->
   application:set_env(batiscaph, clickhouse_url, list_to_binary(os:getenv("BATISCAPH_ENDPOINT_CLICKHOUSE_URL"))),
   % application:set_env(batiscaph, neo4j_url, list_to_binary(os:getenv("BATISCAPH_ENDPOINT_NEO4J_HTTP_URL"))),
 
-  Url = os:getenv("BATISCAPH_ENDPOINT_POSTGRES_URL"),
-  {ok, {postgres, Auth, Host, _Port, "/"++DbName, _}} = http_uri:parse(Url, [{scheme_defaults, [{postgres, 5432}]}]),
-  [Login, Password] = string:split(Auth, ":"),
-
-  ok = application:set_env(epgpool, database_host, Host),
-  ok = application:set_env(epgpool, database_name, DbName),
-  ok = application:set_env(epgpool, database_user, Login),
-  ok = application:set_env(epgpool, database_password, Password),
-  ok = application:set_env(epgpool, log_errors_verbose, true),
+  % Url = os:getenv("BATISCAPH_ENDPOINT_POSTGRES_URL"),
+  % {ok, {postgres, Auth, Host, _Port, "/"++DbName, _}} = http_uri:parse(Url, [{scheme_defaults, [{postgres, 5432}]}]),
+  % [Login, Password] = string:split(Auth, ":"),
+  % 
+  % ok = application:set_env(epgpool, database_host, Host),
+  % ok = application:set_env(epgpool, database_name, DbName),
+  % ok = application:set_env(epgpool, database_user, Login),
+  % ok = application:set_env(epgpool, database_password, Password),
+  % ok = application:set_env(epgpool, log_errors_verbose, true),
 
   ok.
 
