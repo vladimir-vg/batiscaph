@@ -43,8 +43,8 @@ get_json(Req, State) ->
   %   [Id || {Id} <- Rows]
   % end),
 
-  {ok, Ids} = batiscaph_clk_events:select_instances_ids(),
-  {ok, Instances} = batiscaph_clk_events:select_instances_infos_with_ids(Ids),
+  {ok, Ids} = batiscaph_events:select_instances_ids(),
+  {ok, Instances} = batiscaph_events:select_instances_infos_with_ids(Ids),
 
   Body = jsx:encode(Instances),
   {Body, Req, State}.

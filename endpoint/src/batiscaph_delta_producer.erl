@@ -209,7 +209,7 @@ delta_chunk_from_now(#delta{instance_id = Id} = State) ->
   % Do not intersect
 
   % do expect that events are sorted DESC
-  {ok, Events} = batiscaph_clk_events:select_events(#{
+  {ok, Events} = batiscaph_events:select_events(#{
     instance_id => Id, types => delta_types(), attrs => delta_attrs(),
     earlier_than => now, limit => ?CHUNK_SIZE
   }),

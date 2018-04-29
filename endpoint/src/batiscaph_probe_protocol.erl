@@ -60,7 +60,7 @@ start_persistent_loop(Env, UserId, Req) ->
   % {ok, State1} = insert_new_instance_into_db(InstanceId, State),
   ok = attach_to_gen_tracker(InstanceId),
 
-  ok = batiscaph_clk_events:insert([
+  ok = batiscaph_events:insert([
     batiscaph_event:event(InstanceId, now, <<"0 batiscaph connection-start">>)
   ]),
 
@@ -123,7 +123,7 @@ init(_) ->
 % executed when process is already dead,
 % but its attrs are not removed yet
 after_terminate(InstanceId, _Attrs) ->
-  ok = batiscaph_clk_events:insert([
+  ok = batiscaph_events:insert([
     batiscaph_event:event(InstanceId, now, <<"0 batiscaph connection-stop">>)
   ]),
   ok.
@@ -199,7 +199,7 @@ handle_message_from_probe({shell_input, Status}, State) ->
 handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
   % [lager:info("event: ~p", [E]) || E <- Events],
   Events1 = batiscaph_event:transform(Events, #{instance_id => InstanceId}),
-  ok = batiscaph_clk_events:insert(Events1),
+  ok = batiscaph_events:insert(Events1),
   ok = notify_delta_producer(InstanceId),
   {ok, State};
 

@@ -41,6 +41,6 @@ get_json(Req, State) ->
   {InstanceId, Req1} = cowboy_req:binding(instance_id, Req),
   Opts = batiscaph_delta_cowboy:parse_id(ReqId),
   Opts1 = Opts#{instance_id => InstanceId},
-  {ok, Info} = batiscaph_clk_events:select_cowboy_request_info(Opts1),
+  {ok, Info} = batiscaph_events:select_cowboy_request_info(Opts1),
   Body = jsx:encode(Info),
   {Body, Req1, State}.

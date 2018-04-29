@@ -1,5 +1,5 @@
 -module(batiscaph_cmds).
--export([reset_clickhouse/0]).
+-export([reset_storage/0]).
 
 
 
@@ -8,13 +8,13 @@
 
 
 
-reset_clickhouse() ->
+reset_storage() ->
   {ok, _} = application:ensure_all_started(hackney),
   ok = batiscaph_app:read_config(),
 
-  try batiscaph_clk_events:drop_tables()
+  try batiscaph_events:drop_tables()
   catch _:_ -> ok
   end,
 
-  ok = batiscaph_clk_events:create_tables(),
+  ok = batiscaph_events:create_tables(),
   ok.
