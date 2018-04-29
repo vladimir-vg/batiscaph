@@ -1,4 +1,4 @@
--module(batiscaph_mnesia_events).
+-module(batiscaph_events_mnesia).
 -export([create_tables/0, drop_tables/0]).
 -export([insert/1]).
 

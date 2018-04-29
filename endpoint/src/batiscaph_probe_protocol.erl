@@ -61,7 +61,7 @@ start_persistent_loop(Env, UserId, Req) ->
   ok = attach_to_gen_tracker(InstanceId),
 
   ok = batiscaph_events:insert([
-    batiscaph_event:event(InstanceId, now, <<"0 batiscaph connection-start">>)
+    batiscaph_events:event(InstanceId, now, <<"0 batiscaph connection-start">>)
   ]),
 
   self() ! {probe_request, get_user_config, []},
@@ -124,7 +124,7 @@ init(_) ->
 % but its attrs are not removed yet
 after_terminate(InstanceId, _Attrs) ->
   ok = batiscaph_events:insert([
-    batiscaph_event:event(InstanceId, now, <<"0 batiscaph connection-stop">>)
+    batiscaph_events:event(InstanceId, now, <<"0 batiscaph connection-stop">>)
   ]),
   ok.
 
@@ -198,7 +198,7 @@ handle_message_from_probe({shell_input, Status}, State) ->
 
 handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId} = State) ->
   % [lager:info("event: ~p", [E]) || E <- Events],
-  Events1 = batiscaph_event:transform(Events, #{instance_id => InstanceId}),
+  Events1 = batiscaph_events:transform(Events, #{instance_id => InstanceId}),
   ok = batiscaph_events:insert(Events1),
   ok = notify_delta_producer(InstanceId),
   {ok, State};
@@ -314,5 +314,6 @@ mention_used_atoms() ->
     host,method,path,port,request_id,
     req_headers,resp_headers,resp_code,
     resp_body_size,plug,halted,
-    reason,mfa,prompt,input,output
+    reason,mfa,prompt,input,output,
+    shell_input,ready,stopped
   ].
