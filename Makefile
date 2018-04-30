@@ -1,9 +1,9 @@
 
-run_test: build_endpoint build_test_apps
+run_test: build_backend build_test_apps
 	./rebar3 ct --name ct_run@0.0.0.0 --setcookie vision-test
 
-build_endpoint:
-	docker build -t vision/endpoint:latest endpoint
+build_backend:
+	docker build -t vision/backend:latest backend
 	@printf "\n\n"
 
 
