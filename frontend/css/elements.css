@@ -29,7 +29,17 @@ rect.HttpReq.hovered {
 }
 
 .process-mention {
-  fill: transparent;
+  fill: white;
+  stroke: #D9D9D9;
+  stroke-width: 2px;
+}
+.process-mention.selected,
+.process-mention.hovered {
+  stroke: #2F80ED;
+  stroke-width: 1.5px;
+}
+
+.process-body-line {
   stroke: #D9D9D9;
   stroke-width: 2px;
 }

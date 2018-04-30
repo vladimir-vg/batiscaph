@@ -30,6 +30,10 @@ class ProcessBody extends React.Component {
   hoverProcess(id) { this.props.hoverProcess(id); }
 
   render() {
+    // need for connecting line rendering
+    let topBodyY = null;
+    let bottomBodyY = null;
+
     const g = this.props.grid;
     const sideOffset = (g.xColWidth - PROC_WIDTH)/2;
     const x = g.xColStart(this.props.x) + sideOffset;
@@ -41,20 +45,26 @@ class ProcessBody extends React.Component {
       exit = <rect className="process-exit" x={x} y={y1} width={width} height={EXIT_HEIGHT} />
     }
 
+    let classModifier = null;
+    if (this.props.selectedProcessPid === this.props.id) {
+      classModifier = "selected";
+    } else if (this.props.hoveredProcessPid === this.props.id) {
+      classModifier = "hovered";
+    }
+
     const bodyRects = [];
     for (const i in this.props.tracedSegments) {
       const [startedY, continueY] = this.props.tracedSegments[i];
       const y = g.yRowAt(startedY);
       const height = (g.yRowAt(continueY) - g.yRowAt(startedY));
 
-      if (this.props.selectedProcessPid === this.props.id) {
-        bodyRects.push(<rect className="process-body selected" key={this.props.id + ' ' + startedY}
-          onClick={this.selectProcess}
-          onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
-          onMouseLeave={this.hoverProcess.bind(this, null)}
-          x={x+0.5} y={y+0.5} width={width-0.5*2} height={height-0.5*2} />);
-      } else if (this.props.hoveredProcessPid === this.props.id) {
-        bodyRects.push(<rect className="process-body hovered" key={this.props.id + ' ' + startedY}
+      topBodyY = topBodyY || startedY;
+      bottomBodyY = bottomBodyY || continueY;
+      topBodyY = Math.max(topBodyY, startedY);
+      bottomBodyY = Math.min(bottomBodyY, continueY);
+
+      if (classModifier) {
+        bodyRects.push(<rect className={"process-body " + classModifier} key={this.props.id + ' ' + startedY}
           onClick={this.selectProcess}
           onMouseEnter={this.hoverProcess.bind(this, this.props.id)} 
           onMouseLeave={this.hoverProcess.bind(this, null)}
@@ -70,14 +80,28 @@ class ProcessBody extends React.Component {
 
     const mentionCircles = [];
     for (const i in this.props.mentionedUntracedPoints) {
-      const y = g.yRowAt(this.props.mentionedUntracedPoints[i]);
-      mentionCircles.push(<circle className="process-mention" key={this.props.id + ' ' + this.props.mentionedUntracedPoints[i]}
+      const at = this.props.mentionedUntracedPoints[i];
+      const y = g.yRowAt(at);
+      topBodyY = topBodyY || at;
+      bottomBodyY = bottomBodyY || at;
+      topBodyY = Math.max(topBodyY, at);
+      bottomBodyY = Math.min(bottomBodyY, at);
+      mentionCircles.push(<circle className={"process-mention " + classModifier}key={this.props.id + ' ' + this.props.mentionedUntracedPoints[i]}
         onClick={this.selectProcess}
         cx={x+sideOffset} cy={y} r={MENTION_RADIUS} />);
     }
 
+    let bodyLine = null;
+    if ((mentionCircles.length + bodyRects.length) >= 2) {
+      const y1 = g.yRowAt(topBodyY);
+      const y2 = g.yRowAt(bottomBodyY);
+      bodyLine = <line className="process-body-line"
+        x1={x+sideOffset} y1={y1} x2={x+sideOffset} y2={y2} />
+    }
+
     return [
       <Layout.WithLayout key="procBody" name="procBody">
+        {bodyLine}
         <g>{mentionCircles}</g>
         <g>{bodyRects}</g>
         {exit}
