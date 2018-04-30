@@ -17,8 +17,9 @@ init() ->
 
 consume(#{<<"Type">> := <<"p1 erlang:process trace start">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid} = E,
-  P = #{<<"TraceStartedAt">> => At, <<"Pid">> => Pid, <<"Children">> => #{}},
-  State#{procs => Procs#{Pid => P}};
+  P = maps:get(Pid, Procs, #{<<"Pid">> => Pid, <<"Children">> => #{}}),
+  P1 = P#{<<"TraceStartedAt">> => At},
+  State#{procs => Procs#{Pid => P1}};
 
 consume(#{<<"Type">> := <<"p2 erlang:process spawn">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := ParentPid, <<"Pid2">> := ChildPid} = E,

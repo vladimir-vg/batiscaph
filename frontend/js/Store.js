@@ -10,8 +10,21 @@ export default class Store {
   constructor() {
     extendObservable(this, {
       currentInstanceId: null,
-      isShellConnected: false,
       instancesList: [],
+      gridEnabled: false,
+    });
+
+    this.resetInstanceInfo();
+
+    this.wsSendQueue = [];
+
+    this.onWSMessage = this.onWSMessage.bind(this);
+    this.onWSOpen = this.onWSOpen.bind(this);
+  }
+
+  resetInstanceInfo() {
+    extendObservable(this, {
+      isShellConnected: false,
       delta: {
         'plug-requests': (new Map()),
         'cowboy-requests': (new Map()),
@@ -26,18 +39,12 @@ export default class Store {
       hoveredProcessPid: null,
       selectedRequestId: null,
       hoveredRequestId: null,
-      gridEnabled: false,
 
       // for full request info
       // we need use Map to make MobX react to dynamically added keys
       // ordinary object won't work
       reqsDetails: new Map(),
     });
-
-    this.wsSendQueue = [];
-
-    this.onWSMessage = this.onWSMessage.bind(this);
-    this.onWSOpen = this.onWSOpen.bind(this);
   }
 
   // to be used for debug from browser console
@@ -200,6 +207,7 @@ export default class Store {
   unsubscribeFromInstance(id) {
     if (this.currentInstanceId == id) { this.currentInstanceId = null; }
     this.wsSend('unsubscribe_from_instance', { id });
+    this.resetInstanceInfo();
   }
 
   ensureShellConnected() {
