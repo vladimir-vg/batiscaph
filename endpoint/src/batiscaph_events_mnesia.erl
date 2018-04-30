@@ -170,7 +170,26 @@ select_plug_request_info(#{
   pid := Pid, instance_id := InstanceId,
   started_at := StartedAt, stopped_at := StoppedAt
 }) ->
-  {ok, undefined}.
+  Match = ets:fun2ms(fun
+    (#event{key = {InstanceId1, AtSec, AtMcs, _, _}, pid1 = Pid1, _ = '_'} = E)
+    when InstanceId1 =:= InstanceId
+    andalso Pid1 =:= Pid
+    andalso (AtSec*1000*1000 + AtMcs) >= StartedAt
+    andalso (AtSec*1000*1000 + AtMcs) =< StoppedAt ->
+      E
+  end),
+
+  Attrs = batiscaph_delta_plug:desired_request_attrs(),
+  Types = batiscaph_delta_plug:desired_request_types(),
+
+  Events = mnesia:dirty_select(event, Match),
+  Events1 = lists:filtermap(fun (E) ->
+    filtermap_event(Types, Attrs, E)
+  end, Events),
+
+  Info = batiscaph_delta_plug:produce_request_info(Events1, #{<<"Pid">> => Pid}),
+
+  {ok, Info}.
 
 
 
@@ -178,4 +197,23 @@ select_cowboy_request_info(#{
   pid := Pid, instance_id := InstanceId,
   started_at := StartedAt, stopped_at := StoppedAt
 }) ->
-  {ok, undefined}.
+  Match = ets:fun2ms(fun
+    (#event{key = {InstanceId1, AtSec, AtMcs, _, _}, pid1 = Pid1, _ = '_'} = E)
+    when InstanceId1 =:= InstanceId
+    andalso Pid1 =:= Pid
+    andalso (AtSec*1000*1000 + AtMcs) >= StartedAt
+    andalso (AtSec*1000*1000 + AtMcs) =< StoppedAt ->
+      E
+  end),
+
+  Attrs = batiscaph_delta_cowboy:desired_request_attrs(),
+  Types = batiscaph_delta_cowboy:desired_request_types(),
+
+  Events = mnesia:dirty_select(event, Match),
+  Events1 = lists:filtermap(fun (E) ->
+    filtermap_event(Types, Attrs, E)
+  end, Events),
+
+  Info = batiscaph_delta_cowboy:produce_request_info(Events1, #{<<"Pid">> => Pid}),
+
+  {ok, Info}.
