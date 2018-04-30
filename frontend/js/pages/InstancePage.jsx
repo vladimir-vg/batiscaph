@@ -176,13 +176,18 @@ export default class InstancePage extends React.Component {
       selectedItemLink = <NavLink to={this.props.location.pathname}>Request</NavLink>
     }
 
+    let requestsLink = null;
+    if (reqs.length != 0) {
+      requestsLink = <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>;
+    }
+
     // for some reason setting viewportHeight for div height creates scrollbar
     // make it disappear using overflow: hidden
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
       <div className="extra-info-container">
         <div className="Tabs">
           <NavLink to={`${this.props.match.url}/shell`}>Shell</NavLink>
-          <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>
+          {requestsLink}
           {selectedItemLink}
         </div>
 
