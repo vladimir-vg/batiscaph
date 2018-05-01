@@ -128,9 +128,10 @@ select_events(#{
   {ok, Events}.
 
 attrs_sql(Q, Attrs) ->
-  Parts = lists:map(fun (Attr) ->
-    {ok, SQL} = eql:get_query(selectable_attr, Q, [{attr, Attr}]),
-    SQL
+  Parts = lists:map(fun
+    (Attr) when is_binary(Attr) ->
+      {ok, SQL} = eql:get_query(selectable_attr, Q, [{attr, Attr}]),
+      SQL
   end, Attrs),
   lists:join(<<",">>, Parts).
 

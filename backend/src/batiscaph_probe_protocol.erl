@@ -315,5 +315,6 @@ mention_used_atoms() ->
     req_headers,resp_headers,resp_code,
     resp_body_size,plug,halted,
     reason,mfa,prompt,input,output,
-    shell_input,ready,stopped
+    shell_input,ready,stopped,
+    binaries
   ].

@@ -260,7 +260,7 @@ delta_attrs() ->
 delta_modules() ->
   [
     batiscaph_delta_plug, batiscaph_delta_cowboy, batiscaph_delta_procs,
-    batiscaph_delta_shell, batiscaph_delta_process_info
+    batiscaph_delta_shell, batiscaph_delta_process_info, batiscaph_delta_process_info_binaries
   ].
 
 delta_init() ->
