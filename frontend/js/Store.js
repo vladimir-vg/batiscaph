@@ -34,6 +34,7 @@ export default class Store {
         // for new item
         'shell-commands': (new Map()),
         'erlang-processes-info': (new Map()),
+        'erlang-processes-info-binaries': (new Map()),
       },
       selectedProcessPid: null,
       hoveredProcessPid: null,
@@ -192,6 +193,21 @@ export default class Store {
     }
 
     return result;
+  }
+
+  @computed
+  get currentProcessBinaries() {
+    if (!this.selectedProcessPid) {
+      throw {
+        message: "Expected selected process pid to be present while fetching current process info",
+        selectedProcessPid: this.selectedProcessPid
+      };
+    }
+
+    const info = this.delta['erlang-processes-info-binaries'].get(this.selectedProcessPid);
+    if (!info) return null;
+
+    return info;
   }
 
 

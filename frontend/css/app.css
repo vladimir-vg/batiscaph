@@ -29,6 +29,7 @@ code {
 .MarkedOutput {
   color: #828282;
   white-space: pre-wrap;
+  word-break: break-all;
 }
 .MarkedOutput .pid-link {
   color: #828282;
@@ -201,10 +202,21 @@ code {
 
 
 
-.ProcessPanel {
+.ProcessPage {
   margin: 0 20px;
 }
-
-.ProcessPanel code div {
+.ProcessPage code div {
   margin: 5px 0;
+}
+.ProcessPage .binary-bricks {
+  display: flex;
+  flex-wrap: wrap;
+}
+.ProcessPage .binary-bricks > div {
+  border: 3px solid #00aad4;
+  background-color: #00aad4;
+  color: white;
+  margin-right: 5px;
+  font-family: 'Fira Mono', monospace;
+  font-size: 14px;
 }
