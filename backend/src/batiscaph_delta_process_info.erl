@@ -25,7 +25,9 @@ init() ->
 
 consume(#{<<"Type">> := <<"p1 erlang:process process_info">>} = E, #{procs := Procs} = State) ->
   #{<<"At">> := At, <<"Pid1">> := Pid} = E,
-  #{<<"Changes">> := Changes} = P = maps:get(Pid, Procs, #{<<"Pid">> => Pid, <<"Changes">> => #{}}),
+  New = #{<<"Pid">> => Pid, <<"Changes">> => #{}},
+  P = maps:get(Pid, Procs, New),
+  #{<<"Changes">> := Changes} = P,
   Attrs = process_info_attrs(),
   Props = maps:filter(fun
     (_K, <<>>) -> false;

@@ -21,10 +21,12 @@ consume(#{<<"Type">> := <<"p1 erlang:process process_info_binary">>, <<"binaries
   State;
 
 consume(#{<<"Type">> := <<"p1 erlang:process process_info_binary">>} = E, #{procs := Procs} = State) ->
-  #{<<"At">> := _At, <<"Pid1">> := Pid, <<"binaries">> := Binaries} = E,
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"binaries">> := Binaries} = E,
   Binaries1 = erlang:binary_to_term(Binaries, [safe]),
-  P = maps:get(Pid, Procs, #{}),
-  P1 = maps:merge(P, Binaries1),
+  New = #{<<"Pid">> => Pid, <<"Changes">> => #{}},
+  P = maps:get(Pid, Procs, New),
+  #{<<"Changes">> := Changes} = P,
+  P1 = P#{<<"Changes">> => Changes#{At => Binaries1}},
   State#{procs => Procs#{Pid => P1}};
 
 consume(_E, State) ->

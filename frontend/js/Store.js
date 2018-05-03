@@ -207,7 +207,18 @@ export default class Store {
     const info = this.delta['erlang-processes-info-binaries'].get(this.selectedProcessPid);
     if (!info) return null;
 
-    return info;
+    const { Changes } = info;
+    const timestamps = Object.keys(Changes);
+    timestamps.sort();
+
+    // collapse all changes into latest one
+    let result = {};
+    for (const i in timestamps) {
+      const key = timestamps[i];
+      result = Object.assign(result, Changes[key]);
+    }
+
+    return result;
   }
 
 
