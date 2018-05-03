@@ -218,6 +218,11 @@ export default class Store {
       result = Object.assign(result, Changes[at]);
     }
 
+    // skip binaries that present in history, but now gone
+    for (const at in result) {
+      if (!result[at]) { delete result[at]; }
+    }
+
     return result;
   }
 
