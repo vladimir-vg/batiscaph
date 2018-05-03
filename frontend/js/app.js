@@ -41,11 +41,11 @@ window.mobx = mobx;
 document.addEventListener("DOMContentLoaded", function() {
   // assign to global var only for debug in console
   // never refer to this global var in actual code
-  window.VisionStore = new Store();
+  window.BatiscaphStore = new Store();
 
   const routes = (
     <div>
-      <Provider store={window.VisionStore}>
+      <Provider store={window.BatiscaphStore}>
         <BrowserRouter>
           <Switch>
             <Route exact path="/" component={InstancesListPage} />

@@ -188,8 +188,8 @@ export default class Store {
     // collapse all changes into latest one
     let result = {};
     for (const i in timestamps) {
-      const key = timestamps[i];
-      result = Object.assign(result, Changes[key]);
+      const at = timestamps[i];
+      result = Object.assign(result, Changes[at]);
     }
 
     return result;
@@ -214,8 +214,8 @@ export default class Store {
     // collapse all changes into latest one
     let result = {};
     for (const i in timestamps) {
-      const key = timestamps[i];
-      result = Object.assign(result, Changes[key]);
+      const at = timestamps[i];
+      result = Object.assign(result, Changes[at]);
     }
 
     return result;
