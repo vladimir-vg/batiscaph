@@ -7,6 +7,14 @@
 
 start_cowboy() ->
   {ok, Port} = application:get_env(batiscaph, http_port),
+
+  % if freshly compiled js is available, then serve it
+  % otherwise serve js compiled for the last stable release
+  StaticDir = case filelib:is_dir(code:priv_dir(batiscaph) ++ "/compiled_static") of
+    true -> "compiled_static";
+    false -> "release_static"
+  end,
+
   Dispatch = cowboy_router:compile([
     {'_', [
       {"/probe", batiscaph_handler_probe, []},
@@ -16,7 +24,7 @@ start_cowboy() ->
       {"/api/instances/:instance_id/cowboy-requests/:req_id", batiscaph_res_cowboy_requests, []},
       {"/websocket", batiscaph_ws_handler, []},
 
-      {"/static/[...]", cowboy_static, {priv_dir, batiscaph, "compiled_static", [{mimetypes, cow_mimetypes, all}]}},
+      {"/static/[...]", cowboy_static, {priv_dir, batiscaph, StaticDir, [{mimetypes, cow_mimetypes, all}]}},
       {"/", cowboy_static, {priv_file, batiscaph, "index.html"}},
       {"/instances/[:instance_id]", cowboy_static, {priv_file, batiscaph, "index.html"}},
       {"/instances/[:instance_id]/[...]", cowboy_static, {priv_file, batiscaph, "index.html"}}
