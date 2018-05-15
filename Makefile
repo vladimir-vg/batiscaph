@@ -1,4 +1,7 @@
 
+run:
+	cd backend && make
+
 run_test: build_backend build_test_apps
 	./rebar3 ct --name ct_run@0.0.0.0 --setcookie vision-test
 
