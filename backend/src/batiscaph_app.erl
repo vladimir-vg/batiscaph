@@ -12,11 +12,11 @@ stop(_State) ->
 
 start(_StartType, _StartArgs) ->
 
-  % start batiscaph probe only is it's provided as dependency
-  try batiscaph_probe_app:module_info() of
-  [_ | _] -> application:ensure_all_started(batiscaph_probe)
-  catch error:undef -> ok
-  end,
+  % % start batiscaph probe only is it's provided as dependency
+  % try batiscaph_probe_app:module_info() of
+  % [_ | _] -> application:ensure_all_started(batiscaph_probe)
+  % catch error:undef -> ok
+  % end,
 
   [_ | _] = batiscaph_probe_protocol:mention_used_atoms(),
   ok = read_config(),
