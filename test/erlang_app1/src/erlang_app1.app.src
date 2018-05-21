@@ -6,7 +6,8 @@
   {applications,
    [kernel,
     stdlib,
-    batiscaph_probe
+    batiscaph_probe,
+    lager
    ]},
   {env,[]},
   {modules, []},

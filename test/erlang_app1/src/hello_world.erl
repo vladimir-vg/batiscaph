@@ -9,6 +9,7 @@ init(_Type, Req, []) ->
   {ok, Req, undefined}.
 
 handle(Req, State) ->
+  lager:info("request"),
   {ok, Req2} = cowboy_req:reply(200, [
     {<<"content-type">>, <<"text/plain">>}
   ], <<"Hello world!">>, Req),
