@@ -229,6 +229,18 @@ export default class Store {
 
 
 
+  @computed
+  get orderedLogs() {
+    const result = [];
+    const logs = Array.from(this.delta['lager-events'].values());
+    logs.sort(({ At: aAt }, { At: bAt }) => {
+      return aAt > bAt ? 1 : -1;
+    });
+    return logs;
+  }
+
+
+
   @action
   subscribeToInstance(id) {
     this.currentInstanceId = id;

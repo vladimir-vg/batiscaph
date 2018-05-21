@@ -9,6 +9,7 @@ import SvgView from '../components/SvgView';
 import RequestsListPage from './RequestsListPage';
 import RequestPage from './RequestPage';
 import ShellPage from './ShellPage';
+import LogsPage from './LogsPage';
 import ProcessPage from './ProcessPage';
 
 
@@ -176,6 +177,11 @@ export default class InstancePage extends React.Component {
       requestsLink = <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>;
     }
 
+    let logsLink = null;
+    if (logs.length != 0) {
+      logsLink = <NavLink to={`${this.props.match.url}/logs`}>Logs</NavLink>;
+    }
+
     // for some reason setting viewportHeight for div height creates scrollbar
     // make it disappear using overflow: hidden
     return <div className="InstancePage" style={{height: this.state.viewportHeight, overflow: 'hidden'}}>
@@ -183,6 +189,7 @@ export default class InstancePage extends React.Component {
         <div className="Tabs">
           <NavLink to={`${this.props.match.url}/shell`}>Shell</NavLink>
           {requestsLink}
+          {logsLink}
           {selectedItemLink}
         </div>
 
@@ -190,6 +197,7 @@ export default class InstancePage extends React.Component {
           <Switch>
             <Route exact path={`${this.props.match.path}/requests`} component={RequestsListPage} />
             <Route exact path={`${this.props.match.path}/shell`} component={ShellPage} />
+            <Route exact path={`${this.props.match.path}/logs`} component={LogsPage} />
             <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPage} />
             <Route exact path={`${this.props.match.path}/plug-request-info/:reqId`} component={RequestPage} />
             <Route exact path={`${this.props.match.path}/cowboy-request-info/:reqId`} component={RequestPage} />

@@ -13,6 +13,7 @@
     "d3-scale": "^2.0.0",
     "mobx": "^3.6.1",
     "mobx-react": "^4.4.2",
+    "moment": "^2.22.1",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "prop-types": "^15.6.1",
