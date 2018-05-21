@@ -6,6 +6,7 @@
 
 import HttpReq from './elements/HttpReq';
 import Process from './elements/Process';
+import LogEvent from './elements/LogEvent';
 import attr from './attr';
 
 
@@ -18,13 +19,14 @@ export function produceLayout(delta) {
   // but I want it to be flexible in future
   const reqs = HttpReq.produceElements(delta);
   const procs = Process.produceElements(delta);
+  const logs = LogEvent.produceElements(delta);
   // console.log('reqs', reqs);
   // console.log('procs', procs);
 
   // here we should consider all generated elements and their
   // constrains, and produce resolve function
   // that can turn each constraint field into actual numeric value
-  const resolve = produceResolveFunc(delta, { HttpReq: reqs, Process: procs });
+  const resolve = produceResolveFunc(delta, { HttpReq: reqs, Process: procs, LogEvent: logs });
 
   // now when we got clear coordinate transforms
   // just generate ready-to-render tree with coords
@@ -32,6 +34,7 @@ export function produceLayout(delta) {
   return {
     HttpReq: resolveAttrs({ elements: reqs, resolve }),
     Process: resolveAttrs({ elements: procs, resolve }),
+    LogEvent: resolveAttrs({ elements: logs, resolve }),
     xColsLength: resolve('xColsLength'),
     yRowsLength: resolve('yRowsLength'),
   };
@@ -52,7 +55,7 @@ function resolveAttrs({ elements, resolve }) {
 
 
 
-function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
+function produceResolveFunc(delta, { HttpReq: reqs, Process: procs, LogEvent: logs }) {
   let timestamps = [];
   let pids = [];
 
@@ -68,6 +71,16 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs }) {
 
   for (const i in procs) {
     const cons = procs[i].attrs;
+    for (const key in cons) {
+      // walk through all constrains of all elements
+      // and extract pids and timestamps
+      pids = pids.concat(attr.getPids(cons[key]));
+      timestamps = timestamps.concat(attr.getTimestamps(cons[key]));
+    }
+  }
+
+  for (const i in logs) {
+    const cons = logs[i].attrs;
     for (const key in cons) {
       // walk through all constrains of all elements
       // and extract pids and timestamps

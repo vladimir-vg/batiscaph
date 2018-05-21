@@ -43,3 +43,9 @@ rect.HttpReq.hovered {
   stroke: #D9D9D9;
   stroke-width: 2px;
 }
+
+
+
+.log-body {
+  fill: #D4AA00;
+}

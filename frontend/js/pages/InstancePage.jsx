@@ -51,6 +51,7 @@ export default class InstancePage extends React.Component {
         procBody: React.createRef(),
         procSpawnLines: React.createRef(),
         procSpawnLinesOverBody: React.createRef(),
+        logEvents: React.createRef(),
       }
     };
   }
@@ -121,13 +122,6 @@ export default class InstancePage extends React.Component {
     this.setState({ tabId });
   }
 
-  saveLayoutRef(ref, key) {
-    console.log('saveLayoutRef', 'key', this.state.layoutRefs);
-    const layoutRefs = Object.assign({}, this.state.layoutRefs);
-    layoutRefs[key] = ref;
-    this.setState({ layoutRefs });
-  }
-
   renderGrid() {
     if (!this.props.store.gridEnabled) { return null; }
 
@@ -164,6 +158,7 @@ export default class InstancePage extends React.Component {
   render() {
     const reqs = this.props.store.layout.HttpReq || [];
     const procs = this.props.store.layout.Process || [];
+    const logs = this.props.store.layout.LogEvent || [];
 
     const usedWidth = grid.xColStart(this.props.store.layout.xColsLength+1);
     const usedHeight = grid.yRowAt(this.props.store.layout.yRowsLength);
@@ -209,12 +204,14 @@ export default class InstancePage extends React.Component {
           <Layout.Provider value={this.state.layoutRefs}>
             <g>{procs.map(this.renderElement)}</g>
             <g>{reqs.map(this.renderElement)}</g>
+            <g>{logs.map(this.renderElement)}</g>
           </Layout.Provider>
 
           <g ref={this.state.layoutRefs.callbackRects} />
           <g ref={this.state.layoutRefs.procSpawnLines} />
           <g ref={this.state.layoutRefs.procBody} />
           <g ref={this.state.layoutRefs.procSpawnLinesOverBody} />
+          <g ref={this.state.layoutRefs.logEvents} />
           <g ref={this.state.layoutRefs.callbackActiveRects} />
         </SvgView>
       </div>

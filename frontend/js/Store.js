@@ -29,6 +29,7 @@ export default class Store {
         'plug-requests': (new Map()),
         'cowboy-requests': (new Map()),
         'erlang-processes': (new Map()),
+        'lager-events': (new Map()),
 
         // initialize as Map, in order to be able to listen
         // for new item
