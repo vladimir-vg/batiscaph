@@ -256,8 +256,8 @@ export default class InstancePage extends React.Component {
           <g ref={this.state.layoutRefs.callbackRects} />
           <g ref={this.state.layoutRefs.procSpawnLines} />
           <g ref={this.state.layoutRefs.procBody} />
-          <g ref={this.state.layoutRefs.procSpawnLinesOverBody} />
           <g ref={this.state.layoutRefs.logEvents} />
+          <g ref={this.state.layoutRefs.procSpawnLinesOverBody} />
           <g ref={this.state.layoutRefs.callbackActiveRects} />
         </SvgView>
       </div>

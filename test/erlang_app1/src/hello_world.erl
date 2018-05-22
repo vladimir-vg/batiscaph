@@ -9,11 +9,14 @@ init(_Type, Req, []) ->
   {ok, Req, undefined}.
 
 handle(Req, State) ->
-  lager:info("request"),
+  lager:info("request started"),
   {ok, Req2} = cowboy_req:reply(200, [
     {<<"content-type">>, <<"text/plain">>}
   ], <<"Hello world!">>, Req),
-  spawn(fun () -> ok end),
+  Parent = self(),
+  spawn(fun () ->
+    lager:info("this is log in spawned child, my parent is ~p", [Parent])
+  end),
   {ok, Req2, State}.
 
 terminate(_Reason, _Req, _State) ->
