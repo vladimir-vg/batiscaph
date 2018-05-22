@@ -1,12 +1,12 @@
-rect.HttpReq {
+rect.callback {
   stroke: #C4C4C4;
   stroke-width: 1px;
   /*fill: #F2F2F2;*/
   fill: transparent;
 }
 
-rect.HttpReq.current,
-rect.HttpReq.hovered {
+rect.callback.current,
+rect.callback.hovered {
   stroke: #2F80ED;
 }
 
@@ -48,4 +48,16 @@ rect.HttpReq.hovered {
 
 .log-body {
   fill: #D4AA00;
+}
+.log-body.hovered {
+  fill: #2F80ED;
+}
+
+
+
+line.background-selection {
+  stroke: rgba(47, 128, 237, 0.1);
+}
+rect.background-selection {
+  fill: rgba(47, 128, 237, 0.1);
 }

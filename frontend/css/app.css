@@ -45,6 +45,18 @@ code {
   white-space: pre-wrap;
 }
 
+.MarkedOutput.hovered {
+  background-color: #2F80ED;
+  color: white;
+}
+.MarkedOutput.hovered .pid-link {
+  color: white;
+}
+.MarkedOutput.hovered .pid-link.hovered,
+.MarkedOutput.hovered .pid-link.selected {
+  color: white;
+}
+
 
 
 /***************/

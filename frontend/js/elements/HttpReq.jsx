@@ -34,7 +34,7 @@ class Component extends React.Component {
     const y = g.yRowAt(this.props.y1)-VPADDING_OFFSET;
     const height = (g.yRowAt(this.props.y2) - g.yRowAt(this.props.y1))+2*VPADDING_OFFSET;
 
-    let className = "HttpReq";
+    let className = "callback";
     let highlighted = false;
     if (this.props.id === this.props.selectedRequestId) {
       className += " current";
@@ -80,47 +80,78 @@ Component.propTypes = {
 
 
 
+class SelectionBackgroundComponent extends React.Component {
+  render() {
+    const g = this.props.grid;
+
+    const x = g.xColStart(this.props.x);
+    const y1 = g.yRowAt(this.props.y1);
+    const y2 = g.yRowAt(this.props.y2);
+    const minX = -10000;
+    const maxX = 10000;
+    const minY = -10000;
+    const maxY = 10000;
+
+    return <Layout.WithLayout key="selectedItemBackground" name="selectedItemBackground">
+      <rect x={x} y={minY} width={g.xColWidth} height={maxY-minY} className="background-selection" />
+      <rect x={minX} y={y1} width={maxX-minX} height={y2-y1} className="background-selection" />
+    </Layout.WithLayout>;
+  }
+}
+SelectionBackgroundComponent.propTypes = {
+  x: PropTypes.number.isRequired,
+  y1: PropTypes.number.isRequired,
+  y2: PropTypes.number.isRequired,
+
+  grid: PropTypes.object.isRequired,
+}
+
+
+
 // this function extracts all request elements from delta
 function produceElements(delta) {
-  const result = [];
+  const result = {};
 
   delta['plug-requests'].forEach((req, id) => {
-    result.push({
+    result[id] = {
       id: id,
       key: id,
       Component,
+      SelectionBackgroundComponent,
       attrs: {
         type: req._type,
         x: attr.xPid(req.Pid),
         y1: attr.yTimestamp(req.StartedAt),
         y2: attr.yTimestamp(req.StoppedAt),
       }
-    });
+    };
   });
 
   delta['cowboy-requests'].forEach((req, id) => {
-    result.push({
+    result[id] = {
       id: id,
       key: `init ${id}`,
       Component,
+      SelectionBackgroundComponent,
       attrs: {
         type: req._type,
         x: attr.xPid(req.Pid),
         y1: attr.yTimestamp(req.init.StartedAt),
         y2: attr.yTimestamp(req.init.StoppedAt),
       }
-    });
-    result.push({
+    };
+    result[id] = {
       id: id,
       key: `handle ${id}`,
       Component,
+      SelectionBackgroundComponent,
       attrs: {
         type: req._type,
         x: attr.xPid(req.Pid),
         y1: attr.yTimestamp(req.handle.StartedAt),
         y2: attr.yTimestamp(req.handle.StoppedAt),
       }
-    });
+    };
   });
 
   return result;

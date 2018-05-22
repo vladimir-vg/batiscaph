@@ -41,6 +41,7 @@ export default class Store {
       hoveredProcessPid: null,
       selectedRequestId: null,
       hoveredRequestId: null,
+      hoveredLogId: null,
 
       // for full request info
       // we need use Map to make MobX react to dynamically added keys
@@ -237,6 +238,11 @@ export default class Store {
       return aAt > bAt ? 1 : -1;
     });
     return logs;
+  }
+
+  @action
+  hoverLogEvent(id) {
+    this.hoveredLogId = id;
   }
 
 

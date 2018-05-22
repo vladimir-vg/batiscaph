@@ -43,14 +43,16 @@ export function produceLayout(delta) {
 
 
 function resolveAttrs({ elements, resolve }) {
-  return elements.map((e) => {
-    const { id, key, attrs, Component } = e;
-    const result = { id, key, Component };
+  const result = {};
+  for (const id1 in elements) {
+    const { id, key, attrs, Component, SelectionBackgroundComponent } = elements[id1];
+    const element1 = { id, key, Component, SelectionBackgroundComponent };
     for (const ckey in attrs) {
-      result[ckey] = resolve(attrs[ckey], e);
+      element1[ckey] = resolve(attrs[ckey], elements[id1]);
     }
-    return result;
-  });
+    result[id1] = element1;
+  }
+  return result;
 }
 
 

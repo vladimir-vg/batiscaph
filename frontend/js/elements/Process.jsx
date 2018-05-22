@@ -172,21 +172,68 @@ SpawnLine.propTypes = {
 
 
 
+class SelectionBackgroundComponent extends React.Component {
+  render() {
+    const g = this.props.grid;
+    const sideOffset = (g.xColWidth - PROC_WIDTH)/2;
+
+    const minX = -10000;
+    const maxX = 10000;
+    const minY = -10000;
+    const maxY = 10000;
+
+    let y1 = maxY, y2 = minY;
+
+    if (this.props.tracedSegments.length != 0) {
+      const [startedY, _continueY] = this.props.tracedSegments[0];
+      const [_startedY, continueY] = this.props.tracedSegments[this.props.tracedSegments.length-1];
+      y1 = Math.min(y1, startedY);
+      y2 = Math.max(y2, continueY);
+    }
+
+    if (this.props.mentionedUntracedPoints.length != 0) {
+      const at1 = this.props.mentionedUntracedPoints[0];
+      const at2 = this.props.mentionedUntracedPoints[this.props.mentionedUntracedPoints.length-1];
+      y1 = Math.min(y1, at1-1); // mention circle takes 1 additional row, so add it
+      y2 = Math.max(y2, at2+1);
+    }
+
+    const x = g.xColStart(this.props.x);
+    y1 = g.yRowAt(y1);
+    y2 = g.yRowAt(y2);
+
+    return <Layout.WithLayout key="selectedItemBackground" name="selectedItemBackground">
+      <rect x={x+sideOffset} y={minY} width={PROC_WIDTH} height={maxY-minY} className="background-selection" />
+      <rect x={minX} y={y1} width={maxX-minX} height={y2-y1} className="background-selection" />
+    </Layout.WithLayout>;
+  }
+}
+SelectionBackgroundComponent.propTypes = {
+  x: PropTypes.number.isRequired,
+  tracedSegments: PropTypes.array.isRequired,
+  mentionedUntracedPoints: PropTypes.array.isRequired,
+  exitedY: PropTypes.number,
+
+  grid: PropTypes.object.isRequired,
+}
+
+
+
 function produceElements(delta) {
-  const result = [];
+  const result = {};
 
   delta['erlang-processes'].forEach((proc, pid) => {
     if (proc.SpawnedAt) {
-      const key = `${proc.ParentPid} ${proc.Pid}`;
-      result.push({
-        id: key, key, Component: SpawnLine,
+      const id = `${proc.ParentPid} ${proc.Pid}`;
+      result[id] = {
+        id, key: id, Component: SpawnLine,
         attrs: {
           isParentTraced: isTracedAt({ delta, at: proc.SpawnedAt, pid: proc.ParentPid }),
           parentX: attr.xPid(proc.ParentPid),
           childX: attr.xPid(proc.Pid),
           y: attr.yTimestamp(proc.SpawnedAt),
         }
-      });
+      };
     }
 
     const attrs = {
@@ -214,7 +261,7 @@ function produceElements(delta) {
       }
     }
 
-    result.push({ id: pid, key: pid, Component: ProcessBody, attrs });
+    result[pid] = { id: pid, key: pid, Component: ProcessBody, SelectionBackgroundComponent, attrs };
   });
 
   return result;

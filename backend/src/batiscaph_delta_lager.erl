@@ -20,7 +20,7 @@ consume(#{<<"Type">> := <<"p1 lager:event">>} = E, #{events := Events} = State) 
   #{<<"text">> := Text, <<"module">> := Module, <<"function">> := Function, <<"line">> := Line} = E,
   Key = <<(erlang:integer_to_binary(At))/binary, " ", Pid/binary>>,
   Event = #{
-    <<"Pid">> => Pid, <<"At">> => At, <<"text">> => Text,
+    <<"Pid">> => Pid, <<"At">> => At, <<"Id">> => Key, <<"text">> => Text,
     <<"module">> => Module, <<"function">> => Function, <<"line">> => Line
   },
   State#{events => Events#{Key => Event}};

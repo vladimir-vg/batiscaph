@@ -22,13 +22,29 @@ export default class LogsPage extends React.Component {
     super();
 
     this.renderItem = this.renderItem.bind(this);
+    this.hoverLogEvent = this.hoverLogEvent.bind(this);
   }
 
-  renderItem({ Pid, At, text, module, line, 'function': fun }) {
+  componentWillUnmount() {
+    this.props.store.hoverLogEvent(null);
+  }
+
+  hoverLogEvent(id) { this.props.store.hoverLogEvent(id); }
+
+  renderItem({ Pid, At, Id, text, module, line, 'function': fun }) {
     const key = `${At} ${Pid}`;
     const instanceId = this.props.match.params.id;
     const text1 = `${formatTimestamp(At)} ${Pid} ${module}:${line} ${text}`;
-    return <MarkedOutput key={key} text={text1} instanceId={instanceId} store={this.props.store} />;
+
+    let className = (this.props.store.hoveredLogId === Id) ? "hovered" : '';
+
+    return <div key={key}
+        onMouseEnter={this.hoverLogEvent.bind(this, Id)}
+        onMouseLeave={this.hoverLogEvent.bind(this, null)}>
+
+      <MarkedOutput className={className} isBlock={false}
+        text={text1} instanceId={instanceId} store={this.props.store} />
+    </div>
   }
 
   render() {

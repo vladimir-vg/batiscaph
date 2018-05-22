@@ -40,10 +40,15 @@ export default class MarkedOutput extends React.Component {
       },
     });
 
+    let className = "MarkedOutput";
+    if (this.props.className) {
+      className += " " + this.props.className;
+    }
+
     if (this.props.isBlock) {
-      return <pre className="MarkedOutput">{nodes}</pre>;
+      return <pre className={className}>{nodes}</pre>;
     } else {
-      return <code className="MarkedOutput">{nodes}</code>;
+      return <code className={className}>{nodes}</code>;
     }
   }
 }
@@ -53,6 +58,7 @@ MarkedOutput.propTypes = {
   store: PropTypes.object.isRequired,
 
   isBlock: PropTypes.bool,
+  className: PropTypes.string,
 };
 MarkedOutput.defaultProps = {
   isBlock: true

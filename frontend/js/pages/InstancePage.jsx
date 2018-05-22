@@ -35,6 +35,7 @@ export default class InstancePage extends React.Component {
     this.hoverRequest = this.hoverRequest.bind(this);
     this.selectProcess = this.selectProcess.bind(this);
     this.hoverProcess = this.hoverProcess.bind(this);
+    this.hoverLogEvent = this.hoverLogEvent.bind(this);
     this.onTabSelect = this.onTabSelect.bind(this);
     this.renderElement = this.renderElement.bind(this);
 
@@ -47,6 +48,7 @@ export default class InstancePage extends React.Component {
     this.state = {
       viewportHeight,
       layoutRefs: {
+        selectedItemBackground: React.createRef(),
         callbackRects: React.createRef(),
         callbackActiveRects: React.createRef(),
         procBody: React.createRef(),
@@ -96,6 +98,7 @@ export default class InstancePage extends React.Component {
 
   hoverRequest(id) { this.props.store.hoverRequest(id); }
   hoverProcess(id) { this.props.store.hoverProcess(id); }
+  hoverLogEvent(id) { this.props.store.hoverLogEvent(id); }
 
   selectRequest(reqId, type) {
     const { id } = this.props.match.params;
@@ -143,23 +146,56 @@ export default class InstancePage extends React.Component {
     return <g>{cols}{rows}</g>;
   }
 
-  renderElement(e) {
-    const { selectedRequestId, hoveredRequestId, selectedProcessPid, hoveredProcessPid } = this.props.store;
-    const { selectRequest, hoverRequest, selectProcess, hoverProcess } = this; // take wrapped functions
+  renderSelection() {
+    const result = [];
+    if (this.props.store.hoveredLogId) {
+      const element = this.props.store.layout.LogEvent[this.props.store.hoveredLogId];
+      if (element) { result.push(this.renderSelectionElement(element)); }
+    }
+    if (this.props.store.hoveredRequestId) {
+      const element = this.props.store.layout.HttpReq[this.props.store.hoveredRequestId];
+      if (element) { result.push(this.renderSelectionElement(element, "hovered")); }
+    }
+    if (this.props.store.selectedRequestId) {
+      const element = this.props.store.layout.HttpReq[this.props.store.selectedRequestId];
+      if (element) { result.push(this.renderSelectionElement(element, "selected")); }
+    }
+    if (this.props.store.hoveredProcessPid) {
+      const element = this.props.store.layout.Process[this.props.store.hoveredProcessPid];
+      if (element) { result.push(this.renderSelectionElement(element, "hovered")); }
+    }
+    if (this.props.store.selectedProcessPid) {
+      const element = this.props.store.layout.Process[this.props.store.selectedProcessPid];
+      if (element) { result.push(this.renderSelectionElement(element, "selected")); }
+    }
+    return result;
+  }
+
+  renderSelectionElement(element, keyPrefix) {
+    const { key, Component, SelectionBackgroundComponent, ...elementProps } = element;
+    const key1 = `${keyPrefix || ''} ${key}`;
+    return <SelectionBackgroundComponent key={key1} grid={grid} {...elementProps} />;
+  }
+
+  renderElement([_key, e]) {
+    const { selectedRequestId, hoveredRequestId, selectedProcessPid, hoveredProcessPid, hoveredLogId } = this.props.store;
+    const { selectRequest, hoverRequest, selectProcess, hoverProcess, hoverLogEvent } = this; // take wrapped functions
     const storeProps = {
       selectRequest, selectProcess,
       hoverRequest, hoverProcess,
       selectedRequestId, hoveredRequestId,
-      selectedProcessPid, hoveredProcessPid
+      selectedProcessPid, hoveredProcessPid,
+      hoveredLogId, hoverLogEvent
     };
+
     const { id, key, Component, ...elementProps} = e;
     return <Component key={key} grid={grid} {...storeProps} id={id} {...elementProps} />;
   }
 
   render() {
-    const reqs = this.props.store.layout.HttpReq || [];
-    const procs = this.props.store.layout.Process || [];
-    const logs = this.props.store.layout.LogEvent || [];
+    const reqs = this.props.store.layout.HttpReq || {};
+    const procs = this.props.store.layout.Process || {};
+    const logs = this.props.store.layout.LogEvent || {};
 
     const usedWidth = grid.xColStart(this.props.store.layout.xColsLength+1);
     const usedHeight = grid.yRowAt(this.props.store.layout.yRowsLength);
@@ -173,12 +209,12 @@ export default class InstancePage extends React.Component {
     }
 
     let requestsLink = null;
-    if (reqs.length != 0) {
+    if (Object.keys(reqs).length != 0) {
       requestsLink = <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>;
     }
 
     let logsLink = null;
-    if (logs.length != 0) {
+    if (Object.keys(logs).length != 0) {
       logsLink = <NavLink to={`${this.props.match.url}/logs`}>Logs</NavLink>;
     }
 
@@ -210,11 +246,13 @@ export default class InstancePage extends React.Component {
           {this.renderGrid()}
 
           <Layout.Provider value={this.state.layoutRefs}>
-            <g>{procs.map(this.renderElement)}</g>
-            <g>{reqs.map(this.renderElement)}</g>
-            <g>{logs.map(this.renderElement)}</g>
+            <g>{this.renderSelection()}</g>
+            <g>{Object.entries(procs).map(this.renderElement)}</g>
+            <g>{Object.entries(reqs).map(this.renderElement)}</g>
+            <g>{Object.entries(logs).map(this.renderElement)}</g>
           </Layout.Provider>
 
+          <g ref={this.state.layoutRefs.selectedItemBackground} />
           <g ref={this.state.layoutRefs.callbackRects} />
           <g ref={this.state.layoutRefs.procSpawnLines} />
           <g ref={this.state.layoutRefs.procBody} />
