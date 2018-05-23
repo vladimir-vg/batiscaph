@@ -194,6 +194,8 @@ export default class Store {
       result = Object.assign(result, Changes[at]);
     }
 
+    result.ExitReason = info.ExitReason;
+
     return result;
   }
 

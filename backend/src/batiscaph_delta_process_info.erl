@@ -5,7 +5,7 @@
 
 
 desired_types() ->
-  [<<"p1 erlang:process process_info">>].
+  [<<"p1 erlang:process process_info">>, <<"p1 erlang:process exit">>].
 
 desired_attrs() ->
   process_info_attrs().
@@ -13,7 +13,8 @@ desired_attrs() ->
 process_info_attrs() ->
   [
     <<"current_function">>,<<"dictionary">>,<<"initial_call">>,
-    <<"links">>,<<"message_queue_len">>,<<"monitors">>,<<"registered_name">>
+    <<"links">>,<<"message_queue_len">>,<<"monitors">>,<<"registered_name">>,
+    <<"reason">>
   ].
 
 
@@ -34,6 +35,13 @@ consume(#{<<"Type">> := <<"p1 erlang:process process_info">>} = E, #{procs := Pr
     (K, _V) -> lists:member(K, Attrs)
   end, E),
   P1 = P#{<<"Changes">> => Changes#{At => Props}},
+  State#{procs => Procs#{Pid => P1}};
+
+consume(#{<<"Type">> := <<"p1 erlang:process exit">>} = E, #{procs := Procs} = State) ->
+  #{<<"At">> := _, <<"Pid1">> := Pid, <<"reason">> := Reason} = E,
+  New = #{<<"Pid">> => Pid, <<"Changes">> => #{}},
+  P = maps:get(Pid, Procs, New),
+  P1 = P#{<<"ExitReason">> => Reason},
   State#{procs => Procs#{Pid => P1}};
 
 consume(_E, State) ->

@@ -77,20 +77,21 @@ export default class ProcessPage extends React.Component {
 
   hoverProcess(id) { this.props.store.hoverProcess(id); }
 
-  renderAttr(info, key) {
-    if (!info[key]) { return null; }
+  renderAttr(key, value) {
+    if (!value) { return null; }
 
     const instanceId = this.props.match.params.id;
 
     switch (key) {
     case 'dictionary':
+    case 'exit reason':
       return <div key={key}>
-        {key}: <MarkedOutput key={key} text={info[key]} instanceId={instanceId} store={this.props.store} />
+        {key}: <MarkedOutput key={key} text={value} instanceId={instanceId} store={this.props.store} />
       </div>;
 
     default:
       return <div key={key}>
-        {key}: <MarkedOutput key={key} isBlock={false} text={info[key]} instanceId={instanceId} store={this.props.store} />
+        {key}: <MarkedOutput key={key} isBlock={false} text={value} instanceId={instanceId} store={this.props.store} />
       </div>;
     }
   }
@@ -130,13 +131,14 @@ export default class ProcessPage extends React.Component {
             text={this.props.match.params.pid}
             instanceId={this.props.match.params.id} store={this.props.store} />
         </div>
-        {this.renderAttr(info, 'registered_name')}
-        {this.renderAttr(info, 'initial_call')}
-        {this.renderAttr(info, 'current_function')}
-        {this.renderAttr(info, 'message_queue_len')}
-        {this.renderAttr(info, 'links')}
-        {this.renderAttr(info, 'monitors')}
-        {this.renderAttr(info, 'dictionary')}
+        {this.renderAttr('registered_name', info['registered_name'])}
+        {this.renderAttr('initial_call', info['initial_call'])}
+        {this.renderAttr('current_function', info['current_function'])}
+        {this.renderAttr('message_queue_len', info['message_queue_len'])}
+        {this.renderAttr('links', info['links'])}
+        {this.renderAttr('monitors', info['monitors'])}
+        {this.renderAttr('dictionary', info['dictionary'])}
+        {this.renderAttr('exit reason', info['ExitReason'])}
 
         {this.renderBinaries()}
       </code>
