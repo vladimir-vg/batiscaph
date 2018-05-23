@@ -1,0 +1,16 @@
+{application, batiscaph_probe,
+ [{description, "Client part for Batiscaph tool"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {batiscaph_probe_app, []}},
+  {applications, [kernel,stdlib,inets]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, ["Vladimir Gordeev <gordeev.vladimir.v@gmail.com>"]},
+  {licenses, ["MIT"]},
+  {links, [
+    {"Repo", "https://github.com/vladimir-vg/batiscaph_probe"},
+    {"Main Github repo", "https://github.com/vladimir-vg/batiscaph"}
+  ]}
+ ]}.
