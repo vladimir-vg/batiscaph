@@ -1,4 +1,4 @@
-import { action, observable, extendObservable, computed } from 'mobx';
+import { action, observable, extendObservable, computed, toJS } from 'mobx';
 
 import { produceLayout } from './layout';
 import { mergeDelta } from './delta';
@@ -285,10 +285,13 @@ export default class Store {
     const cmds = Array.from(this.delta['shell-commands'].values());
     cmds.sort((a, b) => a.At > b.At ? 1 : -1);
     const cmds1 = cmds.map(({ At, Input, Outputs, Pid, Prompt }) => {
-      const Outputs1 = Object.values(Outputs);
+      // Chrome bug that breaks Object.values on MobX objects
+      // https://github.com/mobxjs/mobx/issues/1504
+      // mandatory convert it using toJS to workaround
+      const Outputs1 = Object.values(toJS(Outputs));
       Outputs1.sort((a, b) => a.At > b.At ? 1 : -1);
       return { Outputs: Outputs1, At, Input, Pid, Prompt };
-    })
+    });
     return cmds1;
   }
 
