@@ -34,11 +34,11 @@ export default class LogsPage extends React.Component {
   renderItem({ Pid, At, Id, text, module, line, 'function': fun }) {
     const key = `${At} ${Pid}`;
     const instanceId = this.props.match.params.id;
-    const text1 = `${formatTimestamp(At)} ${Pid} ${module}:${line} ${text}`;
+    const text1 = `${formatTimestamp(At)} ${Pid} ${module}:${line}\n${text}`;
 
     let className = (this.props.store.hoveredLogId === Id) ? "hovered" : '';
 
-    return <div key={key}
+    return <div key={key} className="item"
         onMouseEnter={this.hoverLogEvent.bind(this, Id)}
         onMouseLeave={this.hoverLogEvent.bind(this, null)}>
 

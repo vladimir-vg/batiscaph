@@ -232,3 +232,9 @@ code {
   font-family: 'Fira Mono', monospace;
   font-size: 14px;
 }
+
+
+
+.LogsPage .item {
+  margin: 0 20px;
+}

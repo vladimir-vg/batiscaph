@@ -103,6 +103,7 @@ function produceResolveFunc(delta, { HttpReq: reqs, Process: procs, LogEvent: lo
   let spawnTree = {};
   for (const i in pids1) {
     const proc = delta['erlang-processes'][pids1[i]];
+    if (!proc) { continue; }
     ensureSavedInSpawnTree(spawnTree, delta['erlang-processes'], proc);
   }
   const pids2 = enumerateSpawnTree(spawnTree);

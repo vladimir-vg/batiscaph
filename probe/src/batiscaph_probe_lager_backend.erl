@@ -44,7 +44,7 @@ lager_message_to_event(Message) ->
   #{
     at => lager_msg:timestamp(Message),
     type => <<"p1 lager:event">>,
-    pid1 => proplists:get_value(pid, Metadata, <<>>),
+    pid1 => any_to_binary(proplists:get_value(pid, Metadata, <<>>)),
     text => erlang:list_to_binary(Text),
     application => any_to_binary(proplists:get_value(application, Metadata, <<>>)),
     module => any_to_binary(proplists:get_value(module, Metadata, <<>>)),
@@ -57,4 +57,5 @@ lager_message_to_event(Message) ->
 any_to_binary(Value) when is_integer(Value) -> erlang:integer_to_binary(Value);
 any_to_binary(Value) when is_list(Value) -> erlang:list_to_binary(Value);
 any_to_binary(Value) when is_atom(Value) -> erlang:atom_to_binary(Value, latin1);
+any_to_binary(Value) when is_pid(Value) -> erlang:list_to_binary(erlang:pid_to_list(Value));
 any_to_binary(Value) when is_binary(Value) -> Value.

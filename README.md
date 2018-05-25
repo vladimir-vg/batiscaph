@@ -7,6 +7,8 @@ Batiscaph is a seeing tool. It helps to understand your code.
 
 # Try it out
 
+0. Install Erlang (worked on 20 version).
+
 1. Install [batiscaph probe](https://github.com/vladimir-vg/batiscaph_probe) as a dependency into your application.
    For Elixir: add `{:batiscaph_probe, "~> 0.1.0"}` into deps in `mix.exs` file.
    
@@ -54,7 +56,7 @@ From this moment events should be stored persistently.
 
 # Development
 
-In order to work on web UI you need to set up Brunch javascript transpiling.
+In order to work on web UI you need to set up brunch javascript transpiling.
 
 ```
 cd frontend
