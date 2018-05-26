@@ -69,7 +69,7 @@ setup_tracing(#{} = Opts, #collector{} = State) ->
   {ok, State2} = setup_trace_feature(batiscaph_probe_feature_cowboy, Opts, State1),
   {ok, State3} = setup_trace_feature(batiscaph_probe_feature_procs, Opts, State2),
   {ok, State4} = setup_trace_feature(batiscaph_probe_feature_lager, Opts, State3),
-  {ok, State3}.
+  {ok, State4}.
 
 
 

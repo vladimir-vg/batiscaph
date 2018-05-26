@@ -1,6 +1,6 @@
 {application, batiscaph_probe,
- [{description, "Client part for seeing tool"},
-  {vsn, "0.1.0"},
+ [{description, "Client part for Batiscaph seeing tool"},
+  {vsn, "0.1.1"},
   {registered, []},
   {mod, {batiscaph_probe_app, []}},
   {applications, [kernel,stdlib,inets]},
