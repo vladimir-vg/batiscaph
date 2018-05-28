@@ -1,4 +1,4 @@
--module(erlang_app1_sup).
+-module(erlang17_app1_sup).
 -behaviour(supervisor).
 -export([start_link/0]).
 -export([init/1]).

@@ -1,4 +1,4 @@
--module(erlang_app1_app).
+-module(erlang17_app1_app).
 -behaviour(application).
 -export([start/2, stop/1]).
 
@@ -9,7 +9,7 @@ start(_StartType, _StartArgs) ->
     false -> ok;
     Port -> start_cowboy(list_to_integer(Port))
   end,
-  erlang_app1_sup:start_link().
+  erlang17_app1_sup:start_link().
 
 stop(_State) ->
   ok.

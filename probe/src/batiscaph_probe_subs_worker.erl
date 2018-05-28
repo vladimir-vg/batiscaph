@@ -165,7 +165,7 @@ diff_props(OldProps, NewProps) when is_map(OldProps) andalso is_map(NewProps) ->
       case maps:get(K, Acc, undefined) of
         % key is present in old props, but gone in new
         % need to report that it's gone
-        undefined -> Acc#{K => <<>>};
+        undefined -> maps:put(K, <<>>, Acc);
         % same value in old and new
         % remove this prop, no need to log it
         V -> maps:remove(K, Acc);

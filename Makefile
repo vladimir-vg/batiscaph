@@ -1,12 +1,14 @@
+.PHONY: run ct build_backend build_test_apps
 
 run:
 	cd backend && make
 
-run_test: build_backend build_test_apps
+ct: build_backend build_test_apps
 	./rebar3 ct --name ct_run@0.0.0.0 --setcookie vision-test
 
 build_backend:
-	docker build -t vision/backend:latest backend
+	cd backend && ./rebar3 compile
+	# docker build -t vision/backend:latest backend
 	@printf "\n\n"
 
 
@@ -26,9 +28,12 @@ build_test_apps:
 		--exclude=_checkouts/batiscaph_probe/.* \
 		--exclude=_checkouts/batiscaph_probe/ebin \
 		--directory=test/erlang_app1 . | docker build -t vision-test/erlang_app1:latest -
-	tar --create --dereference \
-		--exclude=_checkouts/batiscaph_probe/_build \
-		--exclude=_checkouts/batiscaph_probe/.* \
-		--exclude=_checkouts/batiscaph_probe/ebin \
-		--directory=test/phoenix_app1 . | docker build -t vision-test/phoenix_app1:latest -
+
+	# comment out build of phoenix test app
+	# 
+	# tar --create --dereference \
+	# 	--exclude=_checkouts/batiscaph_probe/_build \
+	# 	--exclude=_checkouts/batiscaph_probe/.* \
+	# 	--exclude=_checkouts/batiscaph_probe/ebin \
+	# 	--directory=test/phoenix_app1 . | docker build -t vision-test/phoenix_app1:latest -
 	@printf "\n\n"
