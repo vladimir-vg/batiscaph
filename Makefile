@@ -1,20 +1,50 @@
 .PHONY: run ct build_backend build_test_apps
+.PHONY: ensure_links_are_in_place
+
+HTTP_PORT = 8999
+CLICKHOUSE_URL = http://0.0.0.0:8123/
+CLICKHOUSE_TEST_DB = batiscaph_test
 
 run:
 	cd backend && make
 
-ct: build_backend build_test_apps
-	./rebar3 ct --name ct_run@0.0.0.0 --setcookie vision-test
+ct: ensure_links_are_in_place build_backend build_test_apps
+	BATISCAPH_ENDPOINT_HTTP_PORT=$(HTTP_PORT) \
+	BATISCAPH_ENDPOINT_CLICKHOUSE_URL=$(CLICKHOUSE_URL) \
+	BATISCAPH_ENDPOINT_CLICKHOUSE_DB=$(CLICKHOUSE_TEST_DB) \
+		./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test --suite delta2_SUITE
+
+
+
+ensure_links_are_in_place: \
+	_checkouts/batiscaph \
+	test/erlang17_app1/_checkouts/batiscaph_probe \
+	test/phoenix_app1/_checkouts/batiscaph_probe \
+	test/erlang17_app1/src/delta_testcases.erl
+
+_checkouts/batiscaph:
+	mkdir -p _checkouts
+	- cd _checkouts && ln -s ../backend batiscaph
+
+test/erlang17_app1/_checkouts/batiscaph_probe:
+	mkdir -p test/erlang17_app1/_checkouts
+	cd test/erlang17_app1/_checkouts && ln -s ../../../probe batiscaph_probe
+
+test/phoenix_app1/_checkouts/batiscaph_probe:
+	mkdir -p test/phoenix_app1/_checkouts
+	cd test/phoenix_app1/_checkouts && ln -s ../../../probe batiscaph_probe
+
+test/erlang17_app1/src/delta_testcases.erl:
+	cd test/erlang17_app1/src && ln -s ../../delta_testcases.erl delta_testcases.erl
+
+
 
 build_backend:
 	cd backend && ./rebar3 compile
-	# docker build -t vision/backend:latest backend
 	@printf "\n\n"
 
 
 
-# TODO: automatically detect if batiscaph_probe is presented in directory,
-# also create all symlinks for applications in test/ directory
 build_test_apps:
 	# docker do not allow to add symlinked files into build
 	# but batiscaph_probe has to be symlinked, to run tests on local version
@@ -27,7 +57,7 @@ build_test_apps:
 		--exclude=_checkouts/batiscaph_probe/_build \
 		--exclude=_checkouts/batiscaph_probe/.* \
 		--exclude=_checkouts/batiscaph_probe/ebin \
-		--directory=test/erlang_app1 . | docker build -t vision-test/erlang_app1:latest -
+		--directory=test/erlang17_app1 . | docker build -t batiscaph-test/erlang17_app1:latest -
 
 	# comment out build of phoenix test app
 	# 
@@ -35,5 +65,5 @@ build_test_apps:
 	# 	--exclude=_checkouts/batiscaph_probe/_build \
 	# 	--exclude=_checkouts/batiscaph_probe/.* \
 	# 	--exclude=_checkouts/batiscaph_probe/ebin \
-	# 	--directory=test/phoenix_app1 . | docker build -t vision-test/phoenix_app1:latest -
+	# 	--directory=test/phoenix_app1 . | docker build -t batiscaph-test/phoenix_app1:latest -
 	@printf "\n\n"
