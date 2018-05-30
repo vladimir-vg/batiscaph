@@ -13,22 +13,11 @@ test_endpoint_url() ->
 
 
 ws_connect() ->
-  application:ensure_all_started(gun),
   {ok, Port} = application:get_env(batiscaph, http_port),
-  {ok, Pid} = gun:open("0.0.0.0", Port),
-  gun:ws_upgrade(Pid, "/websocket"),
-
-  receive
-    {gun_ws_upgrade, Pid, ok, _Headers} -> {ok, Pid};
-
-    {gun_response, Pid, _, _, Status, Headers} ->
-      error({ws_upgrade_failed, Status, Headers});
-    {gun_error, Pid, _StreamRef, Reason} ->
-      error({ws_upgrade_failed, Reason})
-
-  after 1000 ->
-    exit(failed_to_connect_to_websocket)
-  end.
+  Url = <<"ws://0.0.0.0:", (integer_to_binary(Port))/binary, "/websocket">>,
+  {ok, Pid} = bt_ws_client:start_link(Url),
+  Pid ! {subscribe, self()},
+  {ok, Pid}.
 
 
 
@@ -38,7 +27,7 @@ ws_send(Pid, Verb, JSON) ->
     <<" ">>,
     jsx:encode(JSON)
   ]),
-  gun:ws_send(Pid, {text, Body}),
+  websocket_client:cast(Pid, {text, Body}),
   ok.
 
 
@@ -49,18 +38,10 @@ ws_receive(Pid, Verb) ->
 ws_receive(Pid, Verb, Timeout) when is_atom(Verb) ->
   ws_receive(Pid, atom_to_binary(Verb, latin1), Timeout);
 
-ws_receive(Pid, Verb, Timeout) when is_binary(Verb) ->
-  Length = byte_size(Verb),
+ws_receive(_Pid, Verb, Timeout) when is_binary(Verb) ->
+  ct:pal("ws_receive ~p ~p", [Timeout, erlang:process_info(self(), messages)]),
   receive
-    {gun_ws, Pid, {text, <<Verb:Length/binary, " ", Payload/binary>>}} ->
-      {ok, jsx:decode(Payload, [return_maps])};
-
-    {gun_ws, Pid, {text, <<Verb:Length/binary>>}} ->
-      erlang:binary_to_atom(Verb, latin1)
-
-    % {gun_ws, Pid, Frame} ->
-    %   ct:pal("got unknown frame: ~p", [Frame]),
-    %   {error, Frame}
+    {bt_ws, Verb, Data} -> {ok, Data}
 
   after Timeout ->
     {error, timeout}

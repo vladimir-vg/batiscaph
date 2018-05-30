@@ -167,7 +167,7 @@ run_test(TC, CtConfig) when is_atom(TC) ->
 % it tries to match every fresh delta against MatchFunc
 % until timeout
 match_delta(MatchFunc, MatchState, CtConfig) ->
-  match_delta(MatchFunc, MatchState, CtConfig, #{timeout => 5000}).
+  match_delta(MatchFunc, MatchState, CtConfig, #{timeout => 10000}).
 
 
 
@@ -190,9 +190,28 @@ match_delta_loop(MatchFunc, MatchState, State) ->
     TimeSpent when TimeSpent > Timeout -> {error, timeout};
     TimeSpent ->
       TimeLeft = Timeout - TimeSpent,
-      {ok, Delta} = bt:ws_receive(WsPid, delta, TimeLeft),
-      case MatchFunc(Delta, MatchState) of
-        {more, MatchState1} -> match_delta_loop(MatchFunc, MatchState1, State);
-        {done, MatchState1} -> {ok, MatchState1}
+
+      case bt:ws_receive(WsPid, delta, TimeLeft) of
+        {error, timeout} ->
+          ct:pal("match state: ~p", [MatchState]),
+          ct:pal("delta: ~p", [maps:get(last_delta, State, undefined)]),
+          error(delta_didnt_match);
+
+        {ok, Delta} ->
+          Delta1 = atomize_delta(Delta),
+          try MatchFunc(Delta1, MatchState) of
+            {more, MatchState1} -> match_delta_loop(MatchFunc, MatchState1, State#{last_delta => Delta1});
+            {done, MatchState1} -> {ok, MatchState1}
+          catch
+            error:function_clause -> match_delta_loop(MatchFunc, MatchState, State#{last_delta => Delta1})
+          end
       end
   end.
+
+
+
+atomize_delta(Delta) ->
+  % turn first level keys into atoms
+  maps:fold(fun (K, V, Acc) ->
+    Acc#{binary_to_atom(K,latin1) => V}
+  end, #{}, Delta).
