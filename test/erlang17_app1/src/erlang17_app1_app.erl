@@ -24,7 +24,7 @@ start_cowboy(Port) ->
 
   Dispatch = cowboy_router:compile([
     {'_', [
-      {"/delta_testcases/:testcase_name", delta_testcase_handler, []},
+      {"/tree_testcases/:testcase_name", tree_testcase_handler, []},
 
       % official Cowboy examples
       {"/rest_basic_auth", rest_basic_auth, []},

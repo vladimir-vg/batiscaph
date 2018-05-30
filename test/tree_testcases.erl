@@ -1,4 +1,4 @@
--module(delta_testcases).
+-module(tree_testcases).
 -compile(export_all).
 
 

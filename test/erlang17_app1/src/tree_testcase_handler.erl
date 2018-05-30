@@ -1,4 +1,4 @@
--module(delta_testcase_handler).
+-module(tree_testcase_handler).
 -export([init/3]).
 -export([handle/2]).
 -export([terminate/3]).
@@ -19,7 +19,7 @@ handle(Req, State) ->
 
   T1 = erlang:now(),
   Response =
-    try delta_testcases:FName() of
+    try tree_testcases:FName() of
       ok -> ok;
       Result -> {ok, Result}
     catch

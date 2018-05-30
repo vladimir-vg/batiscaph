@@ -1,4 +1,4 @@
--module(delta2_SUITE).
+-module(tree_SUITE).
 -export([
   all/0, groups/0,
   init_per_suite/1, end_per_suite/1
@@ -16,11 +16,11 @@
 %      probe and http server.
 %
 %   2. Testcase makes request to http server,
-%      asks to execute function from delta_testcases module.
+%      asks to execute function from tree_testcases module.
 %      Receives remote pid of process executing test,
 %      start and stop timings.
 %
-%  3. Testcase tries to match against received delta
+%  3. Testcase tries to match against tree (merged from received delta)
 %     until matching function returns {done, _} or timeout
 %
 
@@ -74,7 +74,7 @@ wait_for_instance_id(Timeout) ->
 
 
 %
-% Delta testcases
+% Tree match testcases
 %
 
 
@@ -145,7 +145,7 @@ exit_with_reason(Config) ->
 
 run_test(TC, CtConfig) when is_atom(TC) ->
   Port = proplists:get_value(client_port, CtConfig),
-  BaseUrl = <<"http://0.0.0.0:", (integer_to_binary(Port))/binary, "/delta_testcases/">>,
+  BaseUrl = <<"http://0.0.0.0:", (integer_to_binary(Port))/binary, "/tree_testcases/">>,
   Url = <<BaseUrl/binary, (atom_to_binary(TC, latin1))/binary>>,
 
   {ok, 200, RespHeaders, Body} = hackney:request(post, Url, [], <<>>, [with_body]),
