@@ -8,3 +8,6 @@ services:
 
 script:
   - make ct_mnesia
+
+notifications:
+  email: false

@@ -1,4 +1,4 @@
-# Batiscaph [![Join the chat at https://gitter.im/batiscaph/Lobby](https://badges.gitter.im/batiscaph/Lobby.svg)](https://gitter.im/batiscaph/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Become a Patron](https://pp.userapi.com/c846016/v846016003/50faf/0W4mEbYb_5s.jpg)](https://www.patreon.com/VladimirVG)
+# Batiscaph [![Build Status](https://travis-ci.com/vladimir-vg/batiscaph.svg?branch=master)](https://travis-ci.com/vladimir-vg/batiscaph) [![Join the chat at https://gitter.im/batiscaph/Lobby](https://badges.gitter.im/batiscaph/Lobby.svg)](https://gitter.im/batiscaph/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Become a Patron](https://pp.userapi.com/c846016/v846016003/50faf/0W4mEbYb_5s.jpg)](https://www.patreon.com/VladimirVG)
 
 Batiscaph is a research device that submerges into ocean and explores unknown space.
 That's what this tool does -- submerges into Erlang node and observes how programs work in it.
