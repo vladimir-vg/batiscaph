@@ -39,7 +39,6 @@ ws_receive(Pid, Verb, Timeout) when is_atom(Verb) ->
   ws_receive(Pid, atom_to_binary(Verb, latin1), Timeout);
 
 ws_receive(_Pid, Verb, Timeout) when is_binary(Verb) ->
-  ct:pal("ws_receive ~p ~p", [Timeout, erlang:process_info(self(), messages)]),
   receive
     {bt_ws, Verb, Data} -> {ok, Data}
 

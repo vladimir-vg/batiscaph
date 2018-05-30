@@ -85,7 +85,7 @@ spawn_process(Config) ->
     = run_test(?FUNCTION_NAME, Config),
 
   NewState = #{pid => undefined},
-  {ok, _} = match_delta(fun
+  {ok, _} = match_tree(fun
 
     (#{erlang_processes := #{ReqPid := #{<<"Children">> := Children}}},
      #{pid := undefined} = State)
@@ -115,7 +115,7 @@ exit_with_reason(Config) ->
     = run_test(?FUNCTION_NAME, Config),
 
   NewState = #{pid => undefined},
-  {ok, _} = match_delta(fun
+  {ok, _} = match_tree(fun
 
     (#{erlang_processes := #{ReqPid := #{<<"Children">> := Children}}},
      #{pid := undefined} = State)
@@ -149,7 +149,6 @@ run_test(TC, CtConfig) when is_atom(TC) ->
   Url = <<BaseUrl/binary, (atom_to_binary(TC, latin1))/binary>>,
 
   {ok, 200, RespHeaders, Body} = hackney:request(post, Url, [], <<>>, [with_body]),
-  ct:pal("~s", [Body]),
 
   Pid = proplists:get_value(<<"x-pid">>, RespHeaders),
   is_binary(Pid) orelse error({bad_resp_headers, RespHeaders}),
@@ -160,18 +159,19 @@ run_test(TC, CtConfig) when is_atom(TC) ->
     pid => Pid, started_at => binary_to_integer(StartedAt),
     stopped_at => binary_to_integer(StoppedAt)
   },
+  ct:pal("testcase request: ~p~n~s", [Result, Body]),
   {ok, Result}.
 
 
 
 % it tries to match every fresh delta against MatchFunc
 % until timeout
-match_delta(MatchFunc, MatchState, CtConfig) ->
-  match_delta(MatchFunc, MatchState, CtConfig, #{timeout => 10000}).
+match_tree(MatchFunc, MatchState, CtConfig) ->
+  match_tree(MatchFunc, MatchState, CtConfig, #{timeout => 10000}).
 
 
 
-match_delta(MatchFunc, MatchState, CtConfig, #{timeout := Timeout}) ->
+match_tree(MatchFunc, MatchState, CtConfig, #{timeout := Timeout}) ->
   InstanceId = proplists:get_value(instance_id, CtConfig),
   % connect to websocket using InstanceId
   {ok, WsPid} = bt:ws_connect(),
@@ -180,11 +180,11 @@ match_delta(MatchFunc, MatchState, CtConfig, #{timeout := Timeout}) ->
     match_started_at => erlang:system_time(milli_seconds),
     websocket_pid => WsPid, timeout => Timeout
   },
-  match_delta_loop(MatchFunc, MatchState, State).
+  match_tree_loop(MatchFunc, MatchState, State).
 
 
 
-match_delta_loop(MatchFunc, MatchState, State) ->
+match_tree_loop(MatchFunc, MatchState, State) ->
   #{match_started_at := StartedAt, timeout := Timeout, websocket_pid := WsPid} = State,
   case erlang:system_time(milli_seconds) - StartedAt of
     TimeSpent when TimeSpent > Timeout -> {error, timeout};
@@ -194,16 +194,20 @@ match_delta_loop(MatchFunc, MatchState, State) ->
       case bt:ws_receive(WsPid, delta, TimeLeft) of
         {error, timeout} ->
           ct:pal("match state: ~p", [MatchState]),
-          ct:pal("delta: ~p", [maps:get(last_delta, State, undefined)]),
+          ct:pal("tree: ~p", [maps:get(last_tree, State, undefined)]),
           error(delta_didnt_match);
 
         {ok, Delta} ->
-          Delta1 = atomize_delta(Delta),
-          try MatchFunc(Delta1, MatchState) of
-            {more, MatchState1} -> match_delta_loop(MatchFunc, MatchState1, State#{last_delta => Delta1});
-            {done, MatchState1} -> {ok, MatchState1}
+          % currently we receive whole tree each time instead of deltas
+          % in future here should be done a merge with all previously received deltas
+          Tree = atomize_delta(Delta),
+          try MatchFunc(Tree, MatchState) of
+            {more, MatchState1} -> match_tree_loop(MatchFunc, MatchState1, State#{last_tree => Tree});
+            {done, MatchState1} ->
+              ct:pal("successful match, state: ~p", [MatchState1]),
+              {ok, MatchState1}
           catch
-            error:function_clause -> match_delta_loop(MatchFunc, MatchState, State#{last_delta => Delta1})
+            error:function_clause -> match_tree_loop(MatchFunc, MatchState, State#{last_tree => Tree})
           end
       end
   end.
