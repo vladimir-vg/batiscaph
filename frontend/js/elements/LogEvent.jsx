@@ -78,7 +78,7 @@ SelectionBackgroundComponent.propTypes = {
 function produceElements(delta) {
   const result = {};
 
-  delta['lager-events'].forEach((e, id) => {
+  delta['lager_events'].forEach((e, id) => {
     result[id] = {
       id: id,
       key: id,

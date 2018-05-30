@@ -26,16 +26,16 @@ export default class Store {
     extendObservable(this, {
       isShellConnected: false,
       delta: {
-        'plug-requests': (new Map()),
-        'cowboy-requests': (new Map()),
-        'erlang-processes': (new Map()),
-        'lager-events': (new Map()),
+        'plug_requests': (new Map()),
+        'cowboy_requests': (new Map()),
+        'erlang_processes': (new Map()),
+        'lager_events': (new Map()),
 
         // initialize as Map, in order to be able to listen
         // for new item
-        'shell-commands': (new Map()),
-        'erlang-processes-info': (new Map()),
-        'erlang-processes-info-binaries': (new Map()),
+        'shell_commands': (new Map()),
+        'erlang_processes_info': (new Map()),
+        'erlang_processes_info_binaries': (new Map()),
       },
       selectedProcessPid: null,
       hoveredProcessPid: null,
@@ -75,8 +75,8 @@ export default class Store {
   // sorted list of ready to display reqs
   @computed
   get httpRequestsList() {
-    const reqs1 = Array.from(this.delta['plug-requests'].values());
-    const reqs2 = Array.from(this.delta['cowboy-requests'].values());
+    const reqs1 = Array.from(this.delta['plug_requests'].values());
+    const reqs2 = Array.from(this.delta['cowboy_requests'].values());
     const reqs = reqs1.concat(reqs2);
     reqs.sort((a, b) => {
       let aAt, bAt;
@@ -98,11 +98,11 @@ export default class Store {
   @action
   consumeDelta(delta) {
     // to distinguish requests, when they are merged into one list
-    for (const id in delta['cowboy-requests']) {
-      delta['cowboy-requests'][id]._type = 'cowboy';
+    for (const id in delta['cowboy_requests']) {
+      delta['cowboy_requests'][id]._type = 'cowboy';
     }
-    for (const id in delta['plug-requests']) {
-      delta['plug-requests'][id]._type = 'plug';
+    for (const id in delta['plug_requests']) {
+      delta['plug_requests'][id]._type = 'plug';
     }
 
     // make new delta also observable, to avoid having unobserved parts
@@ -136,9 +136,9 @@ export default class Store {
 
     let url = null;
     if (type === 'plug') {
-      url = `/api/instances/${this.currentInstanceId}/plug-requests/${id}`;
+      url = `/api/instances/${this.currentInstanceId}/plug_requests/${id}`;
     } else if (type === 'cowboy') {
-      url = `/api/instances/${this.currentInstanceId}/cowboy-requests/${id}`;
+      url = `/api/instances/${this.currentInstanceId}/cowboy_requests/${id}`;
     }
 
     fetch(url)
@@ -180,7 +180,7 @@ export default class Store {
       };
     }
 
-    const info = this.delta['erlang-processes-info'].get(this.selectedProcessPid);
+    const info = this.delta['erlang_processes_info'].get(this.selectedProcessPid);
     if (!info) return null;
 
     const { Changes } = info;
@@ -208,7 +208,7 @@ export default class Store {
       };
     }
 
-    const info = this.delta['erlang-processes-info-binaries'].get(this.selectedProcessPid);
+    const info = this.delta['erlang_processes_info_binaries'].get(this.selectedProcessPid);
     if (!info) return null;
 
     const { Changes } = info;
@@ -235,7 +235,7 @@ export default class Store {
   @computed
   get orderedLogs() {
     const result = [];
-    const logs = Array.from(this.delta['lager-events'].values());
+    const logs = Array.from(this.delta['lager_events'].values());
     logs.sort(({ At: aAt }, { At: bAt }) => {
       return aAt > bAt ? 1 : -1;
     });
@@ -282,7 +282,7 @@ export default class Store {
 
   @computed
   get shellCommands() {
-    const cmds = Array.from(this.delta['shell-commands'].values());
+    const cmds = Array.from(this.delta['shell_commands'].values());
     cmds.sort((a, b) => a.At > b.At ? 1 : -1);
     const cmds1 = cmds.map(({ At, Input, Outputs, Pid, Prompt }) => {
       // Chrome bug that breaks Object.values on MobX objects

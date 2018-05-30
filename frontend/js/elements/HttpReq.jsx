@@ -112,7 +112,7 @@ SelectionBackgroundComponent.propTypes = {
 function produceElements(delta) {
   const result = {};
 
-  delta['plug-requests'].forEach((req, id) => {
+  delta['plug_requests'].forEach((req, id) => {
     result[id] = {
       id: id,
       key: id,
@@ -127,7 +127,7 @@ function produceElements(delta) {
     };
   });
 
-  delta['cowboy-requests'].forEach((req, id) => {
+  delta['cowboy_requests'].forEach((req, id) => {
     result[id] = {
       id: id,
       key: `init ${id}`,

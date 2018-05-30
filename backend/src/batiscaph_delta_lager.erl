@@ -31,4 +31,4 @@ consume(_E, State) ->
 
 
 finalize(#{events := Events}) ->
-  #{<<"lager-events">> => Events}.
+  #{<<"lager_events">> => Events}.

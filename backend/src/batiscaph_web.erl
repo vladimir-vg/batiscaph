@@ -20,8 +20,8 @@ start_cowboy() ->
       {"/probe", batiscaph_handler_probe, []},
 
       {"/api/instances", batiscaph_res_instances, []},
-      {"/api/instances/:instance_id/plug-requests/:req_id", batiscaph_res_plug_requests, []},
-      {"/api/instances/:instance_id/cowboy-requests/:req_id", batiscaph_res_cowboy_requests, []},
+      {"/api/instances/:instance_id/plug_requests/:req_id", batiscaph_res_plug_requests, []},
+      {"/api/instances/:instance_id/cowboy_requests/:req_id", batiscaph_res_cowboy_requests, []},
       {"/websocket", batiscaph_ws_handler, []},
 
       {"/static/[...]", cowboy_static, {priv_dir, batiscaph, StaticDir, [{mimetypes, cow_mimetypes, all}]}},

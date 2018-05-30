@@ -222,7 +222,7 @@ SelectionBackgroundComponent.propTypes = {
 function produceElements(delta) {
   const result = {};
 
-  delta['erlang-processes'].forEach((proc, pid) => {
+  delta['erlang_processes'].forEach((proc, pid) => {
     if (proc.SpawnedAt) {
       const id = `${proc.ParentPid} ${proc.Pid}`;
       result[id] = {

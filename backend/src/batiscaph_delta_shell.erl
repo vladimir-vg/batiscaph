@@ -47,4 +47,4 @@ save_current_command(#{commands := Cmds, current_command := Cmd} = State) ->
 
 finalize(State) ->
   {ok, #{commands := Cmds}} = save_current_command(State),
-  #{<<"shell-commands">> => Cmds}.
+  #{<<"shell_commands">> => Cmds}.

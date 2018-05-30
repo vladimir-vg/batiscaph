@@ -50,4 +50,4 @@ consume(_E, State) ->
 
 
 finalize(#{procs := Procs}) ->
-  #{<<"erlang-processes-info">> => Procs}.
+  #{<<"erlang_processes_info">> => Procs}.
