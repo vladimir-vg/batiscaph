@@ -1,0 +1,10 @@
+language: erlang
+otp_release:
+  - '20.0'
+sudo: required
+
+services:
+  - docker
+
+script:
+  - make ct_mnesia

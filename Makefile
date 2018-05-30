@@ -1,18 +1,25 @@
-.PHONY: run ct build_backend build_test_apps
-.PHONY: ensure_links_are_in_place
+.PHONY: run ct ct_mnesia ct_clickhouse prepare_ct build_backend build_test_apps ensure_links_are_in_place
 
 HTTP_PORT = 8999
-CLICKHOUSE_URL = http://0.0.0.0:8123/
-CLICKHOUSE_TEST_DB = batiscaph_test
+#CLICKHOUSE_URL = http://0.0.0.0:8123/
+#CLICKHOUSE_TEST_DB = batiscaph_test
 
 run:
 	cd backend && make
 
-ct: ensure_links_are_in_place build_backend build_test_apps
+ct: ct_clickhouse
+
+ct_mnesia: prepare_ct
+	BATISCAPH_ENDPOINT_HTTP_PORT=$(HTTP_PORT) \
+	./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test --suite delta2_SUITE
+
+ct_clickhouse: prepare_ct
 	BATISCAPH_ENDPOINT_HTTP_PORT=$(HTTP_PORT) \
 	BATISCAPH_ENDPOINT_CLICKHOUSE_URL=$(CLICKHOUSE_URL) \
 	BATISCAPH_ENDPOINT_CLICKHOUSE_DB=$(CLICKHOUSE_TEST_DB) \
-		./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test --suite delta2_SUITE
+	./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test --suite delta2_SUITE
+
+prepare_ct: ensure_links_are_in_place build_backend build_test_apps
 
 
 
