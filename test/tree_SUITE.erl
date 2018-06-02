@@ -1,7 +1,8 @@
 -module(tree_SUITE).
 -export([
   all/0, groups/0,
-  init_per_suite/1, end_per_suite/1
+  init_per_suite/1, end_per_suite/1,
+  init_per_group/2, end_per_group/2
 ]).
 -export([
   spawn_process/1, exit_with_reason/1
@@ -27,40 +28,52 @@
 
 
 all() ->
-  [{group, main}].
+  [{group, erlang17_app1}].
 
 groups() ->
+  Testcases = [
+    spawn_process,
+    exit_with_reason
+  ],
   [
-    {main, [parallel], [
-      spawn_process,
-      exit_with_reason
-    ]}
+    {erlang17_app1, [parallel], Testcases}
   ].
 
 
 
 init_per_suite(Config) ->
   application:ensure_all_started(batiscaph),
+  Config.
 
+end_per_suite(Config) ->
+  Config.
+
+
+
+init_per_group(erlang17_app1, Config) ->
   Port = 12345,
-  {ok, ContainerPid} = bt_container:start_link(<<"batiscaph-test/erlang17_app1:latest">>, #{
-    logdir => list_to_binary(proplists:get_value(priv_dir, Config)),
-    name => ?MODULE, host_network => true, <<"HTTP_PORT">> => Port,
-    <<"BATISCAPH_PROBE_ENDPOINT_URL">> => bt:test_endpoint_url()
-  }),
-
-  % going to be stopped manually in end_per_suite
-  unlink(ContainerPid),
-
-  {ok, InstanceId} = wait_for_instance_id(5000),
+  {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang17_app1:latest">>, Port, Config),
   [{instance_id, InstanceId}, {client_port, Port}, {client_container_pid, ContainerPid} | Config].
 
 
 
-end_per_suite(Config) ->
+end_per_group(_, Config) ->
   ContainerPid = proplists:get_value(client_container_pid, Config),
   exit(ContainerPid, end_per_suite),
   Config.
+
+
+
+start_erlang_node(ImageName, Port, Config) ->
+  {ok, ContainerPid} = bt_container:start_link(ImageName, #{
+    logdir => list_to_binary(proplists:get_value(priv_dir, Config)),
+    name => ?MODULE, host_network => true, <<"HTTP_PORT">> => Port,
+    <<"BATISCAPH_PROBE_ENDPOINT_URL">> => bt:test_endpoint_url()
+  }),
+  % going to be stopped manually in end_per_suite
+  unlink(ContainerPid),
+  {ok, InstanceId} = wait_for_instance_id(5000),
+  {ok, InstanceId, ContainerPid}.
 
 
 

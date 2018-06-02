@@ -1,7 +1,8 @@
 -module(shell_SUITE).
 -export([
   all/0, groups/0,
-  init_per_suite/1, end_per_suite/1
+  init_per_suite/1, end_per_suite/1,
+  init_per_group/2, end_per_group/2
 ]).
 -export([
 	subscribe_to_process_info/1
@@ -16,38 +17,50 @@
 
 
 all() ->
-  [{group, main}].
+  [{group, erlang17_app1}].
 
 groups() ->
+  Testcases = [
+    subscribe_to_process_info
+  ],
   [
-    {main, [shuffle], [
-      subscribe_to_process_info
-    ]}
+    {erlang17_app1, [shuffle], Testcases}
   ].
 
 
 
 init_per_suite(Config) ->
   application:ensure_all_started(batiscaph),
+  Config.
 
-  {ok, ContainerPid} = bt_container:start_link(<<"batiscaph-test/erlang17_app1:latest">>, #{
-    logdir => list_to_binary(proplists:get_value(priv_dir, Config)),
-    name => ?MODULE, host_network => true,
-    <<"BATISCAPH_PROBE_ENDPOINT_URL">> => bt:test_endpoint_url()
-  }),
+end_per_suite(Config) ->
+  Config.
 
-  % going to be stopped manually in end_per_suite
-  unlink(ContainerPid),
 
-  {ok, InstanceId} = wait_for_instance_id(5000),
+
+init_per_group(erlang17_app1, Config) ->
+  {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang17_app1:latest">>, Config),
   [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config].
 
 
 
-end_per_suite(Config) ->
+end_per_group(_, Config) ->
   ContainerPid = proplists:get_value(client_container_pid, Config),
   exit(ContainerPid, end_per_suite),
   Config.
+
+
+
+start_erlang_node(ImageName, Config) ->
+  {ok, ContainerPid} = bt_container:start_link(ImageName, #{
+    logdir => list_to_binary(proplists:get_value(priv_dir, Config)),
+    name => ?MODULE, host_network => true,
+    <<"BATISCAPH_PROBE_ENDPOINT_URL">> => bt:test_endpoint_url()
+  }),
+  % going to be stopped manually in end_per_suite
+  unlink(ContainerPid),
+  {ok, InstanceId} = wait_for_instance_id(5000),
+  {ok, InstanceId, ContainerPid}.
 
 
 
@@ -69,11 +82,7 @@ wait_for_instance_id(Timeout) ->
 
 subscribe_to_process_info(Config) ->
   InstanceId = proplists:get_value(instance_id, Config),
-  {ok, WsPid} = bt:ws_connect(),
-  ok = bt:ws_send(WsPid, subscribe_to_instance, #{id => InstanceId}),
-  ok = bt:ws_send(WsPid, connect_to_shell, #{id => InstanceId}),
-  ok = bt:ws_receive(WsPid, connected_to_shell),
-  MatchOpts = #{websocket_pid => WsPid, instance_id => InstanceId},
+  MatchOpts = #{websocket_pid := WsPid} = fresh_ws_shell(InstanceId),
 
   {ok, _} = shell_exec("f().", MatchOpts), % forget variables created by other testcasees
   {ok, Output1} = shell_exec("Pid = spawn(fun () -> receive stop -> ok end end).", MatchOpts),
@@ -106,6 +115,15 @@ subscribe_to_process_info(Config) ->
 %
 % Helpers
 %
+
+
+
+fresh_ws_shell(InstanceId) ->
+  {ok, WsPid} = bt:ws_connect(),
+  ok = bt:ws_send(WsPid, subscribe_to_instance, #{id => InstanceId}),
+  ok = bt:ws_send(WsPid, connect_to_shell, #{id => InstanceId}),
+  ok = bt:ws_receive(WsPid, connected_to_shell),
+  #{websocket_pid => WsPid, instance_id => InstanceId}.
 
 
 
