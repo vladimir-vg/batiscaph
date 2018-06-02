@@ -1,4 +1,4 @@
-FROM erlang:17
+FROM erlang:18
 WORKDIR /root
 
 # fetch and compile dependencies that change rarely

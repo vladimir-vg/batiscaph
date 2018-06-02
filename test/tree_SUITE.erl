@@ -28,7 +28,7 @@
 
 
 all() ->
-  [{group, erlang17_app1}].
+  [{group, erlang17_app1}, {group, erlang18_app1}].
 
 groups() ->
   Testcases = [
@@ -36,7 +36,8 @@ groups() ->
     exit_with_reason
   ],
   [
-    {erlang17_app1, [parallel], Testcases}
+    {erlang17_app1, [parallel], Testcases},
+    {erlang18_app1, [parallel], Testcases}
   ].
 
 
@@ -51,8 +52,13 @@ end_per_suite(Config) ->
 
 
 init_per_group(erlang17_app1, Config) ->
-  Port = 12345,
+  Port = 12017,
   {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang17_app1:latest">>, Port, Config),
+  [{instance_id, InstanceId}, {client_port, Port}, {client_container_pid, ContainerPid} | Config];
+
+init_per_group(erlang18_app1, Config) ->
+  Port = 12018,
+  {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang18_app1:latest">>, Port, Config),
   [{instance_id, InstanceId}, {client_port, Port}, {client_container_pid, ContainerPid} | Config].
 
 

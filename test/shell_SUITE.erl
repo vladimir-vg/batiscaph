@@ -17,14 +17,15 @@
 
 
 all() ->
-  [{group, erlang17_app1}].
+  [{group, erlang17_app1}, {group, erlang18_app1}].
 
 groups() ->
   Testcases = [
     subscribe_to_process_info
   ],
   [
-    {erlang17_app1, [shuffle], Testcases}
+    {erlang17_app1, [shuffle], Testcases},
+    {erlang18_app1, [shuffle], Testcases}
   ].
 
 
@@ -40,6 +41,10 @@ end_per_suite(Config) ->
 
 init_per_group(erlang17_app1, Config) ->
   {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang17_app1:latest">>, Config),
+  [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config];
+
+init_per_group(erlang18_app1, Config) ->
+  {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang18_app1:latest">>, Config),
   [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config].
 
 
