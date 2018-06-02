@@ -67,8 +67,7 @@ start_docker_container(#container{image_name = ImageName, opts = Opts} = State) 
   ]),
 
   #{name := Name0, logdir := LogDir} = Opts,
-  Name1 = atom_to_binary(Name0, latin1),
-  {ok, LogFile} = file:open(<<LogDir/binary, Name1/binary, ".log">>, [write]),
+  {ok, LogFile} = file:open(<<LogDir/binary, Name0/binary, ".log">>, [write]),
   State1 = State#container{port = Port, log_file = LogFile},
   {ok, State1}.
 

@@ -17,7 +17,7 @@
 
 
 all() ->
-  [{group, erlang17_app1}, {group, erlang18_app1}].
+  [{group, erlang17_app1}, {group, erlang18_app1}, {group, erlang19_app1}, {group, erlang20_app1}].
 
 groups() ->
   Testcases = [
@@ -25,7 +25,9 @@ groups() ->
   ],
   [
     {erlang17_app1, [shuffle], Testcases},
-    {erlang18_app1, [shuffle], Testcases}
+    {erlang18_app1, [shuffle], Testcases},
+    {erlang19_app1, [shuffle], Testcases},
+    {erlang20_app1, [shuffle], Testcases}
   ].
 
 
@@ -42,9 +44,14 @@ end_per_suite(Config) ->
 init_per_group(erlang17_app1, Config) ->
   {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang17_app1:latest">>, Config),
   [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config];
-
 init_per_group(erlang18_app1, Config) ->
   {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang18_app1:latest">>, Config),
+  [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config];
+init_per_group(erlang19_app1, Config) ->
+  {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang19_app1:latest">>, Config),
+  [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config];
+init_per_group(erlang20_app1, Config) ->
+  {ok, InstanceId, ContainerPid} = start_erlang_node(<<"batiscaph-test/erlang20_app1:latest">>, Config),
   [{instance_id, InstanceId}, {client_container_pid, ContainerPid} | Config].
 
 
@@ -57,9 +64,11 @@ end_per_group(_, Config) ->
 
 
 start_erlang_node(ImageName, Config) ->
+  GroupName = proplists:get_value(name, proplists:get_value(tc_group_properties, Config)),
   {ok, ContainerPid} = bt_container:start_link(ImageName, #{
     logdir => list_to_binary(proplists:get_value(priv_dir, Config)),
-    name => ?MODULE, host_network => true,
+    name => iolist_to_binary([atom_to_binary(GroupName,latin1), "_", atom_to_binary(?MODULE,latin1)]),
+    host_network => true,
     <<"BATISCAPH_PROBE_ENDPOINT_URL">> => bt:test_endpoint_url()
   }),
   % going to be stopped manually in end_per_suite
