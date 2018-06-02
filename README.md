@@ -79,7 +79,13 @@ wait for changes and update js files in `backend/priv/compiled_static`.
 
 # Running tests
 
-Currently tests are broken, working on it.
+Batiscaph uses docker containers for testing different environments (Erlang version, libraries).
+You need to install docker to run tests.
+
+To run tests with in-memory storage, just exec: `make ct_mnesia`.
+
+To run tests with persistent storage, install Clickhouse first and create empty `batiscaph_test` database.
+Then run `make ct_clickhouse`.
 
 # Help and feedback
 

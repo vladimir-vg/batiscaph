@@ -25,8 +25,8 @@ websocket_handle({pong, _}, _ConnState, State) ->
   {ok, State};
 
 websocket_handle({text, Msg}, _ConnState, #{subs := Subs} = State) ->
-  {Verb, JSON} = parse_message(Msg),
-  [P ! {bt_ws, Verb, JSON} || P <- Subs],
+  {Verb, Data} = parse_message(Msg),
+  [P ! {bt_ws, Verb, Data} || P <- Subs],
   {ok, State}.
 
 
@@ -43,5 +43,7 @@ websocket_terminate(_CloseInfo, _ConnState, _State) ->
 
 
 parse_message(Msg) ->
-  [Verb, Body] = binary:split(Msg, <<" ">>),
-  {Verb, jsx:decode(Body, [return_maps])}.
+  case binary:split(Msg, <<" ">>) of
+    [Verb] -> {Verb, none};
+    [Verb, Body] -> {Verb, jsx:decode(Body, [return_maps])}
+  end.

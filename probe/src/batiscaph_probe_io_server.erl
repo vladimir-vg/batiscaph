@@ -116,6 +116,7 @@ continue_pending_input(#io_server{pending_get_until = Pending} = State) ->
 
 
 attempt_scan(#io_server{input_string = Input, pending_get_until = Pending} = State) ->
+  % io:format("attempt_scan ~p~n", [Input]),
   #pending_read{extra_args = ExtraArgs, continuation = Continuation, have_scanned = Scanned} = Pending,
   case erlang:apply(erl_scan, tokens, [Continuation, Input] ++ ExtraArgs) of
     {done, Result, Input1} ->
@@ -140,7 +141,7 @@ shell_output_event_now(Pid, Requests) ->
   #{
     type => <<"p1 erlang:shell output">>,
     pid1 => list_to_binary(pid_to_list(Pid)),
-    at => erlang:system_time(micro_seconds),
+    at => erlang:now(),
     output => iolist_to_binary(Output)
   }.
 
@@ -160,7 +161,7 @@ shell_output_event_now0([{put_chars,unicode,io_lib,format,[Format,Args]} | Reque
 
 shell_input_event_now(Pid, Prompt, Result) ->
   #{
-    at => erlang:system_time(micro_seconds),
+    at => erlang:now(),
     type => <<"p1 erlang:shell input">>,
     pid1 => list_to_binary(pid_to_list(Pid)),
     prompt => iolist_to_binary(Prompt),

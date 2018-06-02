@@ -25,28 +25,35 @@ websocket_terminate(_Reason, _Req, _State) ->
 
 
 
-websocket_handle({text, <<"subscribe_to_instance ", Rest/binary>>}, Req, State) ->
+websocket_handle({text, Text}, Req, State) ->
+  % lager:info("websocket: ~p", [Text]),
+  websocket_handle1({text, Text}, Req, State).
+
+
+
+websocket_handle1({text, <<"subscribe_to_instance ", Rest/binary>>}, Req, State) ->
   subscribe_to_instance(jsx:decode(Rest, [return_maps]), Req, State);
 
-websocket_handle({text, <<"connect_to_shell ", Rest/binary>>}, Req, State) ->
+websocket_handle1({text, <<"connect_to_shell ", Rest/binary>>}, Req, State) ->
   connect_to_shell(jsx:decode(Rest, [return_maps]), Req, State);
 
-websocket_handle({text, <<"shell_input ", Rest/binary>>}, Req, State) ->
+websocket_handle1({text, <<"shell_input ", Rest/binary>>}, Req, State) ->
   shell_input(jsx:decode(Rest, [return_maps]), Req, State);
 
-websocket_handle({text, <<"subscribe_to_process_info ", Rest/binary>>}, Req, State) ->
+websocket_handle1({text, <<"subscribe_to_process_info ", Rest/binary>>}, Req, State) ->
   subscribe_to_process_info(jsx:decode(Rest, [return_maps]), Req, State);
 
-websocket_handle({text, <<"unsubscribe_from_process_info ", Rest/binary>>}, Req, State) ->
+websocket_handle1({text, <<"unsubscribe_from_process_info ", Rest/binary>>}, Req, State) ->
   unsubscribe_from_process_info(jsx:decode(Rest, [return_maps]), Req, State);
 
-websocket_handle(Data, Req, State) ->
+websocket_handle1(Data, Req, State) ->
   lager:error("Unknown websocket message: ~p", [Data]),
   {ok, Req, State}.
 
 
 
 websocket_info({delta_query_result, Result}, Req, #ws_state{} = State) ->
+  % lager:info("websocket output delta: ~p", [Result]),
   Reply = {text, [<<"delta ">>, jsx:encode(Result)]},
   {reply, Reply, Req, State};
 

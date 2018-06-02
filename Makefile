@@ -1,8 +1,8 @@
 .PHONY: run ct ct_mnesia ct_clickhouse prepare_ct build_backend build_test_apps ensure_links_are_in_place
 
 HTTP_PORT = 8999
-#CLICKHOUSE_URL = http://0.0.0.0:8123/
-#CLICKHOUSE_TEST_DB = batiscaph_test
+CLICKHOUSE_URL = http://0.0.0.0:8123/
+CLICKHOUSE_TEST_DB = batiscaph_test
 
 run:
 	cd backend && make
@@ -14,6 +14,11 @@ ct_mnesia: prepare_ct
 	./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test
 
 ct_clickhouse: prepare_ct
+	cd backend && \
+	BATISCAPH_ENDPOINT_CLICKHOUSE_URL=$(CLICKHOUSE_URL) \
+	BATISCAPH_ENDPOINT_CLICKHOUSE_DB=$(CLICKHOUSE_TEST_DB) \
+	erl -pa `./rebar3 path` -s batiscaph_cmds reset_storage -noshell -eval 'init:stop()'
+
 	BATISCAPH_ENDPOINT_HTTP_PORT=$(HTTP_PORT) \
 	BATISCAPH_ENDPOINT_CLICKHOUSE_URL=$(CLICKHOUSE_URL) \
 	BATISCAPH_ENDPOINT_CLICKHOUSE_DB=$(CLICKHOUSE_TEST_DB) \

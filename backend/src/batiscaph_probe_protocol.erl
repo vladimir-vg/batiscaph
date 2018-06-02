@@ -200,7 +200,19 @@ handle_message_from_probe({events, Events}, #persistent{instance_id = InstanceId
   % [lager:info("event: ~p", [E]) || E <- Events],
   Events1 = batiscaph_events:transform(Events, #{instance_id => InstanceId}),
   ok = batiscaph_events:insert(Events1),
-  ok = notify_delta_producer(InstanceId),
+  % If Clickhouse returned 200 OK on INSERT operation
+  % it doesn't mean that inserted data already available for SELECT.
+  % Looks INSERT is async opreation and it takes some time
+  % to make these events available for select.
+  % For now we notify delta producer about fresh events with slight delay.
+  % This approach wouldn't work on any significant load
+  % TODO: Figure out better way to check for fresh events for delta producer
+  case gen_tracker:find(delta_producers, InstanceId) of
+    undefined -> ok;
+    {ok, Pid} ->
+      erlang:send_after(1000, Pid, new_events_saved),
+      ok
+  end,
   {ok, State};
 
 handle_message_from_probe(Message, State) ->
@@ -212,16 +224,6 @@ handle_message_from_probe(Message, State) ->
 %
 %
 %
-
-
-
-notify_delta_producer(InstanceId) ->
-  case gen_tracker:find(delta_producers, InstanceId) of
-    undefined -> ok;
-    {ok, Pid} ->
-      Pid ! new_events_saved,
-      ok
-  end.
 
 
 

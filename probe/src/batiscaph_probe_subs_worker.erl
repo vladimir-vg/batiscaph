@@ -107,7 +107,7 @@ log_process_infos2([Pid | Pids], OldInfos, NewPids, Events, NewInfos) ->
   case erlang:process_info(Pid, process_info_flags()) of
     undefined -> log_process_infos2(Pids, OldInfos, NewPids, Events, NewInfos);
     Props ->
-      Timestamp = erlang:system_time(micro_seconds),
+      Timestamp = erlang:now(),
       Props1 = attrs_to_map(Props),
       case maps:get(Pid, OldInfos, undefined) of
         undefined ->
@@ -133,7 +133,10 @@ log_process_infos2([Pid | Pids], OldInfos, NewPids, Events, NewInfos) ->
 
 
 attrs_to_map(Props) ->
-  {Binaries, Props1} = maps:take(binary, maps:from_list(Props)),
+  % maps:take/2 is not available in Erlang 17
+  Props0 = maps:from_list(Props),
+  Binaries = maps:get(binary, Props0),
+  Props1 = maps:remove(binary, Props0),
   Binaries1 = maps:from_list(lists:map(fun ({Id, Size, RefCount}) ->
     Key = integer_to_binary(Id),
     Value = <<(integer_to_binary(Size))/binary, " ", (integer_to_binary(RefCount))/binary>>,
@@ -192,16 +195,16 @@ process_info_flags() ->
   ].
 
 process_info_events(Pid, Timestamp, Props) ->
-  {BinaryEvents, Props1} = case maps:take(binary, Props) of
-    error -> {[], Props};
-    {Binaries, Props2} ->
+  {BinaryEvents, Props1} = case maps:get(binary, Props, undefined) of
+    undefined -> {[], Props};
+    Binaries ->
       E = #{
         at => Timestamp,
         type => <<"p1 erlang:process process_info_binary">>,
         pid1 => erlang:list_to_binary(erlang:pid_to_list(Pid)),
         binaries => erlang:term_to_binary(Binaries)
       },
-      {[E], Props2}
+      {[E], maps:remove(binary, Props)}
   end,
   Props3 = maps:map(fun format_props/2, Props1),
 
@@ -228,7 +231,7 @@ format_props(links, List) ->
     (P) when is_pid(P) -> erlang:pid_to_list(P);
     (P) when is_port(P) -> erlang:port_to_list(P)
   end, List),
-  iolist_to_binary(lists:join(<<" ">>, List1));
+  iolist_to_binary(lists_join(<<" ">>, List1));
 
 format_props(monitors, List) ->
   List1 = lists:map(fun
@@ -236,7 +239,15 @@ format_props(monitors, List) ->
     ({port,P}) when is_port(P) -> erlang:port_to_list(P);
     ({time_offset,clock_service}) -> "time_offset"
   end, List),
-  iolist_to_binary(lists:join(<<" ">>, List1));
+  iolist_to_binary(lists_join(<<" ">>, List1));
 
 format_props(dictionary, Term) ->
   batiscaph_probe_util:format_term(Term).
+
+
+
+% 17 and 18 Erlang don't have lists:join/2
+lists_join(_Sep, []) -> [];
+lists_join(Sep, List) ->
+  [_ | List2] = lists:flatten([[Sep, E] || E <- List]),
+  List2.

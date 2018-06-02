@@ -20,7 +20,10 @@ start_link() ->
 
 init([]) ->
   self() ! init,
-  {ok, #shell{}}.
+  % start io server right during sync creation of shell process
+  % this will allow to receive shell_input event if shell didn't start yet
+  {ok, IoServerPid} = batiscaph_probe_io_server:start_link(),
+  {ok, #shell{io_server_pid = IoServerPid}}.
 
 
 
@@ -49,8 +52,7 @@ handle_cast(Cast, State) ->
 
 
 
-init0(State) ->
-  {ok, IoServerPid} = batiscaph_probe_io_server:start_link(),
+init0(#shell{io_server_pid = IoServerPid} = State) ->
   true = group_leader(IoServerPid, self()),
 
   erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, whereis(batiscaph_probe_collector)}]),

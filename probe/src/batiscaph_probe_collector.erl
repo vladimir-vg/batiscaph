@@ -55,7 +55,7 @@ handle_cast(Cast, State) ->
 ensure_basic_tracing(Pid) ->
   try erlang:trace(Pid, true, [procs, timestamp, set_on_spawn, {tracer, whereis(batiscaph_probe_collector)}]) of
     1 ->
-      TraceEvents = batiscaph_probe_feature_procs:tracing_started_event(Pid, erlang:system_time(micro_seconds)),
+      TraceEvents = batiscaph_probe_feature_procs:tracing_started_event(Pid, erlang:now()),
       {ok, TraceEvents}
   catch
     error:badarg -> {ok, []} % if process already died, just ignore

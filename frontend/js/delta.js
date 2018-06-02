@@ -51,8 +51,8 @@ function assign(key, old, new1) {
 
 
 export function isTracedAt({ at, pid, delta }) {
-  if (!delta['erlang-processes'].has(pid)) { return false; }
-  const proc = delta['erlang-processes'].get(pid);
+  if (!delta['erlang_processes'].has(pid)) { return false; }
+  const proc = delta['erlang_processes'].get(pid);
 
   if (proc.SpawnedAt && proc.SpawnedAt < at) { return true; }
   if (proc.TraceStartedAt && proc.TraceStartedAt < at) { return true; }

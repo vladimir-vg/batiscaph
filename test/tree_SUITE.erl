@@ -51,6 +51,7 @@ init_per_suite(Config) ->
 
   % going to be stopped manually in end_per_suite
   unlink(ContainerPid),
+
   {ok, InstanceId} = wait_for_instance_id(5000),
   [{instance_id, InstanceId}, {client_port, Port}, {client_container_pid, ContainerPid} | Config].
 
@@ -80,12 +81,13 @@ wait_for_instance_id(Timeout) ->
 
 
 spawn_process(Config) ->
-  timer:sleep(10000),
   {ok, #{pid := ReqPid, started_at := _, stopped_at := _}}
     = run_test(?FUNCTION_NAME, Config),
 
+  MatchOpts = #{instance_id => proplists:get_value(instance_id, Config)},
+
   NewState = #{pid => undefined},
-  {ok, _} = match_tree(fun
+  {ok, _} = bt:match_tree(fun
 
     (#{erlang_processes := #{ReqPid := #{<<"Children">> := Children}}},
      #{pid := undefined} = State)
@@ -104,7 +106,7 @@ spawn_process(Config) ->
           {more, State}
       end
 
-  end, NewState, Config),
+  end, NewState, MatchOpts),
 
   ok.
 
@@ -114,8 +116,10 @@ exit_with_reason(Config) ->
   {ok, #{pid := ReqPid, started_at := _, stopped_at := _}}
     = run_test(?FUNCTION_NAME, Config),
 
+  MatchOpts = #{instance_id => proplists:get_value(instance_id, Config)},
+
   NewState = #{pid => undefined},
-  {ok, _} = match_tree(fun
+  {ok, _} = bt:match_tree(fun
 
     (#{erlang_processes := #{ReqPid := #{<<"Children">> := Children}}},
      #{pid := undefined} = State)
@@ -132,7 +136,7 @@ exit_with_reason(Config) ->
         _ -> {more, State}
       end
 
-  end, NewState, Config),
+  end, NewState, MatchOpts),
   ok.
 
 
@@ -161,61 +165,3 @@ run_test(TC, CtConfig) when is_atom(TC) ->
   },
   ct:pal("testcase request: ~p~n~s", [Result, Body]),
   {ok, Result}.
-
-
-
-% it tries to match every fresh delta against MatchFunc
-% until timeout
-match_tree(MatchFunc, MatchState, CtConfig) ->
-  match_tree(MatchFunc, MatchState, CtConfig, #{timeout => 10000}).
-
-
-
-match_tree(MatchFunc, MatchState, CtConfig, #{timeout := Timeout}) ->
-  InstanceId = proplists:get_value(instance_id, CtConfig),
-  % connect to websocket using InstanceId
-  {ok, WsPid} = bt:ws_connect(),
-  ok = bt:ws_send(WsPid, subscribe_to_instance, #{id => InstanceId}),
-  State = #{
-    match_started_at => erlang:system_time(milli_seconds),
-    websocket_pid => WsPid, timeout => Timeout
-  },
-  match_tree_loop(MatchFunc, MatchState, State).
-
-
-
-match_tree_loop(MatchFunc, MatchState, State) ->
-  #{match_started_at := StartedAt, timeout := Timeout, websocket_pid := WsPid} = State,
-  case erlang:system_time(milli_seconds) - StartedAt of
-    TimeSpent when TimeSpent > Timeout -> {error, timeout};
-    TimeSpent ->
-      TimeLeft = Timeout - TimeSpent,
-
-      case bt:ws_receive(WsPid, delta, TimeLeft) of
-        {error, timeout} ->
-          ct:pal("match state: ~p", [MatchState]),
-          ct:pal("tree: ~p", [maps:get(last_tree, State, undefined)]),
-          error(delta_didnt_match);
-
-        {ok, Delta} ->
-          % currently we receive whole tree each time instead of deltas
-          % in future here should be done a merge with all previously received deltas
-          Tree = atomize_delta(Delta),
-          try MatchFunc(Tree, MatchState) of
-            {more, MatchState1} -> match_tree_loop(MatchFunc, MatchState1, State#{last_tree => Tree});
-            {done, MatchState1} ->
-              ct:pal("successful match, state: ~p", [MatchState1]),
-              {ok, MatchState1}
-          catch
-            error:function_clause -> match_tree_loop(MatchFunc, MatchState, State#{last_tree => Tree})
-          end
-      end
-  end.
-
-
-
-atomize_delta(Delta) ->
-  % turn first level keys into atoms
-  maps:fold(fun (K, V, Acc) ->
-    Acc#{binary_to_atom(K,latin1) => V}
-  end, #{}, Delta).

@@ -3,7 +3,7 @@
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([mention_used_atoms/0]).
--define(EVENTS_FLUSH_INTERVAL, 1000).
+-define(EVENTS_FLUSH_INTERVAL, 100).
 
 
 
