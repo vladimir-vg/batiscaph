@@ -5,7 +5,7 @@
   init_per_group/2, end_per_group/2
 ]).
 -export([
-	subscribe_to_process_info/1
+  subscribe_to_process_info/1
 ]).
 
 

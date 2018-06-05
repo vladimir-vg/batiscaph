@@ -1,5 +1,6 @@
 {"1.1.0",
-[{<<"certifi">>,{pkg,<<"certifi">>,<<"1.2.1">>},1},
+[{<<"batiscaph_probe">>,{pkg,<<"batiscaph_probe">>,<<"0.1.0">>},0},
+ {<<"certifi">>,{pkg,<<"certifi">>,<<"1.2.1">>},1},
  {<<"cowboy">>,
   {git,"git://github.com/ninenines/cowboy.git",
        {ref,"0c15b9216b7467390623db84e169b32c68e85bcb"}},
@@ -44,6 +45,7 @@
  {<<"unicode_util_compat">>,{pkg,<<"unicode_util_compat">>,<<"0.2.0">>},2}]}.
 [
 {pkg_hash,[
+ {<<"batiscaph_probe">>, <<"89BBD31345C50CD825D15D615FCCA53C9E6C7747DDA8462075EE9705CFC6F172">>},
  {<<"certifi">>, <<"C3904F192BD5284E5B13F20DB3CEAC9626E14EEACFBB492E19583CF0E37B22BE">>},
  {<<"goldrush">>, <<"F06E5D5F1277DA5C413E84D5A2924174182FB108DABB39D5EC548B27424CD106">>},
  {<<"idna">>, <<"AC203208ADA855D95DC591A764B6E87259CB0E2A364218F215AD662DAA8CD6B4">>},

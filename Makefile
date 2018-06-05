@@ -11,7 +11,7 @@ ct: ct_clickhouse
 
 ct_mnesia: prepare_ct
 	BATISCAPH_ENDPOINT_HTTP_PORT=$(HTTP_PORT) \
-	./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test
+	./rebar3 ct
 
 ct_clickhouse: prepare_ct
 	cd backend && \
@@ -22,7 +22,7 @@ ct_clickhouse: prepare_ct
 	BATISCAPH_ENDPOINT_HTTP_PORT=$(HTTP_PORT) \
 	BATISCAPH_ENDPOINT_CLICKHOUSE_URL=$(CLICKHOUSE_URL) \
 	BATISCAPH_ENDPOINT_CLICKHOUSE_DB=$(CLICKHOUSE_TEST_DB) \
-	./rebar3 ct --name ct_run@0.0.0.0 --setcookie batiscaph-test
+	./rebar3 ct
 
 prepare_ct: ensure_links_are_in_place build_backend build_test_apps
 
@@ -30,6 +30,7 @@ prepare_ct: ensure_links_are_in_place build_backend build_test_apps
 
 ensure_links_are_in_place: \
 	_checkouts/batiscaph \
+	_checkouts/batiscaph_probe \
 	test/phoenix_app1/_checkouts/batiscaph_probe \
 	test/erlang17_app1/_checkouts/batiscaph_probe \
 	test/erlang18_app1/_checkouts/batiscaph_probe \
@@ -38,11 +39,19 @@ ensure_links_are_in_place: \
 	test/erlang17_app1/src/tree_testcases.erl \
 	test/erlang18_app1/src/tree_testcases.erl \
 	test/erlang19_app1/src/tree_testcases.erl \
-	test/erlang20_app1/src/tree_testcases.erl
+	test/erlang20_app1/src/tree_testcases.erl \
+	test/erlang17_app1/test \
+	test/erlang18_app1/test \
+	test/erlang19_app1/test \
+	test/erlang20_app1/test
 
 _checkouts/batiscaph:
 	mkdir -p _checkouts
-	- cd _checkouts && ln -s ../backend batiscaph
+	cd _checkouts && ln -s ../backend batiscaph
+
+_checkouts/batiscaph_probe:
+	mkdir -p _checkouts
+	cd _checkouts && ln -s ../probe batiscaph_probe
 
 test/phoenix_app1/_checkouts/batiscaph_probe:
 	mkdir -p test/phoenix_app1/_checkouts
@@ -69,6 +78,15 @@ test/erlang19_app1/src/tree_testcases.erl:
 	cd test/erlang19_app1/src && ln -s ../../tree_testcases.erl tree_testcases.erl
 test/erlang20_app1/src/tree_testcases.erl:
 	cd test/erlang20_app1/src && ln -s ../../tree_testcases.erl tree_testcases.erl
+
+test/erlang17_app1/test:
+	cd test/erlang17_app1 && ln -s ../test_app_ct_test test
+test/erlang18_app1/test:
+	cd test/erlang18_app1 && ln -s ../test_app_ct_test test
+test/erlang19_app1/test:
+	cd test/erlang19_app1 && ln -s ../test_app_ct_test test
+test/erlang20_app1/test:
+	cd test/erlang20_app1 && ln -s ../test_app_ct_test test
 
 
 

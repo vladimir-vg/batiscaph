@@ -15,5 +15,6 @@ COPY rebar.config rebar.config
 COPY _checkouts _checkouts
 COPY src src
 RUN ./rebar3 compile
+COPY test test
 
 CMD ./rebar3 shell

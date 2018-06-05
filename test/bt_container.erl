@@ -80,15 +80,17 @@ find_docker_executable() ->
   end.
 
 docker_cmd_args_env(Image, Opts) ->
-  Args1 = maps:fold(fun
+  {Args1, Cmd1} = maps:fold(fun
     % these opts do not change command arguments, just skip
-    (logdir, _, Args) -> Args;
-    (name, _, Args) -> Args;
-    (host_network, true, Args) -> ["--net=host" | Args];
+    (logdir, _, {Args, Cmd}) -> {Args, Cmd};
+    (name, _, {Args, Cmd}) -> {Args, Cmd};
+    (host_network, true, {Args, Cmd}) -> {["--net=host" | Args], Cmd};
+    (cmd, Cmd, {Args, _}) when is_binary(Cmd) -> {Args, [Cmd]};
+    (cmd, Cmd, {Args, _}) when is_list(Cmd) -> {Args, Cmd};
 
-    (Key, Value, Args) when is_binary(Key) -> env_args(Key, Value) ++ Args
-  end, [], Opts),
-  Args2 = ["run", "-i"]++Args1++[Image], % , "/bin/bash"
+    (Key, Value, {Args, Cmd}) when is_binary(Key) -> {env_args(Key, Value) ++ Args, Cmd}
+  end, {[], []}, Opts),
+  Args2 = ["run", "-i"]++Args1++[Image] ++ Cmd1, % , "/bin/bash"
   {ok, Args2}.
 
 env_args(Key, Value) ->
