@@ -61,13 +61,13 @@ handle_cast(Cast, State) ->
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,Binary}, #io_server{} = State) when is_binary(Binary) ->
   Event = shell_output_event_now(From, [{put_chars,unicode,Binary}]),
-  ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, [Event]}}),
+  ok = gen_server:call(batiscaph_probe_session, {events, [Event]}),
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
 handle_io_request(From, ReplyAs, {put_chars,unicode,io_lib,format,[Format,Args]}, #io_server{} = State) ->
   Event = shell_output_event_now(From, [{put_chars,unicode,io_lib,format,[Format,Args]}]),
-  ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, [Event]}}),
+  ok = gen_server:call(batiscaph_probe_session, {events, [Event]}),
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
@@ -87,7 +87,7 @@ handle_io_request(From, ReplyAs, getopts, State) ->
 
 handle_io_request(From, ReplyAs, {requests, Requests}, #io_server{} = State) ->
   Event = shell_output_event_now(From, Requests),
-  ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, [Event]}}),
+  ok = gen_server:call(batiscaph_probe_session, {events, [Event]}),
   From ! {io_reply, ReplyAs, ok},
   {ok, State};
 
@@ -105,7 +105,7 @@ continue_pending_input(#io_server{pending_get_until = Pending} = State) ->
       Event = shell_input_event_now(From, Prompt, Scanned),
       % make sure that input logged first, and only then execution starts
       batiscaph_probe_session ! {to_service, {shell_input, stopped}},
-      ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, [Event]}}),
+      ok = gen_server:call(batiscaph_probe_session, {events, [Event]}),
       From ! {io_reply, ReplyAs, Result},
       {ok, State1#io_server{pending_get_until = undefined}};
 

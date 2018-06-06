@@ -1,4 +1,4 @@
--module(batiscaph_probe_collector).
+-module(batiscaph_probe_trace_collector).
 -behaviour(gen_server).
 -export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -24,9 +24,9 @@ init([]) ->
 handle_info(TraceEvent, State) when element(1, TraceEvent) =:= trace_ts ->
   % io:format("~p~n", [TraceEvent]),
   {ok, Events, State1} = match_and_consume_event(TraceEvent, State),
-  ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, Events}}),
+  ok = gen_server:call(batiscaph_probe_session, {events, Events}),
   {noreply, State1};
-
+ 
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
@@ -53,7 +53,7 @@ handle_cast(Cast, State) ->
 
 
 ensure_basic_tracing(Pid) ->
-  try erlang:trace(Pid, true, [procs, timestamp, set_on_spawn, {tracer, whereis(batiscaph_probe_collector)}]) of
+  try erlang:trace(Pid, true, [procs, timestamp, set_on_spawn, {tracer, whereis(batiscaph_probe_trace_collector)}]) of
     1 ->
       TraceEvents = batiscaph_probe_feature_procs:tracing_started_event(Pid, erlang:now()),
       {ok, TraceEvents}

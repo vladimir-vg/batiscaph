@@ -55,7 +55,7 @@ handle_cast(Cast, State) ->
 init0(#shell{io_server_pid = IoServerPid} = State) ->
   true = group_leader(IoServerPid, self()),
 
-  erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, whereis(batiscaph_probe_collector)}]),
+  erlang:trace(self(), true, [procs, timestamp, set_on_spawn, {tracer, whereis(batiscaph_probe_trace_collector)}]),
 
   ShellPid = shell:start(true, true),
   State1 = State#shell{io_server_pid = IoServerPid, shell_pid = ShellPid},

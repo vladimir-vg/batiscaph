@@ -91,7 +91,7 @@ log_process_infos1(#subs{process_info_pids = []} = State) ->
 
 log_process_infos1(#subs{process_info_pids = OldPids, prev_process_infos = OldInfos} = State) ->
   {ok, Events, Pids, Infos} = log_process_infos2(OldPids, OldInfos),
-  ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, Events}}),
+  ok = gen_server:call(batiscaph_probe_session, {events, Events}),
   State1 = State#subs{process_info_pids = Pids, prev_process_infos = Infos},
   {ok, State1}.
 

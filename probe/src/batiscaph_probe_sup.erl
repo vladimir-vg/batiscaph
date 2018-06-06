@@ -21,7 +21,7 @@ init([]) ->
       {ok, _} ->
         [
           {batiscaph_probe_session, {batiscaph_probe_session, start_link, []}, permanent, 5000, worker, [batiscaph_probe_session]},
-          {batiscaph_probe_collector, {batiscaph_probe_collector, start_link, []}, permanent, 5000, worker, [batiscaph_probe_collector]},
+          {batiscaph_probe_trace_collector, {batiscaph_probe_trace_collector, start_link, []}, permanent, 5000, worker, [batiscaph_probe_trace_collector]},
           {batiscaph_probe_subs_worker, {batiscaph_probe_subs_worker, start_link, []}, permanent, 5000, worker, [batiscaph_probe_subs_worker]}
         ]
     end,

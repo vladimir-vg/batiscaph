@@ -30,7 +30,7 @@ code_change(_OldVsn, State, _Extra) ->
 %% @private
 handle_event({log, Message}, State) ->
   Event = lager_message_to_event(Message),
-  ok = gen_server:call(batiscaph_probe_session, {queue_for_send, {events, [Event]}}),
+  ok = gen_server:call(batiscaph_probe_session, {events, [Event]}),
   {ok, State};
 
 handle_event(_Event, State) ->

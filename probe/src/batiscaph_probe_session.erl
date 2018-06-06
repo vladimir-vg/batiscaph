@@ -61,6 +61,10 @@ handle_info({tcp, Socket, Data}, #session{socket = Socket} = State) ->
   {ok, State1} = handle_message_from_service(Term, State),
   {noreply, State1};
 
+handle_info({events, Events}, State) ->
+  {ok, State1} = maybe_send_events(Events, State),
+  {noreply, State1};
+
 handle_info(Msg, State) ->
   {stop, {unknown_info, Msg}, State}.
 
@@ -72,7 +76,7 @@ handle_call({request, Method, Arg}, From, #session{} = State) ->
   {ok, State1} = request_service(From, Method, Arg, State),
   {noreply, State1};
 
-handle_call({queue_for_send, {events, Events}}, _From, #session{} = State) ->
+handle_call({events, Events}, _From, #session{} = State) ->
   {ok, State1} = maybe_send_events(Events, State),
   {reply, ok, State1};
 
@@ -106,7 +110,7 @@ handle_message_from_service({shell_input, Text}, State) ->
 
 handle_message_from_service({ensure_subscribed_to_process_info, PidBin}, State) ->
   Pid = erlang:list_to_pid(erlang:binary_to_list(PidBin)),
-  {ok, Events} = batiscaph_probe_collector:ensure_basic_tracing(Pid),
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(Pid),
   {ok, State1} = maybe_send_events(Events, State),
   ok = gen_server:call(batiscaph_probe_subs_worker, {ensure_subscribed_to_process_info, Pid}),
   {ok, State1};
@@ -125,7 +129,7 @@ handle_request(get_user_config, _Arg, State) ->
 
 handle_request(apply_config, Config, State) ->
   % send new config via gen_server:call to collector
-  ok = gen_server:call(batiscaph_probe_collector, {apply_config, Config}),
+  ok = gen_server:call(batiscaph_probe_trace_collector, {apply_config, Config}),
   {ok, ok, State};
 
 handle_request(ensure_shell_started, Arg, State) ->
