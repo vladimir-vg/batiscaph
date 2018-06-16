@@ -5,31 +5,133 @@
 
 
 desired_types() ->
-  [<<"p1 ct:callback">>].
+  [
+    <<"p1 ct:pre_init_per_suite">>,
+    <<"p1 ct:post_init_per_suite">>,
+    <<"p1 ct:pre_end_per_suite">>,
+    <<"p1 ct:post_end_per_suite">>,
+    <<"p1 ct:pre_init_per_group">>,
+    <<"p1 ct:post_init_per_group">>,
+    <<"p1 ct:pre_end_per_group">>,
+    <<"p1 ct:post_end_per_group">>,
+    <<"p1 ct:pre_init_per_testcase">>,
+    <<"p1 ct:post_init_per_testcase">>,
+    <<"p1 ct:pre_end_per_testcase">>,
+    <<"p1 ct:post_end_per_testcase">>
+  ].
 
 desired_attrs() ->
-  [<<"callback">>].
+  [<<"suite">>, <<"groups">>, <<"testcase">>].
 
 init() ->
-  #{suites => #{}}.
+  #{callbacks => #{}}.
 
 
 
-consume(#{<<"Type">> := <<"p1 ct:callback">>} = E, #{events := Suites} = State) ->
-  #{<<"At">> := At, <<"Pid1">> := Pid} = E,
-  State;
-  % #{<<"text">> := Text, <<"module">> := Module, <<"function">> := Function, <<"line">> := Line} = E,
-  % Key = <<(erlang:integer_to_binary(At))/binary, " ", Pid/binary>>,
-  % Event = #{
-  %   <<"Pid">> => Pid, <<"At">> => At, <<"Id">> => Key, <<"text">> => Text,
-  %   <<"module">> => Module, <<"function">> => Function, <<"line">> => Line
-  % },
-  % State#{events => Events#{Key => Event}};
+consume(#{<<"Type">> := <<"p1 ct:pre_init_per_suite">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite} = E,
+  Key = <<Suite/binary, " init_per_suite">>,
+  Callbacks1 = Callbacks#{Key => #{<<"StartedAt">> => At, <<"Pid">> => Pid}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:post_init_per_suite">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite} = E,
+  Key = <<Suite/binary, " init_per_suite">>,
+  Callback = #{<<"Pid">> := Pid} = maps:get(Key, Callbacks),
+  Callbacks1 = Callbacks#{Key => Callback#{<<"StoppedAt">> => At}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:pre_end_per_suite">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite} = E,
+  Key = <<Suite/binary, " end_per_suite">>,
+  Callbacks1 = Callbacks#{Key => #{<<"StartedAt">> => At, <<"Pid">> => Pid}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:post_end_per_suite">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite} = E,
+  Key = <<Suite/binary, " end_per_suite">>,
+  Callback = #{<<"Pid">> := Pid} = maps:get(Key, Callbacks),
+  Callbacks1 = Callbacks#{Key => Callback#{<<"StoppedAt">> => At}},
+  State#{callbacks => Callbacks1};
+
+
+
+consume(#{<<"Type">> := <<"p1 ct:pre_init_per_group">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups} = E,
+  Key = <<Suite/binary, " ", Groups/binary, " init_per_group">>,
+  Callbacks1 = Callbacks#{Key => #{<<"StartedAt">> => At, <<"Pid">> => Pid}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:post_init_per_group">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups} = E,
+  Key = <<Suite/binary, " ", Groups/binary, " init_per_group">>,
+  Callback = #{<<"Pid">> := Pid} = maps:get(Key, Callbacks),
+  Callbacks1 = Callbacks#{Key => Callback#{<<"StoppedAt">> => At}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:pre_end_per_group">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups} = E,
+  Key = <<Suite/binary, " ", Groups/binary, " end_per_group">>,
+  Callbacks1 = Callbacks#{Key => #{<<"StartedAt">> => At, <<"Pid">> => Pid}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:post_end_per_group">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups} = E,
+  Key = <<Suite/binary, " ", Groups/binary, " end_per_group">>,
+  Callback = #{<<"Pid">> := Pid} = maps:get(Key, Callbacks),
+  Callbacks1 = Callbacks#{Key => Callback#{<<"StoppedAt">> => At}},
+  State#{callbacks => Callbacks1};
+
+
+
+consume(#{<<"Type">> := <<"p1 ct:pre_init_per_testcase">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups, <<"testcase">> := TC} = E,
+  Groups1 = case Groups of
+    <<>> -> <<>>;
+    _ -> <<" ", Groups/binary>>
+  end,
+  Key = <<Suite/binary, Groups1/binary, " ", TC/binary, " init_per_testcase">>,
+  Callbacks1 = Callbacks#{Key => #{<<"StartedAt">> => At, <<"Pid">> => Pid}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:post_init_per_testcase">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups, <<"testcase">> := TC} = E,
+  Groups1 = case Groups of
+    <<>> -> <<>>;
+    _ -> <<" ", Groups/binary>>
+  end,
+  Key = <<Suite/binary, Groups1/binary, " ", TC/binary, " init_per_testcase">>,
+  Callback = #{<<"Pid">> := Pid} = maps:get(Key, Callbacks),
+  Callbacks1 = Callbacks#{Key => Callback#{<<"StoppedAt">> => At}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:pre_end_per_testcase">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups, <<"testcase">> := TC} = E,
+  Groups1 = case Groups of
+    <<>> -> <<>>;
+    _ -> <<" ", Groups/binary>>
+  end,
+  Key = <<Suite/binary, Groups1/binary, " ", TC/binary,  " end_per_testcase">>,
+  Callbacks1 = Callbacks#{Key => #{<<"StartedAt">> => At, <<"Pid">> => Pid}},
+  State#{callbacks => Callbacks1};
+
+consume(#{<<"Type">> := <<"p1 ct:post_end_per_testcase">>} = E, #{callbacks := Callbacks} = State) ->
+  #{<<"At">> := At, <<"Pid1">> := Pid, <<"suite">> := Suite, <<"groups">> := Groups, <<"testcase">> := TC} = E,
+  Groups1 = case Groups of
+    <<>> -> <<>>;
+    _ -> <<" ", Groups/binary>>
+  end,
+  Key = <<Suite/binary, Groups1/binary, " ", TC/binary, " end_per_testcase">>,
+  Callback = #{<<"Pid">> := Pid} = maps:get(Key, Callbacks),
+  Callbacks1 = Callbacks#{Key => Callback#{<<"StoppedAt">> => At}},
+  State#{callbacks => Callbacks1};
+
+
 
 consume(_E, State) ->
   State.
 
 
 
-finalize(#{suites := Suites}) ->
-  #{<<"ct_suites">> => Suites}.
+finalize(#{callbacks := Callbacks}) ->
+  #{<<"ct_callbacks">> => Callbacks}.

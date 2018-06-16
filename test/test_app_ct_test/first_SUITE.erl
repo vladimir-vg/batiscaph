@@ -30,5 +30,5 @@ testcase1(_Config) ->
   ok.
 
 must_fail1(_Config) ->
-  error(reason_of_failure),
+  error(intentional_error),
   ok.

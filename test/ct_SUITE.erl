@@ -5,7 +5,7 @@
   init_per_group/2, end_per_group/2
 ]).
 -export([
-  first_suite/1
+  first_suite_callbacks/1
 ]).
 
 
@@ -27,7 +27,7 @@ all() ->
 
 groups() ->
   Testcases = [
-    first_suite
+    first_suite_callbacks
   ],
   [
     % ./rebar3 ct hangs on 17 and 18 erlang when ran in docker
@@ -103,15 +103,22 @@ wait_for_instance_id(Timeout) ->
 
 
 
-first_suite(Config) ->
+first_suite_callbacks(Config) ->
   MatchOpts = #{instance_id => proplists:get_value(instance_id, Config)},
-
   {ok, _} = bt:match_tree(fun
 
-    (#{ct_suites := #{<<"first_SUITE">> := #{<<"Testcases">> := #{
-      <<"testcase1">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _}
-    }}}},
-     State)
+    (#{ct_callbacks := #{
+      <<"first_SUITE init_per_suite">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE end_per_suite">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE testcase1 init_per_testcase">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE testcase1 end_per_testcase">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE group1 group2 testcase1 init_per_testcase">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE group1 group2 testcase1 end_per_testcase">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE group1 init_per_group">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE group1 end_per_group">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE group1 group2 group3 init_per_group">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _},
+      <<"first_SUITE group1 group2 group3 end_per_group">> := #{<<"StartedAt">> := _, <<"StoppedAt">> := _, <<"Pid">> := _}
+    }}, State)
     ->
       {done, State}
 
