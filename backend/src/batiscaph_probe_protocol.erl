@@ -168,6 +168,9 @@ handle_cast(Cast, State) ->
 
 
 handle_data_from_probe(Data, #persistent{} = State) ->
+  % if it fails with badargs, then there is an atom
+  % that doesn't exists yet on this node
+  % need to add that atom into mention_used_atoms/0
   Term = erlang:binary_to_term(Data, [safe]),
   % check subsribers just right before receiving/sending for now
   % rework later to receive subscribe requests
@@ -318,5 +321,5 @@ mention_used_atoms() ->
     resp_body_size,plug,halted,
     reason,mfa,prompt,input,output,
     shell_input,ready,stopped,
-    binaries,callback
+    binaries,callback,groups,suite,testcase
   ].
