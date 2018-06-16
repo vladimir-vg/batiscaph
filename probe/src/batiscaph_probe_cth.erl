@@ -34,95 +34,107 @@ init(_Id, _Opts) ->
 
 
 pre_init_per_suite(Suite,Config,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(pre_init_per_suite, #{suite => atom_to_binary(Suite,latin1)}),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Config, State}.
 
 post_init_per_suite(Suite,_Config,Return,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(post_init_per_suite, #{suite => atom_to_binary(Suite,latin1)}),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Return, State}.
 
 pre_end_per_suite(Suite,Config,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(pre_end_per_suite, #{suite => atom_to_binary(Suite,latin1)}),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Config, State}.
 
 post_end_per_suite(Suite,_Config,Return,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(post_end_per_suite, #{suite => atom_to_binary(Suite,latin1)}),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Return, State}.
 
 
 
 pre_init_per_group(_Group,Config,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(pre_init_per_group, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Config, State}.
 
 post_init_per_group(_Group,Config,Return, State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(post_init_per_group, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Return, State}.
 
 pre_end_per_group(_Group,Config,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(pre_end_per_group, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Config, State}.
 
 post_end_per_group(_Group,Config,Return, State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(post_end_per_group, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Return, State}.
 
 
 
 pre_init_per_testcase(TC,Config,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(pre_init_per_testcase, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config),
     testcase => atom_to_binary(TC,latin1)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Config, State}.
 
 post_init_per_testcase(TC,Config,Return,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(post_init_per_testcase, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config),
     testcase => atom_to_binary(TC,latin1)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Return, State}.
 
 pre_end_per_testcase(TC,Config,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(pre_end_per_testcase, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config),
     testcase => atom_to_binary(TC,latin1)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Config, State}.
 
 post_end_per_testcase(TC,Config,Return,State) ->
+  {ok, Events} = batiscaph_probe_trace_collector:ensure_basic_tracing(self()),
   E = ct_callback_event(post_end_per_testcase, #{
     groups => groups_from_config(Config),
     suite => suite_from_config(Config),
     testcase => atom_to_binary(TC,latin1)
   }),
-  batiscaph_probe_session ! {events, [E]},
+  batiscaph_probe_session ! {events, [E | Events]},
   {Return, State}.
 
 
@@ -169,7 +181,6 @@ get_group(Part) ->
 ct_callback_event(Atom, Attrs) when is_atom(Atom) andalso is_map(Attrs) ->
   Attrs#{
     at => erlang:now(),
-    type => <<"p1 ct:callback">>,
-    pid1 => list_to_binary(pid_to_list(self())),
-    callback => atom_to_binary(Atom, latin1)
+    type => <<"p1 ct:", (atom_to_binary(Atom,latin1))/binary>>,
+    pid1 => list_to_binary(pid_to_list(self()))
   }.
