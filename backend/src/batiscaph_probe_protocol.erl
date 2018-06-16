@@ -49,7 +49,7 @@ authorize_by_token(Token) ->
 
 start_persistent_loop(Env, UserId, Req) ->
   ok = remove_from_ranch_connection_pool(Env),
-  InstanceId = batiscaph_util:binary_to_hex(crypto:strong_rand_bytes(32)),
+  InstanceId = batiscaph_util:binary_to_hex(crypto:strong_rand_bytes(16)),
   {ok, Socket, Transport, _Req1} = switch_socket_to_binary_stream(InstanceId, Req),
   lager:info("Socket ~p was open open on id: ~p", [Socket, InstanceId]),
 
@@ -318,5 +318,5 @@ mention_used_atoms() ->
     resp_body_size,plug,halted,
     reason,mfa,prompt,input,output,
     shell_input,ready,stopped,
-    binaries
+    binaries,callback
   ].

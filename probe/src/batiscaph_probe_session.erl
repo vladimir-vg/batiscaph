@@ -25,9 +25,7 @@ start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-  % not all applications are be loaded on this stage
-  % wait a bit before sending summary to be able to determine dependency
-  erlang:send_after(1000, self(), init),
+  self() ! init,
   {ok, #session{}}.
 
 
