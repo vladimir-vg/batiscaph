@@ -29,8 +29,12 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @private
 handle_event({log, Message}, State) ->
-  Event = lager_message_to_event(Message),
-  ok = gen_server:call(batiscaph_probe_session, {events, [Event]}),
+  E = lager_message_to_event(Message),
+  {ok, Events} = case proplists:get_value(pid, lager_msg:metadata(Message)) of
+    Pid when is_pid(Pid) -> batiscaph_probe_trace_collector:ensure_basic_tracing(Pid);
+    _ -> {ok, []}
+  end,
+  ok = gen_server:call(batiscaph_probe_session, {events, [E | Events]}),
   {ok, State};
 
 handle_event(_Event, State) ->
