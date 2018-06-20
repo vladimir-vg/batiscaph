@@ -4,7 +4,7 @@
 // makes sure that requested constraints are met
 // generates ready-to-render data tree, with calculated x's and y's.
 
-import HttpReq from './elements/HttpReq';
+import Callback from './elements/Callback';
 import Process from './elements/Process';
 import LogEvent from './elements/LogEvent';
 import attr from './attr';
@@ -17,22 +17,22 @@ export function produceLayout(delta) {
   //
   // for now args are just Timestamp and Pids
   // but I want it to be flexible in future
-  const reqs = HttpReq.produceElements(delta);
+  const callbacks = Callback.produceElements(delta);
   const procs = Process.produceElements(delta);
   const logs = LogEvent.produceElements(delta);
-  // console.log('reqs', reqs);
+  // console.log('callbacks', callbacks);
   // console.log('procs', procs);
 
   // here we should consider all generated elements and their
   // constrains, and produce resolve function
   // that can turn each constraint field into actual numeric value
-  const resolve = produceResolveFunc(delta, { HttpReq: reqs, Process: procs, LogEvent: logs });
+  const resolve = produceResolveFunc(delta, { Callback: callbacks, Process: procs, LogEvent: logs });
 
   // now when we got clear coordinate transforms
   // just generate ready-to-render tree with coords
 
   return {
-    HttpReq: resolveAttrs({ elements: reqs, resolve }),
+    Callback: resolveAttrs({ elements: callbacks, resolve }),
     Process: resolveAttrs({ elements: procs, resolve }),
     LogEvent: resolveAttrs({ elements: logs, resolve }),
     xColsLength: resolve('xColsLength'),
@@ -57,12 +57,12 @@ function resolveAttrs({ elements, resolve }) {
 
 
 
-function produceResolveFunc(delta, { HttpReq: reqs, Process: procs, LogEvent: logs }) {
+function produceResolveFunc(delta, { Callback: callbacks, Process: procs, LogEvent: logs }) {
   let timestamps = [];
   let pids = [];
 
-  for (const i in reqs) {
-    const cons = reqs[i].attrs;
+  for (const i in callbacks) {
+    const cons = callbacks[i].attrs;
     for (const key in cons) {
       // walk through all constrains of all elements
       // and extract pids and timestamps

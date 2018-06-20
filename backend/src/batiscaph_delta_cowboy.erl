@@ -21,10 +21,13 @@ parse_id(Id) ->
 format_req_id(R) ->
   #{
     <<"Pid">> := Pid,
-    <<"init">> := #{<<"StartedAt">> := StartedAt},
-    <<"handle">> := #{<<"StoppedAt">> := StoppedAt}
+    <<"init">> := #{<<"StartedAt">> := StartedAt, <<"StoppedAt">> := StoppedAt}
   } = R,
-  format_id(Pid, StartedAt, StoppedAt).
+  StoppedAt1 = case R of
+    #{<<"handle">> := #{<<"StoppedAt">> := At1}} -> At1;
+    _ -> StoppedAt
+  end,
+  format_id(Pid, StartedAt, StoppedAt1).
 
 
 

@@ -11,32 +11,32 @@ export default class RequestsListPage extends React.Component {
     super();
 
     this.renderItem = this.renderItem.bind(this);
-    this.selectRequest = this.selectRequest.bind(this);
-    this.hoverRequest = this.hoverRequest.bind(this);
+    this.selectCallback = this.selectCallback.bind(this);
+    this.hoverCallback = this.hoverCallback.bind(this);
   }
 
   componentWillUnmount() {
-    this.props.store.hoverRequest(null);
+    this.props.store.hoverCallback(null);
   }
 
-  hoverRequest(id) { this.props.store.hoverRequest(id); }
+  hoverCallback(id) { this.props.store.hoverCallback(id); }
 
-  selectRequest(reqId, type) {
+  selectCallback(reqId) {
     const { id } = this.props.match.params;
-    const newPath = `/instances/${id}/${type}-request-info/${reqId}`;
+    const newPath = `/instances/${id}/request-info/${reqId}`;
     this.props.history.push(newPath);
   }
 
-  renderItem({ Id, Method, Path, RespCode, _type }) {
+  renderItem({ Id1, Method, Path, RespCode }) {
     let className = "";
-    if (Id === this.props.store.hoveredRequestId) {
+    if (Id1 === this.props.store.hoveredCallbackId) {
       className += " hovered";
     }
 
-    return <tr key={Id} className={className}
-        onClick={this.selectRequest.bind(this, Id, _type)}
-        onMouseEnter={this.hoverRequest.bind(this, Id)}
-        onMouseLeave={this.hoverRequest.bind(this, null)}>
+    return <tr key={Id1} className={className}
+        onClick={this.selectCallback.bind(this, Id1)}
+        onMouseEnter={this.hoverCallback.bind(this, Id1)}
+        onMouseLeave={this.hoverCallback.bind(this, null)}>
 
       <td>{Method}</td>
       <td>{Path}</td>

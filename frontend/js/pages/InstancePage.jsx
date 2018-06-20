@@ -31,8 +31,8 @@ export default class InstancePage extends React.Component {
   constructor() {
     super();
 
-    this.selectRequest = this.selectRequest.bind(this);
-    this.hoverRequest = this.hoverRequest.bind(this);
+    this.selectCallback = this.selectCallback.bind(this);
+    this.hoverCallback = this.hoverCallback.bind(this);
     this.selectProcess = this.selectProcess.bind(this);
     this.hoverProcess = this.hoverProcess.bind(this);
     this.hoverLogEvent = this.hoverLogEvent.bind(this);
@@ -96,17 +96,17 @@ export default class InstancePage extends React.Component {
     return false;
   }
 
-  hoverRequest(id) { this.props.store.hoverRequest(id); }
+  hoverCallback(id) { this.props.store.hoverCallback(id); }
   hoverProcess(id) { this.props.store.hoverProcess(id); }
   hoverLogEvent(id) { this.props.store.hoverLogEvent(id); }
 
-  selectRequest(reqId, type) {
+  selectCallback(reqId) {
     const { id } = this.props.match.params;
     if (!reqId) {
       const newPath = `/instances/${id}/requests`;
       this.props.history.push(newPath);
     } else {
-      const newPath = `/instances/${id}/${type}-request-info/${encodeURIComponent(reqId)}`;
+      const newPath = `/instances/${id}/request-info/${encodeURIComponent(reqId)}`;
       this.props.history.push(newPath);
     }
   }
@@ -152,12 +152,12 @@ export default class InstancePage extends React.Component {
       const element = this.props.store.layout.LogEvent[this.props.store.hoveredLogId];
       if (element) { result.push(this.renderSelectionElement(element)); }
     }
-    if (this.props.store.hoveredRequestId) {
-      const element = this.props.store.layout.HttpReq[this.props.store.hoveredRequestId];
+    if (this.props.store.hoveredCallbackId) {
+      const element = this.props.store.layout.Callback[this.props.store.hoveredCallbackId];
       if (element) { result.push(this.renderSelectionElement(element, "hovered")); }
     }
-    if (this.props.store.selectedRequestId) {
-      const element = this.props.store.layout.HttpReq[this.props.store.selectedRequestId];
+    if (this.props.store.selectedCallbackId) {
+      const element = this.props.store.layout.Callback[this.props.store.selectedCallbackId];
       if (element) { result.push(this.renderSelectionElement(element, "selected")); }
     }
     if (this.props.store.hoveredProcessPid) {
@@ -178,12 +178,12 @@ export default class InstancePage extends React.Component {
   }
 
   renderElement([_key, e]) {
-    const { selectedRequestId, hoveredRequestId, selectedProcessPid, hoveredProcessPid, hoveredLogId } = this.props.store;
-    const { selectRequest, hoverRequest, selectProcess, hoverProcess, hoverLogEvent } = this; // take wrapped functions
+    const { selectedCallbackId, hoveredCallbackId, selectedProcessPid, hoveredProcessPid, hoveredLogId } = this.props.store;
+    const { selectCallback, hoverCallback, selectProcess, hoverProcess, hoverLogEvent } = this; // take wrapped functions
     const storeProps = {
-      selectRequest, selectProcess,
-      hoverRequest, hoverProcess,
-      selectedRequestId, hoveredRequestId,
+      selectCallback, selectProcess,
+      hoverCallback, hoverProcess,
+      selectedCallbackId, hoveredCallbackId,
       selectedProcessPid, hoveredProcessPid,
       hoveredLogId, hoverLogEvent
     };
@@ -193,7 +193,7 @@ export default class InstancePage extends React.Component {
   }
 
   render() {
-    const reqs = this.props.store.layout.HttpReq || {};
+    const callbacks = this.props.store.layout.Callback || {};
     const procs = this.props.store.layout.Process || {};
     const logs = this.props.store.layout.LogEvent || {};
 
@@ -204,12 +204,12 @@ export default class InstancePage extends React.Component {
     let selectedItemLink = null;
     if (/\/process-info\//.test(this.props.location.pathname)) {
       selectedItemLink = <NavLink to={this.props.location.pathname}>Process</NavLink>
-    } else if (/-request-info\//.test(this.props.location.pathname)) {
+    } else if (/\/\/request-info\//.test(this.props.location.pathname)) {
       selectedItemLink = <NavLink to={this.props.location.pathname}>Request</NavLink>
     }
 
     let requestsLink = null;
-    if (Object.keys(reqs).length != 0) {
+    if (Object.keys(callbacks).length != 0) {
       requestsLink = <NavLink to={`${this.props.match.url}/requests`}>Requests</NavLink>;
     }
 
@@ -235,8 +235,7 @@ export default class InstancePage extends React.Component {
             <Route exact path={`${this.props.match.path}/shell`} component={ShellPage} />
             <Route exact path={`${this.props.match.path}/logs`} component={LogsPage} />
             <Route exact path={`${this.props.match.path}/process-info/:pid`} component={ProcessPage} />
-            <Route exact path={`${this.props.match.path}/plug-request-info/:reqId`} component={RequestPage} />
-            <Route exact path={`${this.props.match.path}/cowboy-request-info/:reqId`} component={RequestPage} />
+            <Route exact path={`${this.props.match.path}/request-info/:reqId`} component={RequestPage} />
             <Redirect to={`/instances/${this.props.match.params.id}/shell`} />
           </Switch>
         </div>
@@ -248,7 +247,7 @@ export default class InstancePage extends React.Component {
           <Layout.Provider value={this.state.layoutRefs}>
             <g>{this.renderSelection()}</g>
             <g>{Object.entries(procs).map(this.renderElement)}</g>
-            <g>{Object.entries(reqs).map(this.renderElement)}</g>
+            <g>{Object.entries(callbacks).map(this.renderElement)}</g>
             <g>{Object.entries(logs).map(this.renderElement)}</g>
           </Layout.Provider>
 

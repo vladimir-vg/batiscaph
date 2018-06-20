@@ -6,6 +6,21 @@ void(computed); // just to silence eslint, which cannot detect decorators usage
 
 
 
+const extractCallbackType = (id) => {
+  let m;
+  m = /^cowboy (.+)$/.exec(id);
+  if (m[1]) { return { id: m[1], type: 'cowboy' }}
+  m = /^plug (.+)$/.exec(id);
+  if (m[1]) { return { id: m[1], type: 'plug' }}
+
+  throw {
+    message: "Unable to extract type from callback id",
+    id
+  };
+};
+
+
+
 export default class Store {
   constructor() {
     extendObservable(this, {
@@ -39,8 +54,8 @@ export default class Store {
       },
       selectedProcessPid: null,
       hoveredProcessPid: null,
-      selectedRequestId: null,
-      hoveredRequestId: null,
+      selectedCallbackId: null,
+      hoveredCallbackId: null,
       hoveredLogId: null,
 
       // for full request info
@@ -99,10 +114,10 @@ export default class Store {
   consumeDelta(delta) {
     // to distinguish requests, when they are merged into one list
     for (const id in delta['cowboy_requests']) {
-      delta['cowboy_requests'][id]._type = 'cowboy';
+      delta['cowboy_requests'][id].Id1 = `cowboy ${id}`;
     }
     for (const id in delta['plug_requests']) {
-      delta['plug_requests'][id]._type = 'plug';
+      delta['plug_requests'][id].Id1 = `plug ${id}`;
     }
 
     // make new delta also observable, to avoid having unobserved parts
@@ -111,14 +126,17 @@ export default class Store {
   }
 
   @action
-  selectRequest(id, type) {
-    this.selectedRequestId = id;
-    if (id) { this.ensureRequestInfoFetch(id, type); }
+  selectCallback(id) {
+    this.selectedCallbackId = id;
+    if (id) {
+      const { id: id1, type } = extractCallbackType(id);
+      this.ensureRequestInfoFetch(id1, type);
+    }
   }
 
   @action
-  hoverRequest(id) {
-    this.hoveredRequestId = id;
+  hoverCallback(id) {
+    this.hoveredCallbackId = id;
   }
 
   @action
@@ -150,10 +168,11 @@ export default class Store {
 
   @computed
   get selectedReqInfo() {
-    if (!this.selectedRequestId) { return null; }
-    if (!this.reqsDetails.has(this.selectedRequestId)) { return 'loading'; }
+    if (!this.selectedCallbackId) { return null; }
+    const { id, _type } = extractCallbackType(this.selectedCallbackId);
+    if (!this.reqsDetails.has(id)) { return 'loading'; }
 
-    return this.reqsDetails.get(this.selectedRequestId);
+    return this.reqsDetails.get(id);
   }
 
   @action

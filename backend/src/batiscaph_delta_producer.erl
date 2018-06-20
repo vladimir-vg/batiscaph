@@ -10,7 +10,7 @@
 ]).
 
 % how many events to retreive for single delta chunk
--define(CHUNK_SIZE, 1000).
+-define(CHUNK_SIZE, 10000).
 
 
 

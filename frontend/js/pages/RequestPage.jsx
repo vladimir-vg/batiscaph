@@ -129,31 +129,30 @@ export default class RequestPage extends React.Component {
 
   componentWillMount() {
     const { reqId } = this.props.match.params;
-    this.props.store.selectRequest(reqId, this.getRequestType());
+    this.props.store.selectCallback(reqId);
   }
 
   componentWillReceiveProps(props) {
     if (props.match.params.reqId !== this.props.match.params.reqId) {
-      this.props.store.selectRequest(props.match.params.reqId, this.getRequestType(props));
+      this.props.store.selectCallback(props.match.params.reqId);
     }
   }
 
   componentWillUnmount() {
-    this.props.store.selectRequest(null);
+    this.props.store.selectCallback(null);
   }
 
-  getRequestType(props) {
-    props = props || this.props;
-
-    const { path } = props.match;
-    if (/plug-request-info/.test(path)) { return 'plug'; }
-    if (/cowboy-request-info/.test(path)) { return 'cowboy'; }
-
-    throw {
-      message: "Unknown request type path",
-      path
-    };
-  }
+  // getRequestType(props) {
+  //   props = props || this.props;
+  // 
+  //   if (/^plug /.test(props.id)) { return 'plug'; }
+  //   if (/^cowboy /.test(props.id)) { return 'cowboy'; }
+  // 
+  //   throw {
+  //     message: "Unknown request type",
+  //     id: props.id
+  //   };
+  // }
 
   clearSelection() {
     const { id } = this.props.match.params;
@@ -200,10 +199,10 @@ export default class RequestPage extends React.Component {
         {plugInfo}
 
         <h2>request headers:</h2>
-        {this.renderHeaders(ReqHeaders)}
+        {ReqHeaders && this.renderHeaders(ReqHeaders)}
 
         <h2>response headers:</h2>
-        {this.renderHeaders(RespHeaders)}
+        {RespHeaders && this.renderHeaders(RespHeaders)}
       </div>
     </div>;
   }

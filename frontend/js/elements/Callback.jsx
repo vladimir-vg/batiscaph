@@ -11,19 +11,19 @@ class Component extends React.Component {
   constructor() {
     super();
 
-    this.selectRequest = this.selectRequest.bind(this);
-    this.hoverRequest = this.hoverRequest.bind(this);
+    this.selectCallback = this.selectCallback.bind(this);
+    this.hoverCallback = this.hoverCallback.bind(this);
   }
 
-  selectRequest() {
-    if (this.props.selectedRequestId === this.props.id) {
-      this.props.selectRequest(null);
+  selectCallback() {
+    if (this.props.selectedCallbackId === this.props.id) {
+      this.props.selectCallback(null);
     } else {
-      this.props.selectRequest(this.props.id, this.props.type);
+      this.props.selectCallback(this.props.id);
     }
   }
 
-  hoverRequest(id) { this.props.hoverRequest(id); }
+  hoverCallback(id) { this.props.hoverCallback(id); }
 
   render() {
     const g = this.props.grid;
@@ -36,10 +36,10 @@ class Component extends React.Component {
 
     let className = "callback";
     let highlighted = false;
-    if (this.props.id === this.props.selectedRequestId) {
+    if (this.props.id === this.props.selectedCallbackId) {
       className += " current";
       highlighted = true;
-    } else if (this.props.id === this.props.hoveredRequestId) {
+    } else if (this.props.id === this.props.hoveredCallbackId) {
       className += " hovered";
       highlighted = true;
     }
@@ -49,9 +49,9 @@ class Component extends React.Component {
     const borderWidth = 1;
 
     const content = <rect className={className} style={{strokeWidth: borderWidth}}
-      onMouseEnter={this.hoverRequest.bind(this, this.props.id)}
-      onMouseLeave={this.hoverRequest.bind(this, null)}
-      onClick={this.selectRequest}
+      onMouseEnter={this.hoverCallback.bind(this, this.props.id)}
+      onMouseLeave={this.hoverCallback.bind(this, null)}
+      onClick={this.selectCallback}
       x={x-borderWidth/2} y={y-borderWidth/2} width={width+borderWidth} height={height+borderWidth} />;
 
     return [
@@ -66,16 +66,15 @@ class Component extends React.Component {
 }
 Component.propTypes = {
   id: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
   x: PropTypes.number.isRequired,
   y1: PropTypes.number.isRequired,
   y2: PropTypes.number.isRequired,
 
   grid: PropTypes.object.isRequired,
-  selectedRequestId: PropTypes.string,
-  hoveredRequestId: PropTypes.string,
-  selectRequest: PropTypes.func.isRequired,
-  hoverRequest: PropTypes.func.isRequired,
+  selectedCallbackId: PropTypes.string,
+  hoveredCallbackId: PropTypes.string,
+  selectCallback: PropTypes.func.isRequired,
+  hoverCallback: PropTypes.func.isRequired,
 }
 
 
@@ -113,13 +112,13 @@ function produceElements(delta) {
   const result = {};
 
   delta['plug_requests'].forEach((req, id) => {
+    const id1 = `plug ${id}`;
     result[id] = {
-      id: id,
+      id: id1,
       key: id,
       Component,
       SelectionBackgroundComponent,
       attrs: {
-        type: req._type,
         x: attr.xPid(req.Pid),
         y1: attr.yTimestamp(req.StartedAt),
         y2: attr.yTimestamp(req.StoppedAt),
@@ -128,30 +127,31 @@ function produceElements(delta) {
   });
 
   delta['cowboy_requests'].forEach((req, id) => {
-    result[id] = {
-      id: id,
-      key: `init ${id}`,
+    const id1 = `cowboy ${id}`;
+    result[id1] = {
+      id: id1,
+      key: `${id} init`,
       Component,
       SelectionBackgroundComponent,
       attrs: {
-        type: req._type,
         x: attr.xPid(req.Pid),
         y1: attr.yTimestamp(req.init.StartedAt),
         y2: attr.yTimestamp(req.init.StoppedAt),
       }
     };
-    result[id] = {
-      id: id,
-      key: `handle ${id}`,
-      Component,
-      SelectionBackgroundComponent,
-      attrs: {
-        type: req._type,
-        x: attr.xPid(req.Pid),
-        y1: attr.yTimestamp(req.handle.StartedAt),
-        y2: attr.yTimestamp(req.handle.StoppedAt),
-      }
-    };
+    // if (req.handle) {
+    //   result[id1] = {
+    //     id: id1,
+    //     key: `${id} handle`,
+    //     Component,
+    //     SelectionBackgroundComponent,
+    //     attrs: {
+    //       x: attr.xPid(req.Pid),
+    //       y1: attr.yTimestamp(req.handle.StartedAt),
+    //       y2: attr.yTimestamp(req.handle.StoppedAt),
+    //     }
+    //   };
+    // }
   });
 
   return result;
